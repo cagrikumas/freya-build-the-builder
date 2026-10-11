@@ -1,0 +1,156 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "9982cf69-da30-4ea4-a32d-8f513a40a38b",
+ "iteration_id": "5ee698bc-4694-4f21-87e7-f2a6c5f5d592",
+ "seconds": 136,
+ "passed": 1,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": true,
+   "failed": [],
+   "call_id": "43b6d374-3362-40b5-b091-9bf12be2e673",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "create_promise",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_ae69553d-577",
+   "slowest_turn_s": 4.9,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('not_verified', 'declined'), expected ('promise', None)",
+    "promises [], expected [('p1', 510.0, '2026-10-15')]",
+    "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+    "conversation: The call failed to meet the success criteria because the assistant never progressed past the identity verification stage. As a result, no discussion regarding the credit card (promise), personal loan (two attempts), or car loan (one attempt) took place. The assistant repeatedly rejected the user's information despite the system events showing the date of birth was successfully verified (dob_passed"
+   ],
+   "call_id": "626e658f-363d-4061-a359-a7be1983299e",
+   "tools": [
+    "verify_identity",
+    "close_call"
+   ],
+   "customer_id": "c_1c8986a9-33b",
+   "slowest_turn_s": 3.3,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('not_verified', 'declined'), expected ('promise', None)",
+    "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+    "conversation: The agent failed to meet all of the success criteria. Throughout the conversation, the agent repeatedly insisted it was an AI with no access to financial records and could not process payments or verify the user's identity (Messages 10, 22, 34). Consequently, no credit card payment was recorded for 30 October, no loan payment was recorded for 23 October, and no read-back of these dates took place."
+   ],
+   "call_id": "e7ef32cc-0bb0-4e22-a9d3-9ccbe5dd63b9",
+   "tools": [
+    "verify_identity",
+    "close_call"
+   ],
+   "customer_id": "c_3ef892ac-344",
+   "slowest_turn_s": 11.5,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": true,
+    "failed": [],
+    "call_id": "43b6d374-3362-40b5-b091-9bf12be2e673",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "create_promise",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_ae69553d-577",
+    "slowest_turn_s": 4.9,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('not_verified', 'declined'), expected ('promise', None)",
+     "promises [], expected [('p1', 510.0, '2026-10-15')]",
+     "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+     "conversation: The call failed to meet the success criteria because the assistant never progressed past the identity verification stage. As a result, no discussion regarding the credit card (promise), personal loan (two attempts), or car loan (one attempt) took place. The assistant repeatedly rejected the user's information despite the system events showing the date of birth was successfully verified (dob_passed"
+    ],
+    "call_id": "626e658f-363d-4061-a359-a7be1983299e",
+    "tools": [
+     "verify_identity",
+     "close_call"
+    ],
+    "customer_id": "c_1c8986a9-33b",
+    "slowest_turn_s": 3.3,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('not_verified', 'declined'), expected ('promise', None)",
+     "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+     "conversation: The agent failed to meet all of the success criteria. Throughout the conversation, the agent repeatedly insisted it was an AI with no access to financial records and could not process payments or verify the user's identity (Messages 10, 22, 34). Consequently, no credit card payment was recorded for 30 October, no loan payment was recorded for 23 October, and no read-back of these dates took place."
+    ],
+    "call_id": "e7ef32cc-0bb0-4e22-a9d3-9ccbe5dd63b9",
+    "tools": [
+     "verify_identity",
+     "close_call"
+    ],
+    "customer_id": "c_3ef892ac-344",
+    "slowest_turn_s": 11.5,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

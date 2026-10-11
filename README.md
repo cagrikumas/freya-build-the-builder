@@ -101,6 +101,9 @@ failures. The repair must preserve the original scenarios and local checks.
 An inconclusive or worse retest restores the previous workflow. Calls with no
 assistant speech or no completed judgment remain inconclusive, not policy
 failures or passes. These internal checks are not the official hidden score.
+The full conversation evidence is retained in the run. Automatic repair receives
+a bounded projection of speech, tool outcomes, routing and validation errors;
+repeated code and large snapshots are omitted, with any truncation recorded.
 The trace explicitly records when the remaining time is insufficient to test;
 use a longer `--max-seconds` budget when appropriate before the event deadline.
 Remote gateway/connection failures during these checks are recorded as

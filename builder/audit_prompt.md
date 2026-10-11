@@ -51,6 +51,10 @@ paths. Reason through both success and failure. Look especially for:
   unfinished tasks suggested by conversation history. Do not replace an
   action-after-speech stage with TTS alone: required tools still need an explicit
   engine route or a constrained action step in the source-prescribed order.
+  If on_enter.prompt overrides entry instructions, ensure it is self-contained:
+  actual interpolated computed speech, exact source opening/fallback and required
+  conditions. Variable identifiers and references to "the current task" do not
+  provide those values. Do not assume unspecified entry-context behavior.
 - Counters initialized as though an entry question already ran, or counters that
   never advance when a repeated unclear reply takes a different taxonomy branch.
   Trace both caller-first and agent-first starts, actual speaking steps, delayed
@@ -59,6 +63,12 @@ paths. Reason through both success and failure. Look especially for:
 - A clarification or repeated offer loop that bypasses a source limit, loses a
   proposal, repeats an already rejected offer, or silently reclassifies a new
   proposal as refusal. Check initial-question and exception rules together.
+- Confirmation corrections resolved using a stale negotiation index instead of
+  the entities and terms actually read back. Trace partial agreements through
+  read-back and a correction, including an omitted entity reference. Preserve a
+  proposal's selected entities, amounts and dates across clarification turns;
+  clarify ambiguity under the source rules rather than silently narrowing scope
+  or dropping another proposed term.
 - Numeric-only dates and split digits: an incomplete or superseded answer cannot
   consume a security attempt. Wrong answer handling must not re-ask passed questions.
 - Calendar off-by-one errors, holidays adjacent to weekends, a Friday holiday,
@@ -67,6 +77,9 @@ paths. Reason through both success and failure. Look especially for:
   clarification allowance on a paraphrase, or discards context needed to resolve
   the customer's next exact date. Resolve from source conventions and call inputs;
   do not repair a limitation by guessing an unsupported date.
+  Include locale-specific weekday plus ordinal/numeric day-of-month answers to
+  a clarification; preserve month/year/period context and distinguish parser
+  coverage gaps from true ambiguity before taking a source-defined fallback.
 - Helpers that trust the real date, a hardcoded practice date, or fabricated IDs.
 - A pre-hook which changes confirmed monetary terms without another confirmation.
 - A success claim before the bank's ok response, a retry that duplicates a successful

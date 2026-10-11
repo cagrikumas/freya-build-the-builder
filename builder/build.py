@@ -24,7 +24,7 @@ from patches import apply_patches
 from http_transport import install_curl_transport
 from documents import read_folder
 from smoke import run_smoke
-from evaluate import run_examples, validate_scenarios, evaluation_seconds
+from evaluate import run_examples, validate_scenarios, evaluation_seconds, compact_feedback
 
 
 def preserve_tests(original, candidate):
@@ -255,9 +255,13 @@ def main():
                                                                          max_seconds=min(evaluation_budget, remaining()-300)), trace, 'document examples')
                     (run_dir / 'examples.json').write_text(redact(evaluated))
                     if evaluated['failed'] and evaluated['conclusive'] and remaining() >= evaluation_budget + 900:
-                        failures = [r for r in evaluated['rows'] if r['outcome'] == 'fail']
+                        feedback = compact_feedback({**evaluated, 'rows': [r for r in evaluated['rows'] if r['outcome'] == 'fail']}, workflow=workflow)
+                        (run_dir / 'example-repair-feedback.json').write_text(redact(feedback))
+                        trace('example_repair_feedback', full_evidence='examples.json',
+                              model_feedback='example-repair-feedback.json',
+                              characters=len(redact(feedback)))
                         repaired = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact)
-                                        + '\n\n# OBSERVED EXAMPLE CONVERSATION FAILURES\n' + redact(failures)
+                                        + '\n\n# OBSERVED EXAMPLE CONVERSATION FAILURES\n' + redact(feedback)
                                         + '\nReturn JSON with issues and patches (JSON Patch into the artifact). Fix general runtime/policy causes from the documents. Never hardcode the example customer or coach tests. Preserve scenarios, smoke and existing checks exactly; you may append additional local checks.',
                                         'Repair policy/runtime defects in document-derived conversations', trace, run_dir,
                                         timeout=min(600, int(remaining()-evaluation_budget-300)), images=images)

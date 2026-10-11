@@ -215,8 +215,12 @@ supplies the next utterance, make that instruction authoritative and do not
 combine it with a broad invitation to improvise the workflow.
 Keep entry speech separate from processing the next fresh caller reply. For an
 LLM entry, a narrow on_enter.prompt can restrict it to the computed current-stage
-utterance. Prefer separate speaking stages when their permitted question types
-differ. Initialized question-only stages may use on_enter tts/text with a
+utterance. A custom entry prompt must be self-contained: interpolate the actual
+computed utterance with {{variable_name}} and include the exact source-derived
+opening/fallback and its conditions. Merely naming a variable or saying "use the
+current task" does not supply its value; do not depend on other task context
+being present in an overridden entry instruction. Prefer separate speaking stages
+when their permitted question types differ. Initialized question-only stages may use on_enter tts/text with a
 template to speak the computed question exactly, while their task processes a
 new reply. A fixed TTS entry does not automatically invoke conversation tools:
 preserve any source-required action after speech through an explicit, verified
@@ -238,6 +242,16 @@ and the supplied date conventions, not only a short phrase whitelist. Track
 clarification allowances across turns independently of the wording used. Retain
 relevant prior context and resolve only what the source and call inputs support;
 clarify ambiguity instead of guessing or letting a new wording reset a limit.
+Handle source-language weekday names combined with ordinal or numeric day-of-month
+fragments, preserving the established month/year or period context. Distinguish
+an unsupported spelling from a genuinely ambiguous date; never silently replace
+a resolvable customer date with a deadline just because its spelling was missed.
+
+At confirmation, resolve corrections against the entities and terms actually
+read back, not a stale negotiation index. Preserve a proposal's selected entities,
+amounts and dates across clarification turns; an answer to one missing detail
+must not silently narrow its scope or discard its other terms. If the reference
+is ambiguous, clarify it under the source rules before changing or recording it.
 
 Cover every policy branch: unclear name, wrong number, deceased, relative offers
 to pay, invalid callbacks, suspicion/AI/human questions, refusal of identity,

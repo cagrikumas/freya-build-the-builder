@@ -1,0 +1,10 @@
+{
+  "kind": "post_build_latest_validator",
+  "artifact": "traces/20261011T161213Z-practice-b/candidate-0.json",
+  "sha256": "44199ac7a553e7ae16728c038e07354dc13019147bf0d4629f13c0f809541172",
+  "static_errors": [],
+  "check_errors": [],
+  "checks": 65,
+  "executed_checks": true,
+  "live_evidence": false
+}

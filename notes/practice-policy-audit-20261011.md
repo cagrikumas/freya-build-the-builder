@@ -122,3 +122,53 @@ ikinci yazımı veya başarılı aktarım sonrası not üretimi hatası bulunmad
 canlı konuşma başarısı garantisi değildir. Prompt ve not değişiklikleri için
 `git diff --check` uygulandı; banka servislerine veya telefon modeline yeni test
 isteği gönderilmedi.
+
+## Yeni taslak: kaynak üzerinden üç kalan bulgu
+
+İncelenen yeni otomatik taslak:
+`traces/20261011T161213Z-practice-b/model-01.answer.json`.
+Bu bölüm yalnız kaynak kodu ve prompt okumasına dayanır. Taslak validator'dan
+henüz geçmediği için hiçbir workflow kodu çalıştırılmadı; bu bulgular yerel
+çalıştırma veya canlı telefon testi sonucu değildir. Otomatik model-02 denetimi
+bu inceleme sırasında sürüyordu; aşağıdakiler model-01 bulgularıdır ve sonraki
+patch için yeniden kontrol edilmelidir. Üretilen artifact değiştirilmedi.
+
+Üç bulgunun JSON yolu `/workflow/nodes/evaluate/code`.
+Kural kaynakları:
+`build-the-builder-v3/build-the-builder/briefs/brief-a.md` ve
+`build-the-builder-v3/build-the-builder/briefs/brief-b.md`.
+
+1. **Onay sırasında düzeltme eski müzakere ürününe uygulanabiliyor.**
+   `readback()` yalnız `phase=confirm` yapıyor; önceki `mode/index` korunuyor.
+   `selection()` ürün adı verilmediğinde `mode=product` için eski index'i
+   döndürüyor. İlk ürünün taahhüdü beklerken sonraki ürünler reddedilmişse,
+   toplu okuma yalnız bekleyen taahhüdü içerir ama adsız bir tarih düzeltmesi
+   son reddedilmiş ürüne yönelir. Proposal döngüsü o ürünün `done` durumunu
+   atlar ve eski taahhüdü değişmeden tekrar okur. Kaynak: A35; toplu okuma
+   bağlamı için B7. Kod noktaları: `selection`, `readback`, proposal döngüsündeki
+   `status == 'done'` kontrolü. Onay kapsamı gerçekten okunan taahhütlerden
+   türetilmeli; birden fazla olası hedef varsa kaynak kurallarına göre sorulmalı.
+
+2. **Ortak tarih önerisinin kapsamı açıklama sorusunda kayboluyor.**
+   Müşterinin tüm ürünler için belirsiz bir dönem önermesi ilk seçilen üründe
+   `date_clarifications` dalına girer. Dal `index` ve `mode=product` atayıp
+   döngüden çıkar; ilk önerinin ürün kümesini veya ortak tarih bağlamını
+   saklamaz. Sonraki kesin gün yanıtı yalnız ilk ürüne uygulanır; `progress()`
+   sonraki üründe yeniden müzakere başlatır. Kaynak: A21 ve B6. Kod noktaları:
+   proposal döngüsündeki `common`, `day is None` açıklama dalı ve `progress`.
+   Açıklama yanıtı eksik parçayı tamamlamalı, önerinin diğer ürünlerini veya
+   şartlarını düşürmemeli.
+
+3. **İlk toplu soruya tutar yetersizliği yanıtı hâlâ yanlış teklife gidiyor.**
+   Sayısal tutar veya tarih içermeyen `kind == 'too_much'` dalı yalnız ilk
+   seçilen ürünü alır; `offered_date` yoksa bugünü seçer ve `offer_adjustment`
+   ile tabanı sorar. Deneme sayacı ilerlemez. B4, ilk toplu bugün sorusunun
+   olumsuz yanıtından sonra her ürüne A30 deneme 1 ile başlamayı gerektirir.
+   Kaynak: B4 ve A30; taban seçimi için A26. Genel ilk-soru/istisna talimatı
+   bu dersi zaten kapsadığı için promptlara aynı talimat yeniden eklenmedi.
+
+Bu taslakta doğal kısa ürün adları için alias çözümü ve `nonanswer` yanıtının
+deneme yoluna girmesi önceki artifact'a göre iyileşmiş görünüyor; bu tespit de
+yalnız kaynak okumasıdır. Yeni genel prompt ekleri yalnız onayda gerçekten
+okunan kapsamı kullanmayı ve açıklama boyunca öneri bağlamını korumayı ister;
+practice banka adı, değeri veya kuralını gelecekteki vakalara taşımıyor.

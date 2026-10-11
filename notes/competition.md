@@ -10,6 +10,9 @@ Resmi sayfa bugün değiştirildi: https://www.freyavoice.ai/hackathon
   çalışır tutulacak. Final ajanı yalnız bu mock’u çağırabilir.
 - Teslim 23.00 İstanbul: tek workflow JSON, onu üreten tek trace, repo/commit,
   üyelerin ad/e-postası ve mock_url. Komut: case_folder + mock_url.
+- Kullanıcının 19.33'te paylaştığı Freya/Tuna Bayrak mesajı, teslim adresinin
+  veya formunun final senaryosuyla birlikte paylaşılacağını belirtiyor. Kanal
+  20.00 duyurusuyla doğrulanacak; dev@ adresi teslim adresi olarak varsayılmadı.
 - Önceki iki hidden-brief biçimi ve 30 dakikalık sınır güncel sayfada yok.
   Builder’ın güncel yerel süre sınırı tüm koşular için 60 dakika; gerekirse --max-seconds ile değişir.
 - Final belgelerinden hiçbir kural/değer/isim builder koduna veya promptlarına
@@ -17,9 +20,10 @@ Resmi sayfa bugün değiştirildi: https://www.freyavoice.ai/hackathon
 - Değerlendirme: gizli müşteriler ve workflow incelemesi; ağırlıklar açıklanmıyor.
   Trace puanlanmıyor, üretimin dürüstlüğünü doğrulamak için okunuyor.
 - Kişisel Cloudflare hesabı bilgisi kullanıcıya soruldu; henüz giriş/deploy yok.
-- Güncel B testi 2/3: PUB-11 ve PUB-13 geçti; PUB-12’de güvenlik adımı ile
-  ortak işlem adımı arasındaki gecikmiş geçiş yeni yanıtı işleyemedi. Bu gözlem
-  genel derleyici/audit talimatına eklendi.
+- Son tamamlanan B testi sürüm 4 ile 1/3: PUB11'de üç taahhüt doğru kaydedildi;
+  PUB12/13 kimlik aşamasında kaldı. Şema çakışmaları düzeldi, ancak hesaplanan
+  soru ile gerçek konuşma hâlâ ayrışıyor. Genel giriş talimatı düzeltildi.
+  Önceki sürümdeki 2/3 küçük örneklem, güncel veya kararlı başarı oranı değildir.
 
 ---
 Aşağıdaki kayıtlar sayfa değişikliğinden önceki tarihsel çalışma notlarıdır.
@@ -203,3 +207,32 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
 - Yeni B koşusunun ilk üretimi19.23'te bitti;9node/44yerelkontrol. İlk taslakta
   yine iki paylaşılan extraction adı çakışması var. Sürmekte olan otomatik
   bağımsız audit yeni genel dersleri içeriyor; henüz yeni canlı sürüm yok.
+
+
+## 19.35–19.38 İstanbul — yedi sekme ve B sürüm 4
+
+- Resmi sayfa yeniden indirildi; Overview, Data, Evaluation, Submit, Leaderboard,
+  Rules ve FAQ ayrı ayrı okundu. 19.28 kopyasıyla bölüm metinleri aynı. Final ZIP
+  henüz yok; kit v3. Sayfadaki13case, kittekilerle identity alanının web görünümünde
+  çıkarılması dışında aynı. Güncel tek Türkçe vaka/Cloudflare/20.00–23.00 biçimi
+  korunuyor. Kullanıcının paylaştığı mesaj nedeniyle kesin teslim adresi/formu
+  final duyurusundan doğrulanacak.
+- B v4 otomatik koşu1215.99s; yeni validator ile65kodkontrolü geçti. Resmi canlı
+  skor1/3,136s: PUB11üçtaahhüt kaydetti; PUB12/13kimlikte kaldı. Sonuç dosyası
+  results/20261011-b-v4-live.json. Ayrıntılı gerçek konuşma/devlet kanıtı ayrı
+  live-diagnostics.json içinde; rendered model promptu elde değil.
+- Şema hataları görülmedi. Kod doğru kimlik sorusunu hazırlarken identity
+  konuşması başka sorular soruyor veya hesap erişimini reddediyor. Üç açılış da
+  gerekli banka/kayıt cümlesini atlıyor; PUB11'in dar case ölçütünü geçmesi tam
+  brief uyumu demek değil. Özel on_enter.prompt yalnız değişken adını anıyor,
+  değerini interpolate etmiyor; entry context kaybı güçlü çıkarım, kanıtlanmış
+  platform kusuru değil. Genel talimat, özel girişleri gerçek değişken değeri ve
+  kaynak açılış/fallback ile kendi başına yeterli hale getirecek şekilde güçlendi.
+- Üç taslak scope/attempt hatası otomatik audit tarafından düzeltildi. Hedefli
+  yerel tekrarlar bunları doğruladı; doğal weekday+ordinal tarih biçiminde ayrı
+  parser açığı kaldı. Genel locale/context tarih rehberi eklendi. Bu yerel
+  sonuçlar telefon modelinin extraction veya konuşmasını kanıtlamıyor.
+- Otomatik örnek onarımına gönderilen model girdisi sınırlı bir projeksiyon;
+  tam system/kod/variable-table tekrarları sonuç dosyasında korunur. Projeksiyon
+  konuşma, araç sonucu, validation hataları ve promptta referans verilen
+  hesaplanmış değerleri sınırlı biçimde taşır; tüm kesilmeler işaretlenir.

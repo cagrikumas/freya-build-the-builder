@@ -1,0 +1,8 @@
+{
+  "workflow_id": "b034a904-0df3-46ef-a6f0-e511e5109055",
+  "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+  "version": 4,
+  "export": "submission/practice-b.workflow.json",
+  "trace": "traces/20261011T161213Z-practice-b/trace.jsonl",
+  "sha256": "936a8e2e994ee4277bed1e4fc03e911be3a87ccb8f35c5c92c6881387358cf3b"
+}
