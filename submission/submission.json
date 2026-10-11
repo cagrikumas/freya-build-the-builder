@@ -1,0 +1,15 @@
+{
+  "team": "cagrikumas",
+  "repo": "https://github.com/cagrikumas/freya-build-the-builder",
+  "commit": "final-submission-20261011",
+  "members": [
+    {
+      "name": "CAGRI KUMAS",
+      "email": "kumascagri@gmail.com"
+    }
+  ],
+  "run_command": "python3 builder/build.py {case_folder} {mock_url} --max-seconds 5400",
+  "workflow": "submission/final.workflow.json",
+  "trace": "traces/20261011T193910Z-final/full-session.jsonl",
+  "mock_url": "https://freya-bank-mock-cagrikumas.freya-hackathon-bank-mock.workers.dev"
+}

@@ -195,8 +195,8 @@ The Submit page updated at 17:00 UTC requires an email to
 `submission.json`, exported workflow, and full coding-agent session trace.
 It also requires those same files in the repository at the named commit.
 The manifest above is initially private for review; its final repository reference
-and organiser clone access must be settled before submission. The repository
-remains private during preparation. No final submission email has been sent.
+and organiser clone access must be settled before submission. Repository access and final email delivery are handled separately after
+reviewing the exact submission artifacts.
 
 
 ## Selected event submission
@@ -208,3 +208,7 @@ See `results/20261011-final-tests.md` and raw results for broader measured
 performance and remaining limitations. The later v5 refinement timed out
 before producing or applying a patch; its failed trace is retained as evidence
 and is not the submitted trace. The exported v4 phone agent was not hand-edited.
+
+The final live priority group completed with 11/12 passes and one failure,
+with no inconclusive grades. The remaining failure concerns a corrected-card
+PDF request. Raw results and earlier failures remain in the repository.

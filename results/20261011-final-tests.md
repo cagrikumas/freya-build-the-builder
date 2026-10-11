@@ -155,3 +155,16 @@ kararlar belirsiz sayılır. Bilinen kalan riskler: teşekkürle birleşen eksik
 e-posta isteğinin bitirme sayılması ve bazı bitiş yollarında modelin
 hesaplanan cümleyi izlemeyip konuşmayı sürdürmesi/yanlış işlem iddiası.
 Bunlar düzelmiş veya tüm vaka %100 başarılı olarak sunulmamaktadır.
+
+
+Son v4 ölçümü 19:53:17 UTC’de tamamlandı: **11/12 başarılı, 1 başarısız,
+0 belirsiz (%91,7)**. Süre sınırından önce tüm görüşmeler ve kararlar bitti.
+Tek başarısızlık `EXTRA08` (kart/para birimi değiştirerek PDF isteme):
+e-posta sözü yine SMS olarak çıkarıldı ve bitiş düğümü yanlış onay
+sorusuna gitti; PDF gönderimi yapılmadı. Bu kez uzun kapanış döngüsü veya
+başarılı gönderim iddiası gözlenmedi. Önceki kayıtlardaki riskler yok sayılmaz.
+
+[Son Freya grubu](https://staging-app.freyavoice.ai/simulations/1e28a757-f034-4bbd-b46a-526327543492/iterations/a6b9229d-26aa-4327-9567-fd938f943f30?workspaceId=f22d7c29-2569-4a74-b8fc-b626c80454a5)
+
+Sonuçlar `20261011-final-v4-last-priority.json` ve yanındaki senaryo/olay
+kayıtlarında değişmeden saklandı. Bu skor organizatörün gizli puanı değildir.
