@@ -1,0 +1,12 @@
+.env
+env.sh
+**/env.sh
+.secrets/
+**/.freya-agents.json
+**/.personas.json
+__pycache__/
+*.pyc
+.venv/
+build-the-builder-v3.zip
+private/
+notes/hackathon-page-*.txt
