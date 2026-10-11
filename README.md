@@ -91,6 +91,17 @@ missing required opening phrases fail it. One automatic repair is allowed;
 the original smoke check cannot be weakened. This is a startup check, not a
 claim of passing the hidden policy evaluation.
 
+When the case supplies example conversations and usable test customers, the
+compiler also derives simulated-customer scenarios and independent success
+criteria from those documents. The builder runs them with the event's fixed
+phone model, saves the conversations and can automatically repair observed
+failures. The repair must preserve the original scenarios and local checks.
+An inconclusive or worse retest restores the previous workflow. Calls with no
+assistant speech or no completed judgment remain inconclusive, not policy
+failures or passes. These internal checks are not the official hidden score.
+The trace explicitly records when the remaining time is insufficient to test;
+use a longer `--max-seconds` budget when appropriate before the event deadline.
+
 ## Local validation
 
 ```sh

@@ -47,6 +47,10 @@ paths. Reason through both success and failure. Look especially for:
   caller's first message before that action; the initial task must also produce
   the required opening if it is absent from conversation history, without
   repeating it when a simulation already delivered it.
+- Example-conversation scenarios that coach the phone agent, preload internal
+  success states, invent customer identities, or omit a documented failure branch.
+  Test criteria must independently reflect the source policy, not accept whatever
+  the candidate happens to do. Check the fixture and source reference for each.
 
 Prefer small, concrete corrections to a wholesale redesign. Local checks must
 assert expected results computed independently from the relevant bank rule, not

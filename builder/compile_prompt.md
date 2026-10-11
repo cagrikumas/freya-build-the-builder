@@ -36,6 +36,18 @@ Your output is JSON with these fields:
   just one chat turn after publication and then ends the synthetic chat. It is
   a startup check, not a full policy score. Never invent test identities. Omit
   smoke if the documents provide no usable synthetic customer variables.
+- `scenarios`: when a case folder includes example conversations and usable
+  synthetic test customers, turn those examples into up to 12 end-to-end checks.
+  Each has `name`, `source` (document/section), `variables` (only documented call
+  inputs), `prompt` (instructions to the simulated customer), and
+  `success_criteria` (an independent judge's policy, outcome and honesty checks).
+  The customer must answer naturally, only reveal requested security information,
+  follow the example's intent and corrections, and never coach the agent with
+  the expected bank policy or tool names. Criteria must come from the documents,
+  not the candidate's implementation; check actual tool outcomes as well as
+  speech where visible. Do not preload internal success flags or account facts
+  as call inputs. Use documented customers only, and do not fabricate a bank
+  reset endpoint. Omit this field for practice briefs or unusable fixtures.
 
 The workflow is what gets evaluated. Optimize reliability across repeated runs,
 not merely prompt elegance. The phone model is fixed and relatively small.
