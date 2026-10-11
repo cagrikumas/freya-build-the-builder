@@ -1,4 +1,6 @@
 import json
+import hashlib
+from decimal import Decimal
 from pathlib import Path
 import shutil
 import sys
@@ -7,7 +9,7 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'builder'))
-from documents import read_folder, spreadsheet, word
+from documents import read_folder, spreadsheet, word, compact_json_text
 
 
 class DocumentTests(unittest.TestCase):
@@ -18,6 +20,45 @@ class DocumentTests(unittest.TestCase):
 
     def tearDown(self): self.tmp.cleanup()
 
+    def test_json_compaction_preserves_nested_values_and_string_whitespace(self):
+        original = '{\n "items": [ true, false, null, { "text": " keep  spaces " } ],\r\n "n": 17\n}'
+        compact = compact_json_text(original)
+        self.assertEqual(compact, '{"items":[true,false,null,{"text":" keep  spaces "}],"n":17}')
+        self.assertEqual(json.loads(compact), json.loads(original))
+
+    def test_json_compaction_preserves_numeric_tokens_without_float_roundtrip(self):
+        tokens = ['123456789012345678901234567890.123456789012345678901234567890',
+                  '-0', '1.2300e+004', '1e999999', '9' * 5001]
+        original = '[\n' + ',\n '.join(tokens) + '\n]'
+        compact = compact_json_text(original)
+        self.assertEqual(compact, '[' + ','.join(tokens) + ']')
+        self.assertEqual(json.loads(compact, parse_float=Decimal, parse_int=Decimal),
+                         json.loads(original, parse_float=Decimal, parse_int=Decimal))
+
+    def test_json_compaction_keeps_escape_spellings_and_duplicate_key_values(self):
+        original = r'''{ "text": "line\n tab\t slash\\ quote\" letter\u0131", "same": 1, "same": 2 }'''
+        expected = r'''{"text":"line\n tab\t slash\\ quote\" letter\u0131","same":1,"same":2}'''
+        self.assertEqual(compact_json_text(original), expected)
+        self.assertEqual(json.loads(original), json.loads(expected))
+
+    def test_json_compaction_does_not_turn_invalid_input_into_valid_json(self):
+        for original in ('1 2', '{ "bad": NaN }', '[Infinity]', '[-Infinity]', '{"x": 01}', '{"x": "broken\\"}'):
+            with self.subTest(original=original), self.assertRaises(ValueError):
+                compact_json_text(original)
+
+    def test_json_folder_compaction_preserves_original_bytes_and_hash(self):
+        folder = self.root/'case'; folder.mkdir()
+        path = folder/'data.json'
+        original = b'\xef\xbb\xbf{\n  "account": "00001234",\n  "exact": 0.123456789012345678901\n}\n'
+        path.write_bytes(original)
+        run = self.root/'run'; run.mkdir()
+        text, _, manifest = read_folder(folder, run)
+        self.assertEqual(path.read_bytes(), original)
+        self.assertEqual(manifest[0]['sha256'], hashlib.sha256(original).hexdigest())
+        self.assertIn('{"account":"00001234","exact":0.123456789012345678901}', text)
+        self.assertEqual(manifest[0]['text_transform'], 'json_whitespace_minified')
+        self.assertGreater(manifest[0]['source_text_chars'], manifest[0]['text_chars'])
+
     def test_word_tables_keep_cells_and_non_ascii_text(self):
         p = self.root/'terms.docx'
         with zipfile.ZipFile(p, 'w') as z:
@@ -26,6 +67,23 @@ class DocumentTests(unittest.TestCase):
         self.assertIn('İşlem koşulları', text)
         self.assertIn('"Alan" | "Açıklama"', text)
         self.assertIn('"kod" | "0007"', text)
+
+    def test_source_and_config_documents_are_read_as_text_without_execution(self):
+        folder = self.root/'case'; folder.mkdir()
+        source = 'throw new Error("must never execute");\nexport default { fetch() {} };\n'
+        config = '# Configuration is source evidence\nname = "example"\n[vars]\nCODE = "0007"\n'
+        (folder/'worker.js').write_text(source, encoding='utf-8')
+        (folder/'wrangler.toml').write_text(config, encoding='utf-8')
+        run = self.root/'run'; run.mkdir()
+        text, images, manifest = read_folder(folder, run)
+        self.assertIn(source, text)
+        self.assertIn(config, text)
+        self.assertEqual(images, [])
+        self.assertEqual({item['path'] for item in manifest}, {'worker.js', 'wrangler.toml'})
+        for item in manifest:
+            original = (folder/item['path']).read_bytes()
+            self.assertEqual(item['sha256'], hashlib.sha256(original).hexdigest())
+            self.assertNotIn('text_transform', item)
 
     def test_excel_preserves_sheet_cell_dates_zeroes_and_formulas(self):
         p = self.root/'values.xlsx'

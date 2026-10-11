@@ -20,6 +20,28 @@ BUILTIN_FORMATS = {9: '0%', 10: '0.00%', 14: 'mm-dd-yy', 15: 'd-mmm-yy',
                    45: 'mm:ss', 46: '[h]:mm:ss', 47: 'mmss.0'}
 
 
+def compact_json_text(text):
+    """Remove JSON whitespace only; preserve every original number/string token."""
+    def invalid_constant(token):
+        raise ValueError('Non-JSON numeric constant: ' + token)
+    # Validate before removing whitespace: invalid `1 2` must never become `12`.
+    # Number callbacks avoid float rounding, overflow and Python's integer cap.
+    json.loads(text, parse_int=str, parse_float=str, parse_constant=invalid_constant)
+    output = []
+    quoted = escaped = False
+    for character in text:
+        if quoted:
+            output.append(character)
+            if escaped: escaped = False
+            elif character == '\\': escaped = True
+            elif character == '"': quoted = False
+        elif character == '"':
+            output.append(character); quoted = True
+        elif character not in ' \t\r\n':
+            output.append(character)
+    return ''.join(output)
+
+
 def office_images(archive, prefix, output):
     images = []
     for name in archive.namelist():
@@ -150,10 +172,15 @@ def read_folder(folder, run_dir):
         if p.is_symlink(): raise ValueError('Case inputs must be regular files: ' + str(p))
         relative = str(p.relative_to(folder)); suffix = p.suffix.lower()
         bucket = assets / hashlib.sha256(relative.encode()).hexdigest()[:12]; bucket.mkdir(exist_ok=True)
-        pictures = []
-        if suffix in ('.md', '.txt', '.csv', '.json', '.yaml', '.yml', '.xml', '.html'):
+        pictures, transformation = [], {}
+        if suffix in ('.md', '.txt', '.csv', '.json', '.yaml', '.yml', '.xml', '.html', '.js', '.toml'):
             try: content = p.read_text(encoding='utf-8-sig')
             except UnicodeDecodeError: content = p.read_text(encoding='cp1254')
+            if suffix == '.json':
+                transformation = {'text_transform': 'json_whitespace_minified', 'source_text_chars': len(content)}
+                try: content = compact_json_text(content)
+                except (ValueError, RecursionError) as error:
+                    raise ValueError('Invalid JSON document ' + relative + ': ' + str(error)) from error
         elif suffix == '.docx': content, pictures = word(p, bucket)
         elif suffix == '.xlsx': content, pictures = spreadsheet(p, bucket)
         elif suffix == '.pdf':
@@ -167,6 +194,6 @@ def read_folder(folder, run_dir):
         for picture in pictures:
             images.append(picture)
             documents.append('ATTACHED IMAGE ' + str(len(images)) + ': ' + relative + ' / ' + picture.name)
-        manifest.append({'path': relative, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'text_chars': len(content), 'images': len(pictures)})
+        manifest.append({'path': relative, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'text_chars': len(content), 'images': len(pictures), **transformation})
     if not files: raise ValueError('The case folder is empty')
     return '\n\n'.join(documents), images, manifest

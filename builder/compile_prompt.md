@@ -23,7 +23,8 @@ Your output is JSON with these fields:
 - `tool_config`: object keyed by bank tool name. Each value may hold `description`,
   `field_descriptions` (map from API body field name, or `path:<name>`,
   `query:<name>` or `header:<name>`, to descriptive instruction),
-  `pre_process_code`, `post_process_code`, and `response_mapping`.
+  optional `bindings` (exact request location/name to documented call variable,
+  specified below), `pre_process_code`, `post_process_code`, and `response_mapping`.
 - `checks`: an array of local code checks. Each has `name`, `node`, optional `tool`,
   `hook` (`code`, `pre`, or `post`), `vars`, optional `config`, optional `result`,
   and `expect_vars` and/or `expect_result`/`expect_config`. Use supplied API shapes
@@ -67,10 +68,26 @@ tool_config entry supplies its hooks, description and response mappings; for a
 pre_action its mappings are moved to the node automatically. Do not duplicate
 these mappings explicitly on that node.
 
-Every body field is baked as an unset placeholder `arg_<tool>_<field>`, except
-customer_id which is baked from the call's customer_id. Never store workflow
-state under one of those arg_ names. Model values arrive in config['body'] for
-pre-hooks. The post-hook can remember pre-hook values stored under separate names.
+Every unbound body field is baked as an unset placeholder
+`arg_<tool>_<field>`; unbound path/query/header parameters use
+`arg_<tool>_<location>_<field>`. No identifier receives an automatic binding based
+on its spelling. Never store workflow state under an arg_ placeholder. Model
+values arrive in config['body'] for pre-hooks. The post-hook can remember
+pre-hook values stored under separate names.
+
+Optional `tool_config.<operation>.bindings` maps an exact request location/name
+to a bare source-declared call-variable name, for example
+`{"body:record_ref":"supplied_record"}`. Supported keys are `body:<field>`,
+`path:<field>`, `query:<field>` and `header:<field>`. Body bindings identify
+top-level request-body properties; other bindings identify exact OpenAPI
+parameter names. Distinguish same-name fields by their location. Unknown binding
+keys fail compilation. Variable names must be nonempty and contain no whitespace,
+braces, colons or control characters; do not put template delimiters or template
+modifiers in binding values.
+Derive each binding from the input OpenAPI and documented call variables rather
+than inventing an identifier name or default. Bindings preserve the contract's
+types, enums and requiredness. Pre-hooks may still normalize or supply required
+values from documented inputs; test the actual bound and unbound request shape.
 
 A code node has `"code": "<Python source>"` instead of pre_actions. The builder
 wraps it in code_exec. Keep its silent on_enter, passthrough, fallback and
@@ -105,9 +122,11 @@ tool result provides an authoritative transition. If the policy requires
 verification before lookup, make the lookup unreachable until those checks
 succeed. A failed security answer must
 not be treated as success. A correction before validation is not a failed attempt.
-Enforce the policy's verification and data-loading prerequisites at EVERY
-account discussion/write stage, including exception/fallback routes. A code failure
-must never send an unverified caller to an account conversation with empty facts.
+Enforce the source-required authorization and data-loading prerequisites at
+EVERY account discussion/write stage, including exception/fallback routes. A
+source-specified trusted upstream handoff may satisfy authorization; preserve its
+documented trust boundary and do not invent new identity steps. A code failure
+must never bypass those prerequisites or enter account dialogue with missing facts.
 Do not reuse a payment-write conversation as a security-answer executor. If
 complete answers need deterministic validation, use a dedicated engine-run
 verification step after validation, then return to a speaking security step.
@@ -118,8 +137,10 @@ answer rather than consume it as acknowledgment of the previous tool result.
 Expose only tools appropriate to the stage. Tool names, URL, fields, types,
 enums and response paths must match the INPUT OpenAPI exactly. Resolve local
 OpenAPI references. The phone agent calls only those endpoints. Use `default`,
-not `const`. Bake customer_id from the call. For model-supplied body fields use
-unique unset placeholders such as `{{arg_create_promise_amount}}`; the same
+not `const`. Bind backend identifiers only through the exact source-defined
+request-field/call-variable mapping; do not invent identifier fields or defaults.
+For model-supplied body fields use unique unset placeholders such as
+`{{arg_operation_field}}`; the same
 placeholder must never be a stored workflow state variable. Declare field enums
 and descriptions on the body property's leaf. Do not add fictitious request fields.
 Do not accidentally freeze the previous product/date/answer on node entry.
@@ -157,9 +178,11 @@ but must not silently alter a customer's confirmed amount or date. Invalid
 proposals must be explained and reconfirmed before a bank write. Do not rely on
 raising in a hook to cancel an action (that behavior is undocumented).
 
-Track successful promises and transfers from actual responses. Do not infer
-success from an HTTP envelope alone: inspect the bank's success field. Avoid
-duplicate writes. If a write failed, retry only as many times as the brief allows,
+Track successful operations from actual responses. Determine success from
+each endpoint's documented HTTP-status and response-body contract, distinguishing
+transport-wrapper status from endpoint/business status where applicable. Do not
+require a universal success field or a response body when the contract has none.
+Avoid duplicate writes. If a write failed, retry only as many times as the brief allows,
 and follow its failure outcome. Never claim a failed operation was recorded.
 No notes should be emitted early if the brief forbids notes on a later transfer;
 defer such notes until final resolution. Pending promises are distinct from

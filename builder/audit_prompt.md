@@ -8,6 +8,10 @@ value (except remove). Use /checks/- to append a check. Replace an entire code
 string if fixing it. Do not return a rewritten full artifact. The builder applies
 these edits deterministically and validates the resulting artifact. Keep edits
 small enough to leave time for platform validation and practice tests.
+Check every pointer against the actual candidate and all preceding edits. Array
+indexes are zero-based; identify checks by their actual name before counting their
+index. Never assume an object key exists in a neighboring check. A JSON-encoded
+string is a leaf, not a traversable object; replace that full string if needed.
 Apply only the supplied policy. Distinguish amendments from superseded
 rules. Do not invent a default bank rule for a missing piece.
 
@@ -23,9 +27,10 @@ paths. Reason through both success and failure. Look especially for:
 - A transition that is reachable before its required tool succeeds, or a stale flag
   that moves the conversation early on the next attempt.
 - Security and payment stages sharing an action node, delayed transitions losing
-  a fresh answer, or an exception fallback entering account dialogue before both
-  identity and lookup succeeded. Trace a failed answer followed by the corrected
-  answer across actual nodes, not only through isolated code hooks.
+  a fresh answer, or an exception fallback bypassing source-required authorization
+  or data-loading prerequisites. Honor a source-specified trusted upstream handoff
+  without inventing additional identity steps. Where checks are required, trace a
+  failed answer followed by its correction across actual nodes, not only hooks.
 - Instructions that contradict the brief, especially first questions, negotiation
   counters, offering a floor, refusal versus a proposed value, multi-product order,
   a combined read-back, or routing a hardship/restructuring request incorrectly.
@@ -97,8 +102,11 @@ paths. Reason through both success and failure. Look especially for:
   coverage gaps from true ambiguity before taking a source-defined fallback.
 - Helpers that trust the real date, a hardcoded practice date, or fabricated IDs.
 - A pre-hook which changes confirmed monetary terms without another confirmation.
-- A success claim before the bank's ok response, a retry that duplicates a successful
-  write, a missing failed-product note, notes before a later transfer forbids them,
+- A success claim before the endpoint's documented HTTP-status/body success
+  conditions hold, or code assuming a universal success field or mandatory body.
+  Distinguish transport-wrapper status from endpoint/business status as the
+  contract requires. A retry that duplicates a successful write, a missing
+  failed-product note, notes before a later transfer forbids them,
   or a closing code inconsistent with successful promises/transfer/notes.
 - A model asked to call a tool absent from the node, missing required request
   fields, tool parameters baked to an old answer, or double close_call paths.

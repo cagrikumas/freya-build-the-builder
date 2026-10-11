@@ -32,7 +32,7 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual(body['required'], ['customer_id', 'amount_minor'])
         self.assertEqual(body['properties']['amount_minor']['type'], 'integer')
         self.assertEqual(body['properties']['resolution']['enum'], ['new', 'retry'])
-        self.assertEqual(body['properties']['customer_id']['default'], '{{customer_id}}')
+        self.assertEqual(body['properties']['customer_id']['default'], '{{arg_record_customer_id}}')
         self.assertEqual(body['properties']['amount_minor']['default'], '{{arg_record_amount_minor}}')
         self.assertEqual(validate(wf, self.api), [])
         self.assertEqual(self.api, source)

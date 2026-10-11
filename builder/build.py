@@ -22,7 +22,7 @@ from session_trace import append_record, redact_secrets
 from validate import validate, check_examples
 from assemble import assemble
 from freya_client import bind_workspace, availability_check
-from patches import apply_patches
+from patches import apply_patches, apply_with_path_repair
 from http_transport import install_curl_transport
 from documents import read_folder
 from smoke import run_smoke
@@ -202,7 +202,23 @@ def main():
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
         if not audit.get('approved'):
-            artifact = audit['artifact'] if 'artifact' in audit else apply_patches(artifact, audit['patches'])
+            def repair_audit_path(original, edits, error):
+                trace('audit_patch_error', index=error.index, error=str(error))
+                if remaining() < 180:
+                    raise error
+                repair_prompt = ('The audit contains an invalid JSON Pointer. Return only {"path":"/correct/pointer"} for the failed edit. '
+                    'Preserve its operation, value and intended audit correction. Inspect the ACTUAL candidate and the preceding edits; '
+                    'array indexes are zero-based. Never redirect a correction to an unrelated field just to make it apply. '
+                    'If the intended correction has no unambiguous target, return {"error":"reason"}. '
+                    'Do not return an artifact or other changes.\n# CANDIDATE\n' + json.dumps(original)
+                    + '\n# AUDIT ISSUES\n' + json.dumps(audit.get('issues', []))
+                    + '\n# ORDERED EDITS\n' + json.dumps(edits)
+                    + '\n# FAILED EDIT\n' + json.dumps({'index': error.index, 'error': str(error)}))
+                correction = call(repair_prompt, 'Repair an invalid audit JSON Pointer without changing its operation or value',
+                                  trace, run_dir, timeout=min(240, int(remaining()-30)))
+                trace('audit_patch_pointer_correction', index=error.index, correction=correction)
+                return correction
+            artifact = audit['artifact'] if 'artifact' in audit else apply_with_path_repair(artifact, audit['patches'], repair_audit_path)
         for attempt in range(4):
             path = run_dir / f'candidate-{attempt}.json'
             path.write_text(json.dumps(artifact, indent=2))

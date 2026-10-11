@@ -41,8 +41,18 @@ def assemble(artifact, api):
             raise ValueError(f'{name}: unresolved OpenAPI path parameter')
         cfg = registry.get(name, {})
         schema = copy.deepcopy(op.get('requestBody', {}).get('content', {}).get('application/json', {}).get('schema', {'type': 'object', 'properties': {}}))
+        bindings = cfg.get('bindings', {})
+        if not isinstance(bindings, dict):
+            raise ValueError(f'{name}: bindings must map request fields to call-variable names')
+        binding_keys = {'body:' + field for field in schema.get('properties', {})}
+        binding_keys.update(parameter['in'] + ':' + parameter['name'] for parameter in layout)
+        for key, variable in bindings.items():
+            if key not in binding_keys:
+                raise ValueError(f'{name}: unknown request binding {key!r}')
+            if not isinstance(variable, str) or not re.fullmatch(r'[^\s{}:\x00-\x1f\x7f]+', variable):
+                raise ValueError(f'{name}: binding {key!r} needs a bare call-variable name')
         for field, leaf in schema.get('properties', {}).items():
-            placeholder = field if field == 'customer_id' else 'arg_' + name + '_' + field
+            placeholder = bindings.get('body:' + field, 'arg_' + name + '_' + field)
             leaf['default'] = '{{' + placeholder + '}}'
             if field in cfg.get('field_descriptions', {}):
                 leaf['description'] = cfg['field_descriptions'][field]
@@ -62,7 +72,7 @@ def assemble(artifact, api):
         for parameter in layout:
             field = parameter['name']
             leaf = copy.deepcopy(parameter['schema'])
-            placeholder = field if field == 'customer_id' else 'arg_' + name + '_' + parameter['in'] + '_' + field
+            placeholder = bindings.get(parameter['in'] + ':' + field, 'arg_' + name + '_' + parameter['in'] + '_' + field)
             leaf['default'] = '{{' + placeholder + '}}'
             descriptions = cfg.get('field_descriptions', {})
             description = descriptions.get(parameter['in'] + ':' + field, descriptions.get(field))
