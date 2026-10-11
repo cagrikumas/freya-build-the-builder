@@ -1,0 +1,6 @@
+{
+  "practice_only": true,
+  "source": "traces/20261011T104235Z-practice-a/candidate-0.json",
+  "source_sha256": "ab01ca83a6283e408c82a36ba76d2b43cc0d7bc94f35b7df823843182813e6db",
+  "assembler_sha256": "706a14385e51b86070eafd950f0b7f8839eb09583f8a52ac0d6aad33a80f1a17"
+}

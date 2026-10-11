@@ -1,0 +1,8 @@
+{
+  "call_id": "de1fc1ff-85dc-4704-86f0-1204bb38a4c1",
+  "response": "Hello. May I ask who I am speaking with, please?",
+  "errors": [
+    "Required opening fragment missing: Freya Bank"
+  ],
+  "passed": false
+}

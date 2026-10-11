@@ -1,0 +1,6 @@
+{
+  "practice_only": true,
+  "source": "traces/20261011T111530Z-practice-b/practice-recovered-artifact.json",
+  "source_sha256": "c4c5c4c53eb16b6685274ffea458e88f42d4db49a89826fc0ad30be59ffa8394",
+  "assembler_sha256": "706a14385e51b86070eafd950f0b7f8839eb09583f8a52ac0d6aad33a80f1a17"
+}

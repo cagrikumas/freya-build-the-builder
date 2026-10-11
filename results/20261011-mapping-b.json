@@ -1,0 +1,156 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "bcc05068-d5c0-485c-a208-a8bff95f6b85",
+ "iteration_id": "4e548829-a366-449f-8424-01a2a684a40e",
+ "seconds": 240,
+ "passed": 2,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": true,
+   "failed": [],
+   "call_id": "2fe0f275-a631-4b03-899b-0818f606ad04",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "create_promise",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_054c2ce4-23a",
+   "slowest_turn_s": 28.4,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 510.0, '2026-10-15')]",
+    "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+    "the call was not closed with close_call",
+    "conversation: The conversation failed to meet several success criteria: - The phone question was only asked once (Message 4) instead of being asked again once. - No promise was recorded for the credit card; the agent explicitly stated it could not record the promise (Message 22) and no corresponding tool call exists in the system events. - No 'refused' notes were added to the system for the personal or car loan"
+   ],
+   "call_id": "69ee7395-9080-4324-8d0a-6ef4644f4bac",
+   "tools": [
+    "verify_identity"
+   ],
+   "customer_id": "c_77dda42b-4d2",
+   "slowest_turn_s": 20.4,
+   "ended": "customer-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": true,
+   "failed": [],
+   "call_id": "8c4ee9bc-4b61-479d-b970-bd4645240258",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_46990501-2b9",
+   "slowest_turn_s": 12.2,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": true,
+    "failed": [],
+    "call_id": "2fe0f275-a631-4b03-899b-0818f606ad04",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "create_promise",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_054c2ce4-23a",
+    "slowest_turn_s": 28.4,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 510.0, '2026-10-15')]",
+     "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+     "the call was not closed with close_call",
+     "conversation: The conversation failed to meet several success criteria: - The phone question was only asked once (Message 4) instead of being asked again once. - No promise was recorded for the credit card; the agent explicitly stated it could not record the promise (Message 22) and no corresponding tool call exists in the system events. - No 'refused' notes were added to the system for the personal or car loan"
+    ],
+    "call_id": "69ee7395-9080-4324-8d0a-6ef4644f4bac",
+    "tools": [
+     "verify_identity"
+    ],
+    "customer_id": "c_77dda42b-4d2",
+    "slowest_turn_s": 20.4,
+    "ended": "customer-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": true,
+    "failed": [],
+    "call_id": "8c4ee9bc-4b61-479d-b970-bd4645240258",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_46990501-2b9",
+    "slowest_turn_s": 12.2,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

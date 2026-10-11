@@ -1,0 +1,1414 @@
+{
+  "approved": false,
+  "issues": [
+    "Incomplete security answers can reach verify_identity: the pre-hook sends a two-digit phone answer unchanged, and an existing check explicitly accepts that request. Because a pre-hook cannot cancel an action, completeness must be checked before exposing the verification call.",
+    "Returning to identity after callback clarification can produce no speech because its only entry action is first-entry-only TTS. Security staging also needs a speaking return path.",
+    "The decision code can lose a proposed date when offering the floor, subsequently recording the old offer date after acceptance. It also fails to update current_index when a customer selects another product, allowing the next acceptance to affect the wrong product.",
+    "An initial all-products affordability rejection offers the first floor without starting that product at attempt 1 and its prescribed date, contrary to B4. A combined monetary total can also be copied independently to every product.",
+    "The payment parser treats every unparsed exact date as a vague period, potentially replacing it with the deadline after two clarifications. It additionally imports the DOB-only numeric day/month rule into payment and callback dates.",
+    "The confirmation node cannot extract paid, dispute, too_much, or a voluntary payment proposal accompanying hardship. Declining support can leave earlier, unrecorded promises pending and return to confirmation instead of resolving them as hardship.",
+    "resolution_ready remains yes after reconciliation. Returning from finalization to record can therefore immediately leave again before a requested transfer or correction is handled. The existing return transition also does not capture and validate the interrupting correction.",
+    "When a final promise fails twice after another product succeeded, routing bypasses the failure instruction and reconciliation only mentions successful promises. The customer is not reliably told which promise could not be recorded.",
+    "A failed duplicate write can downgrade a previously recorded product to service_error. Successful recorded state must remain authoritative.",
+    "A lookup failure reaches finalize, which has neither get_account nor a retry transition, despite the policy promising a customer-requested repeat after a confirmed API 500.",
+    "The security post-hook counts an ok=true response with a missing verified field as a wrong answer. An incomplete response is not evidence of an actual wrong answer."
+  ],
+  "patches": [
+    {
+      "op": "replace",
+      "path": "/policy/identity/assembly",
+      "value": "Use the corrected part of an utterance; assemble fragments across turns and preserve leading zeroes. A code step checks completeness before the verification tool is exposed. Partial, ambiguous, superseded or month-word-hint-incompatible answers cause clarification without a bank call or a consumed attempt."
+    },
+    {
+      "op": "add",
+      "path": "/policy/calendar/numeric_payment_dates",
+      "value": "The mandatory numeric day/month/year interpretation applies to DOB. For ambiguous numeric payment or callback dates, ask for the month as a word rather than inventing a bank interpretation. Do not count an exact but ambiguous date as a vague period."
+    },
+    {
+      "op": "replace",
+      "path": "/policy/calendar/weekend_gap",
+      "value": "If now falls after the last business day of its calendar week, including on a Friday holiday, the literal attempt-1 date is past. The brief supplies no replacement rule. Do not offer or record that past date; ask for a permissible exact day without inventing a replacement persuasion date."
+    },
+    {
+      "op": "replace",
+      "path": "/policy/amounts/above_full",
+      "value": "The supplied acceptance range ends at past_due. Re-offer the full past_due and obtain agreement; do not silently reduce a proposal or invent a separate bank overpayment policy."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/security_answer",
+      "value": ""
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/security_need_month_word",
+      "value": "no"
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/security_result_state",
+      "value": "idle"
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/amount_scope",
+      "value": ""
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/finalization_started",
+      "value": "no"
+    },
+    {
+      "op": "add",
+      "path": "/workflow/test_variables/account_retry_permitted",
+      "value": "no"
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/on_enter",
+      "value": {
+        "type": "llm",
+        "prompt": "If the opening has not yet been spoken, say exactly: I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with {{title}} {{last_name}}? Otherwise immediately follow the current identity feedback without repeating the opening: {{identity_feedback}}. Ask only the missing callback/security detail or the next unpassed security question. Security stage: {{security_state}}."
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/on_enter_first_entry_only",
+      "value": false
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/tools",
+      "value": [
+        "transfer_to_agent"
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/task_message",
+      "value": "Establish that the speaker is the named customer. Only yes, that's me, speaking or their own name confirms. Hello/go ahead/who is this does not. Ask the name question at most twice total, answering their question first. If still unclear, finish as unclear. Never reveal the purpose or accounts here.\nIf someone else answers, ask when the customer can be reached. Relatives cannot answer security or receive account details even if offering to pay. Wrong number finishes wrong_number. For death say exactly 'I am sorry for your loss.' and ask nothing else. A third party unable to provide a callback finishes no_callback. Gather callback date and time without scheduling an unvalidated proposal.\nImmediately follow validation feedback: {{identity_feedback}}. For a confirmed customer ask DOB first, then phone last four only after DOB passed. Security stage: {{security_state}}. Gather only customer-supplied answers. Use the final corrected answer, assemble split answers across turns, retain leading zeroes, and ask only for missing pieces. A partial answer or correction is never a refusal or a wrong attempt. Complete answers are validated before checking them with the bank; do not claim they passed merely because they are complete. Purely numeric DOB means day/month/year. A swapped-day/month hint requires the customer to say the month as a word. Never re-ask a passed question. After three actual wrong answers, direct the customer to the mobile app or a branch and disclose no debt.\nFor a security refusal or a question about the call's purpose instead of an answer, explain once that the questions protect their account. The second refusal/purpose question finishes declined. Two statements not wanting to talk also finish declined.\nFor AI questions identify yourself as Freya Bank's digital assistant. For scam concerns say they can verify by calling Freya Bank's customer service number; do not invent the number. For a human request ask once whether you can help first; if they insist CALL transfer_to_agent with general. This is the only bank tool available here. Never ask a third party security questions. After any result speak or perform the next permitted action immediately. A failed transfer is not a connection."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/extraction_schema/1/enum_values",
+      "value": [
+        "",
+        "callback",
+        "security"
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/extraction_schema/1/description",
+      "value": "security when the confirmed named customer supplies or corrects any part of the security answer currently requested, including incomplete fragments. callback only for a known third party supplying or completing callback details. Never interpret a security date as a callback or a name confirmation as a security answer. Otherwise empty."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/identity/extraction_schema/-",
+      "value": {
+        "name": "security_answer",
+        "type": "string",
+        "description": "The customer's final corrected answer to the current security question, assembling only their supplied pieces across turns. For phone digits retain leading zeroes and include all digits supplied for this answer. For DOB normalize spoken day/year numbers, retaining a spoken month as a word; preserve purely numeric source order as DD/MM/YYYY. Do not invent missing day, month, year or digits. A correction replaces the superseded portion. Never copy a previous failed answer when the customer is supplying a new one.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/identity/transitions/2/condition/conditions/-",
+      "value": {
+        "variable": "event",
+        "operator": "equals",
+        "operand": "security"
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/identity/transitions/2/description",
+      "value": "Validate a customer-supplied security answer or third-party callback before exposing its bank action."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/collect/extraction_schema/0/description",
+      "value": "Latest substantive response only. accept agrees to the current explicit offer, including the initial all-products offer. proposal includes every volunteered amount/date, even invalid or vague, and a voluntary proposal accompanying hardship; never classify these as refusal. too_much explicitly says the full amount is too much. refuse includes flat no/non-answer or rejection of the floor/deadline but excludes clarification, questions and alternative proposals. paid means this past-due amount was paid; historical payoff/closure is dispute. hardship applies to illness, family death or job loss without a voluntary proposal, including when accompanied by a restructuring request. decline_support requires rejection of an actual support offer. no_talk is an explicit wish not to talk. Human requests and support acceptance remain empty for dialogue to handle. Otherwise empty."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/collect/extraction_schema/3/description",
+      "value": "Final corrected payment-date expression. Normalize unambiguous spoken day/year numbers, preserving a named month, but retain today/tomorrow and this/next weekday literally for code to interpret from call now. Preserve ambiguous purely numeric source dates rather than choosing their order. Do not invent missing components, use the real clock, or extract a small-talk date. Empty when no payment date is proposed."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/collect/extraction_schema/-",
+      "value": {
+        "name": "amount_scope",
+        "type": "string",
+        "enum_values": [
+          "",
+          "per_product",
+          "combined"
+        ],
+        "description": "per_product only when the customer expressly assigns the proposed amount to the identified single product or says this same amount for EACH identified product. combined for a total across products. Empty when unspecified. Never infer an allocation.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/decide/code",
+      "value": "import json, re, datetime\nevent = ''\ntry:\n    event = str(vars.get('event', ''))\n    scope = str(vars.get('scope', 'current'))\n    amount_text = str(vars.get('amount_text', '')).strip()\n    amount_scope = str(vars.get('amount_scope', ''))\n    phrase = str(vars.get('date_phrase', '')).strip()\n    security_answer = str(vars.get('security_answer', '')).strip()\n    cb_time = str(vars.get('callback_time', '')).strip()\n    hardship = vars.get('hardship_mentioned') == 'yes'\n    initial_offer = vars.get('split_started') != 'yes'\n    vars['event'] = ''\n    vars['amount_text'] = ''\n    vars['amount_scope'] = ''\n    vars['date_phrase'] = ''\n    vars['hardship_mentioned'] = 'no'\n    vars['decision_route'] = 'collect'\n    vars['next_instruction'] = 'Ask only for the missing or unclear payment detail.'\n    vars['identity_feedback'] = ''\n    vars['resolution_ready'] = 'no'\n    vars['close_ready'] = 'no'\n    if event != 'confirm':\n        vars['confirmation_state'] = 'none'\n        vars['confirmed_promises'] = []\n    now = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n    today = now.date()\n    holidays = ['2026-10-26', '2026-11-11', '2026-11-26', '2026-12-25', '2027-01-01']\n    def business(d):\n        return d.weekday() < 5 and d.isoformat() not in holidays\n    def following(d):\n        while not business(d):\n            d += datetime.timedelta(days=1)\n        return d\n    def parsed(text):\n        try:\n            text = text.lower().strip().replace(',', '')\n            text = re.sub(r'^on\\s+', '', text)\n            if text == 'today':\n                return today\n            if text == 'tomorrow':\n                return today + datetime.timedelta(days=1)\n            if text in ['day after tomorrow', 'the day after tomorrow']:\n                return today + datetime.timedelta(days=2)\n            days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']\n            m = re.fullmatch(r'(this|next)\\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)', text)\n            if m:\n                monday = today - datetime.timedelta(days=today.weekday())\n                return monday + datetime.timedelta(days=days.index(m.group(2)) + (7 if m.group(1) == 'next' else 0))\n            if re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}', text):\n                return datetime.date.fromisoformat(text)\n            clean = re.sub(r'(\\d)(st|nd|rd|th)\\b', r'\\1', text)\n            clean = re.sub(r'\\b(the|of)\\s+', '', clean)\n            for fmt in ['%d %B %Y', '%B %d %Y', '%d %b %Y', '%b %d %Y', '%d %B', '%B %d', '%d %b', '%b %d']:\n                try:\n                    p = datetime.datetime.strptime(clean, fmt)\n                    return datetime.date(p.year if '%Y' in fmt else today.year, p.month, p.day)\n                except Exception:\n                    pass\n        except Exception:\n            pass\n        return False\n    if vars.get('transfer_requested') == 'yes':\n        vars['decision_route'] = 'reconcile' if vars.get('transfer_state') == 'succeeded' else 'record'\n        vars['record_mode'] = 'transfer_hold'\n        vars['next_instruction'] = 'The requested transfer must be resolved. Do not negotiate, record abandoned promises or write notes. Do not repeat a successful transfer. A failed transfer may be repeated on customer request after a confirmed API 500.'\n    elif event == 'security':\n        vars['decision_route'] = 'identity'\n        vars['record_mode'] = ''\n        vars['pending_facts'] = ''\n        vars['security_result_state'] = 'idle'\n        stage = str(vars.get('security_state', 'date_of_birth'))\n        answer = ''\n        if stage == 'failed':\n            vars['decision_route'] = 'reconcile'\n        elif stage == 'verified':\n            vars['identity_feedback'] = 'Security is already complete. Do not re-ask either passed question.'\n        elif stage == 'date_of_birth' and vars.get('dob_passed') != 'yes':\n            month_word = bool(re.search(r'\\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\b', security_answer.lower()))\n            if vars.get('security_need_month_word') == 'yes' and not month_word:\n                vars['identity_feedback'] = 'Ask the customer to say the birth month as a word. Do not submit a numeric-only retry or count an attempt.'\n            else:\n                clean = re.sub(r'(\\d)(st|nd|rd|th)\\b', r'\\1', security_answer.lower().replace(',', ''))\n                m = re.fullmatch(r'(\\d{1,2})[/.\\-](\\d{1,2})[/.\\-](\\d{4})', clean)\n                try:\n                    if m:\n                        answer = datetime.date(int(m.group(3)), int(m.group(2)), int(m.group(1))).isoformat()\n                    else:\n                        for fmt in ['%Y-%m-%d', '%d %B %Y', '%B %d %Y', '%d %b %Y', '%b %d %Y']:\n                            try:\n                                answer = datetime.datetime.strptime(clean, fmt).date().isoformat()\n                                break\n                            except Exception:\n                                pass\n                except Exception:\n                    answer = ''\n                if not answer:\n                    vars['identity_feedback'] = 'Ask only for the missing or ambiguous part of the birth date, including the year if missing. Use the corrected customer answer. Do not validate a partial answer or count an attempt.'\n        elif stage == 'phone_last4' and vars.get('dob_passed') == 'yes' and vars.get('phone_passed') != 'yes':\n            words = dict(zero='0', oh='0', one='1', two='2', three='3', four='4', five='5', six='6', seven='7', eight='8', nine='9')\n            candidate = ''.join(words.get(x, x) for x in re.split(r'[\\s,\\-]+', security_answer.lower()))\n            if re.fullmatch(r'\\d{4}', candidate):\n                answer = candidate\n            else:\n                vars['identity_feedback'] = 'Ask only for the missing or unclear phone digits, preserving the digits already supplied and leading zeroes. Do not submit fewer or more than four digits, pad an answer, or count an attempt.'\n        else:\n            vars['identity_feedback'] = 'Do not re-ask a passed question. Explain that complete bank verification has not yet been confirmed; disclose no account information.'\n        if answer:\n            vars['prepared_security_field'] = stage\n            vars['prepared_security_answer'] = answer\n            vars['security_result_state'] = 'awaiting'\n            vars['record_mode'] = 'security'\n            vars['pending_facts'] = json.dumps(dict(field=stage, answer=answer))\n            vars['next_instruction'] = 'Immediately check this complete customer-supplied answer with verify_identity. Do not claim verification before its result.'\n            vars['decision_route'] = 'record'\n    elif event == 'callback':\n        vars['decision_route'] = 'identity'\n        next_day = following(today + datetime.timedelta(days=1))\n        vars['callback_facts'] = json.dumps(dict(today=today.isoformat(), next_business_day=next_day.isoformat(), earliest='10:00', latest='19:00', strictly_after=str(vars.get('now', ''))))\n        date_text = phrase or str(vars.get('callback_draft_phrase', ''))\n        time_text = cb_time or str(vars.get('callback_draft_time', ''))\n        vars['callback_draft_phrase'] = date_text\n        vars['callback_draft_time'] = time_text\n        d = parsed(date_text) if date_text else False\n        time_match = re.fullmatch(r'(\\d{2}):(\\d{2})', time_text)\n        t = False\n        if time_match:\n            try:\n                t = datetime.time(int(time_match.group(1)), int(time_match.group(2)))\n            except Exception:\n                pass\n        invalid = bool(d and d not in [today, next_day]) or bool(t and not datetime.time(10, 0) <= t <= datetime.time(19, 0)) or bool(time_match and not t)\n        if re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}', date_text) and not d:\n            invalid = True\n        if d and t and datetime.datetime.combine(d, t) <= now:\n            invalid = True\n        if invalid:\n            count = int(vars.get('callback_invalid_count', 0)) + 1\n            vars['callback_invalid_count'] = count\n            vars['callback_draft_phrase'] = ''\n            vars['callback_draft_time'] = ''\n            vars['callback_time'] = ''\n            if count >= 2:\n                vars['identity_exit'] = 'no_callback'\n                vars['decision_route'] = 'reconcile'\n            else:\n                vars['identity_feedback'] = 'That time is outside the callback window. Ask once for another time: today ' + today.isoformat() + ' or ' + next_day.isoformat() + ', 10:00 through 19:00, strictly later than the call time.'\n        elif not d or not t:\n            vars['identity_feedback'] = 'Ask only for the missing or ambiguous callback day or time; ask for a named month if a numeric date is ambiguous. Allowed days: ' + today.isoformat() + ' and ' + next_day.isoformat() + '; 10:00–19:00, later than now. Do not schedule yet.'\n        else:\n            vars['callback_date_ready'] = d.isoformat()\n            vars['callback_time_ready'] = t.strftime('%H:%M')\n            vars['callback_state'] = 'ready'\n            vars['record_mode'] = 'callback'\n            vars['pending_facts'] = json.dumps(dict(date=d.isoformat(), time=t.strftime('%H:%M')))\n            vars['next_instruction'] = 'Immediately schedule exactly the validated callback date and time.'\n            vars['decision_route'] = 'record'\n    else:\n        rows = vars.get('product_state', [])\n        if isinstance(rows, str):\n            rows = json.loads(rows)\n        if not isinstance(rows, list) or not rows or vars.get('security_state') != 'verified':\n            raise ValueError('Missing verified products')\n        vars['operational_hold'] = ''\n        current = int(vars.get('current_index', 0))\n        if not 0 <= current < len(rows):\n            current = 0\n        targets = [p for p in rows if p.get('state') in ['open', 'pending']] if scope == 'all' else [p for p in rows if p.get('product_id') == (rows[current]['product_id'] if scope == 'current' else scope)]\n        if targets:\n            current = next(i for i, p in enumerate(rows) if p['product_id'] == targets[0]['product_id'])\n            vars['current_index'] = current\n        messages = []\n        blocked = False\n        if hardship:\n            vars['hardship_active'] = 'yes'\n            messages.append('Give one short sentence of sympathy and offer connection to customer support. Process a voluntary payment proposal without persuasion.')\n        def signature(amount, date):\n            return str(float(amount)) + '|' + str(date)\n        def offer(p):\n            if vars.get('hardship_active') == 'yes':\n                return 'Offer connection to customer support; do not persuade.'\n            while int(p.get('attempts', 0)) < int(p['attempt_limit']):\n                n = int(p.get('attempts', 0)) + 1\n                p['attempts'] = n\n                a = p['floor'] if n == 2 or p.get('full_too_much') else p['past_due']\n                d = p['deadline'] if n == 2 else p['attempt1_date']\n                if not d:\n                    p['offer_amount'] = a\n                    p['offer_date'] = ''\n                    return 'The literal attempt-1 day is past and cannot be offered. Ask for an exact permissible payment day; allowed days are ' + ', '.join(p['allowed_dates']) + '.'\n                if signature(a, d) in p.get('rejected', []):\n                    continue\n                p['offer_amount'] = a\n                p['offer_date'] = d\n                p['amount'] = a\n                p['date'] = ''\n                return 'Offer ' + p['label'] + ': ' + str(a) + ' on ' + d + '.' + (' Explain that the rest stays overdue.' if a < p['past_due'] else '')\n            p['state'] = 'note'\n            p['reason'] = 'refused'\n            return ''\n        if event == 'confirm':\n            pending = [p for p in rows if p.get('state') == 'pending']\n            if vars.get('confirmation_state') != 'awaiting' or not pending or any(p.get('state') == 'open' for p in rows):\n                messages.append('A complete current joint read-back is required before confirmation.')\n                blocked = True\n            else:\n                if not all(p['date'] in p['allowed_dates'] and p['floor'] <= float(p['amount']) <= p['past_due'] for p in pending):\n                    raise ValueError('Invalid confirmed proposal')\n                vars['confirmation_state'] = 'confirmed'\n                vars['confirmed_promises'] = [dict(product_id=p['product_id'], amount=p['amount'], date=p['date']) for p in pending]\n                vars['record_mode'] = 'promises'\n                vars['decision_route'] = 'record'\n                messages.append('Immediately call create_promise for the first still-pending confirmed product.')\n        elif event == 'no_talk':\n            count = int(vars.get('dont_talk_count', 0)) + 1\n            vars['dont_talk_count'] = count\n            if count >= 2:\n                for p in rows:\n                    if p.get('state') in ['open', 'pending']:\n                        p['state'] = 'note'\n                        p['reason'] = 'refused'\n            else:\n                messages.append('Acknowledge briefly that they do not want to talk. Do not treat this as a second refusal; keep the next question short.')\n                blocked = True\n        elif event in ['hardship', 'decline_support']:\n            vars['hardship_active'] = 'yes'\n            if event == 'hardship':\n                if not hardship:\n                    messages.append('Say one short sentence of sympathy and offer connection to customer support. Make no persuasion attempt.')\n                blocked = True\n            else:\n                for p in rows:\n                    if p.get('state') == 'open' or p.get('state') == 'pending' and not p.get('voluntary_hardship'):\n                        p['state'] = 'note'\n                        p['reason'] = 'hardship'\n                        p['date'] = ''\n        elif event in ['paid', 'dispute']:\n            if not targets:\n                messages.append('Clarify which actual product this concerns.')\n                blocked = True\n            for p in targets:\n                if p.get('state') == 'recorded':\n                    messages.append('A recorded promise cannot be changed here; direct changes to the mobile app.')\n                    blocked = True\n                else:\n                    p['state'] = 'note'\n                    p['reason'] = event\n                    if event == 'paid':\n                        messages.append('Explain that payments can take one business day to appear.')\n            vars['split_started'] = 'yes'\n        elif event in ['refuse', 'too_much']:\n            vars['split_started'] = 'yes'\n            if not targets:\n                messages.append('Clarify which actual product this concerns.')\n                blocked = True\n            else:\n                p = targets[0]\n                if p.get('state') == 'recorded':\n                    messages.append('A recorded promise cannot be changed here; direct changes to the mobile app.')\n                    blocked = True\n                elif vars.get('hardship_active') == 'yes':\n                    messages.append('Offer connection to support; make no persuasion attempt.')\n                    blocked = True\n                else:\n                    p['state'] = 'open'\n                    if event == 'too_much':\n                        p['full_too_much'] = True\n                    if event == 'too_much' and not p.get('floor_offered'):\n                        p['floor_offered'] = True\n                        if initial_offer:\n                            text = offer(p)\n                        else:\n                            p['offer_amount'] = p['floor']\n                            p['amount'] = p['floor']\n                            text = 'Offer the floor of ' + str(p['floor']) + ' for ' + p['label'] + (' on ' + str(p.get('offer_date')) if p.get('offer_date') else '') + ' once. Explain that the rest stays overdue. Obtain agreement; do not ask how much they can pay.'\n                    else:\n                        p.setdefault('rejected', []).append(signature(p.get('offer_amount', p['past_due']), p.get('offer_date', '')))\n                        text = offer(p)\n                    if text:\n                        messages.append(text)\n                        blocked = True\n        elif event in ['accept', 'proposal', 'correction']:\n            vars['split_started'] = 'yes'\n            if not targets:\n                messages.append('Clarify which actual product is meant.')\n                blocked = True\n            if amount_text and len(targets) > 1 and amount_scope != 'per_product':\n                messages.append('You proposed an amount for several products. Clarify which product that amount concerns; do not allocate it or copy a combined total to each product.')\n                blocked = True\n                targets = []\n            for p in targets:\n                if p.get('state') == 'recorded':\n                    messages.append('The promise for ' + p['label'] + ' is already recorded and cannot be changed or cancelled here. Direct changes to the mobile app.')\n                    blocked = True\n                    continue\n                old_date = p.get('date', '')\n                p['state'] = 'open'\n                p['date'] = ''\n                a = float(amount_text) if amount_text else float(p.get('offer_amount', p['past_due']) if event == 'accept' else p.get('amount', p['past_due']))\n                if a != a or abs(a) == float('inf'):\n                    raise ValueError('Invalid amount')\n                amount_invalid = not p['floor'] <= a <= p['past_due']\n                amount_message = ''\n                if a < p['floor']:\n                    if not p.get('floor_offered'):\n                        p['floor_offered'] = True\n                        amount_message = 'That amount cannot be recorded. Offer ' + str(p['floor']) + ' for ' + p['label'] + ' once and explain that the rest stays overdue; obtain agreement.'\n                    else:\n                        amount_message = 'The minimum remains ' + str(p['floor']) + '. Clarify the proposed amount without counting it as a refusal or repeating a rejected offer.'\n                    p['offer_amount'] = p['floor']\n                elif a > p['past_due']:\n                    p['offer_amount'] = p['past_due']\n                    amount_message = 'Offer the full past-due amount of ' + str(p['past_due']) + ' for ' + p['label'] + ' and obtain agreement; do not silently reduce the proposed amount.'\n                else:\n                    p['amount'] = a\n                    p['offer_amount'] = a\n                text_date = phrase\n                if not text_date and event == 'accept':\n                    text_date = str(p.get('offer_date', ''))\n                if not text_date and event == 'correction':\n                    text_date = old_date or str(p.get('offer_date', ''))\n                if not text_date and old_date:\n                    text_date = old_date\n                if not text_date:\n                    p['offer_date'] = ''\n                    if amount_message:\n                        messages.append(amount_message)\n                    else:\n                        messages.append('Ask the exact payment day for ' + p['label'] + '; the proposed amount is ' + str(a) + '.')\n                    blocked = True\n                    continue\n                d = parsed(text_date)\n                if not d:\n                    p['offer_date'] = ''\n                    if amount_message:\n                        messages.append(amount_message)\n                    vague = bool(re.search(r'\\b(week|month|salary|payday)\\b|when .*paid', text_date.lower()))\n                    if vague:\n                        p['vague_count'] = int(p.get('vague_count', 0)) + 1\n                        if p['vague_count'] == 1:\n                            messages.append('Ask once for the exact payment day for ' + p['label'] + '.')\n                        else:\n                            p['offer_date'] = p['deadline']\n                            messages.append('Propose ' + p['deadline'] + ' for ' + p['label'] + ' and obtain agreement.')\n                    else:\n                        messages.append('Clarify the exact calendar day for ' + p['label'] + ', asking for a named month or the intended week if necessary. An ambiguous exact date is not a vague-period answer or a refusal.')\n                    blocked = True\n                    continue\n                deadline = datetime.date.fromisoformat(p['deadline'])\n                if d < today:\n                    p['offer_date'] = ''\n                    if amount_message:\n                        messages.append(amount_message)\n                    messages.append('That date is in the past. Ask for a business day from ' + today.isoformat() + ' through ' + p['deadline'] + '.')\n                    blocked = True\n                    continue\n                adjustment = ''\n                date_needs_agreement = False\n                if d > deadline:\n                    if scope == 'all' and phrase:\n                        adjustment = 'The common requested date ' + d.isoformat() + ' exceeds this product deadline; use ' + p['deadline'] + ' and say so in joint read-back.'\n                        d = deadline\n                    else:\n                        d = deadline\n                        messages.append('The latest date recordable for ' + p['label'] + ' is ' + p['deadline'] + '. Offer it and obtain agreement.')\n                        date_needs_agreement = True\n                elif not business(d):\n                    d = following(d)\n                    if d > deadline:\n                        d = deadline\n                        messages.append('No later permissible business day fits that proposal. Offer the deadline ' + p['deadline'] + ' and obtain agreement.')\n                    else:\n                        messages.append('That is a weekend or holiday. Offer ' + d.isoformat() + ' for ' + p['label'] + ' and obtain agreement.')\n                    date_needs_agreement = True\n                p['offer_date'] = d.isoformat()\n                if amount_message:\n                    messages.append(amount_message + ' Retain the proposed or explicitly offered payment date ' + p['offer_date'] + ' in this offer.')\n                if amount_invalid or date_needs_agreement:\n                    blocked = True\n                    continue\n                p['date'] = d.isoformat()\n                p['date_adjustment'] = adjustment\n                p['state'] = 'pending'\n                if vars.get('hardship_active') == 'yes' and event in ['proposal', 'correction']:\n                    p['voluntary_hardship'] = True\n        if event != 'confirm' or vars.get('confirmation_state') != 'confirmed':\n            if not blocked:\n                open_rows = [i for i, p in enumerate(rows) if p.get('state') == 'open']\n                while open_rows:\n                    current = open_rows[0]\n                    vars['current_index'] = current\n                    p = rows[current]\n                    if vars.get('hardship_active') == 'yes':\n                        messages.append('Offer support connection; do not persuade. Voluntary payment proposals remain permitted.')\n                        break\n                    text = offer(p) if int(p.get('attempts', 0)) == 0 else 'Continue the outstanding offer for ' + p['label'] + ' without repeating a rejected offer.'\n                    if text:\n                        messages.append(text)\n                        break\n                    open_rows = [i for i, q in enumerate(rows) if q.get('state') == 'open']\n                if not open_rows:\n                    pending = [p for p in rows if p.get('state') == 'pending']\n                    if pending:\n                        vars['confirmation_state'] = 'awaiting'\n                        vars['record_mode'] = 'promises'\n                        vars['decision_route'] = 'record'\n                        messages.append('Read ALL pending products, amounts and dates back together, disclose date adjustments, and ask Do you confirm?')\n                    else:\n                        vars['decision_route'] = 'reconcile'\n        vars['product_state'] = rows\n        vars['product_facts'] = json.dumps(rows)\n        vars['pending_facts'] = json.dumps([dict(product_id=p['product_id'], label=p['label'], amount=p.get('amount', p.get('past_due', '')), date=p.get('date', ''), adjustment=p.get('date_adjustment', ''), state=p.get('state', '')) for p in rows if p.get('state') in ['pending', 'recorded']])\n        vars['next_instruction'] = ' '.join(messages) or 'Continue with the next permitted action.'\nexcept Exception:\n    vars['event'] = ''\n    vars['resolution_ready'] = 'no'\n    vars['close_ready'] = 'no'\n    vars['decision_route'] = 'identity' if event in ['callback', 'security'] else 'collect'\n    vars['confirmation_state'] = 'none'\n    vars['confirmed_promises'] = []\n    vars['identity_feedback'] = 'Ask only for the missing or ambiguous detail. Do not submit a partial security answer, count an attempt, schedule a callback or claim success.'\n    vars['next_instruction'] = 'The proposed detail could not be validated. Ask for the exact corrected amount or calendar day. Do not write or claim a promise.'\n"
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/tools",
+      "value": [
+        "verify_identity",
+        "create_promise",
+        "schedule_callback",
+        "transfer_to_agent"
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/task_message",
+      "value": "Mode: {{record_mode}}. Confirmation: {{confirmation_state}}. Validated details: {{pending_facts}}. Next instruction: {{next_instruction}}. Callback status: {{callback_state}}. Transfer request: {{transfer_requested}}; transfer status: {{transfer_state}}. Operational hold: {{operational_hold}}.\nFollow the instruction for the current mode only. For security mode immediately CALL verify_identity with exactly the validated field and complete answer. Do not check another field, re-ask a passed question or claim security success before the bank result. If the customer corrects the answer before validation, use the corrected answer for validation first. Never disclose account information here before security succeeds.\nFor callback mode, if status is ready CALL schedule_callback immediately with exactly the validated date and time. Do not disclose accounts. Only claim scheduling after ok=true. If scheduling failed, do not automatically repeat it: report the failure and permit a customer-requested repeat after a confirmed API 500, or validate a newly proposed callback. A callback response is not a promise confirmation.\nFor transfer_hold mode, resolve only the requested transfer. Do not record abandoned promises or notes. Never repeat a successful transfer. A failed transfer may be repeated on customer request after a confirmed API 500.\nFor promises with confirmation awaiting, first give any unspoken sympathy or other required instruction, then read ALL pending products, amounts and exact dates together, including common-date adjustments, and ask exactly 'Do you confirm?'. Wait for a clear yes. Changes, a paid/dispute claim, hardship or refusal invalidate the previous confirmation and must be processed first. For an ambiguous correction clarify the affected product. Never change a recorded promise; direct changes to the mobile app.\nWhen confirmation is confirmed, CALL create_promise for each still-pending confirmed product in account order, copying its product_id, amount and ISO date exactly. Retry only the first failed attempt, once, with identical terms. Never retry a successful product. After each actual success say 'You will receive a text message confirming this promise.' Then perform the next permitted action. If a product fails twice, tell the customer that its promise could not be recorded, retain successful promises, and continue the other confirmed products.\nBefore final notes, restructuring requires transfer_to_agent/restructuring; a human request requires asking once whether you can help first, then general if they insist. Hardship precedes restructuring and persuasion: one sympathy sentence, offer support, and use support if accepted. A voluntary payment proposal during hardship can still be validated. A transfer abandons every unrecorded proposal, including confirmed ones, and preserves recorded promises. Never add notes here. After every result immediately speak or perform the next permitted action."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/extraction_schema/0/enum_values",
+      "value": [
+        "",
+        "security",
+        "callback",
+        "confirm",
+        "correction",
+        "proposal",
+        "refuse",
+        "too_much",
+        "paid",
+        "dispute",
+        "hardship",
+        "decline_support",
+        "no_talk"
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/extraction_schema/0/description",
+      "value": "Use the current mode. security is a correction or completion of the current security answer before it is checked. callback is a new or corrected callback proposal. In promise mode confirm requires a clear yes to the current complete joint read-back with no correction. correction changes a proposed amount/date; proposal includes a volunteered payment proposal during hardship. too_much is explicit inability to pay the full amount. paid concerns this past-due amount; historical payoff/closure or never-owned is dispute. hardship applies without a voluntary proposal and takes precedence over a simultaneous restructuring request. decline_support requires rejection of an actual support offer. A bare no to the read-back is refuse. no_talk is an explicit wish not to talk. Human requests, support acceptance and unrelated questions remain empty for dialogue; never mistake an answer to the human-help question for joint confirmation."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/extraction_schema/3/description",
+      "value": "Only the newly proposed or corrected payment/callback date. Normalize unambiguous spoken day/year numbers while preserving a named month; retain today/tomorrow and this/next weekday literally. Preserve ambiguous numeric source order for clarification. Do not infer from the real clock or copy an unchanged date. Empty if unchanged."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/record/extraction_schema/-",
+      "value": {
+        "name": "security_answer",
+        "type": "string",
+        "description": "In security mode only, the customer's complete final corrected security answer assembled from their supplied pieces. Preserve leading zeroes and numeric DOB day/month/year order; retain a spoken month as a word. Do not invent missing pieces or retain superseded digits. Empty outside security mode.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/record/extraction_schema/-",
+      "value": {
+        "name": "callback_time",
+        "type": "string",
+        "description": "In callback mode only, the corrected callback time as HH:MM if unambiguous. Do not guess AM/PM. Preserve an unchanged time only while completing the same callback proposal.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/record/extraction_schema/-",
+      "value": {
+        "name": "amount_scope",
+        "type": "string",
+        "enum_values": [
+          "",
+          "per_product",
+          "combined"
+        ],
+        "description": "per_product only for an amount expressly assigned to one product or the same amount expressly for EACH identified product; combined for a total across products. Otherwise empty. Do not infer allocations.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/record/transitions",
+      "value": [
+        {
+          "target_node": "reconcile",
+          "description": "An actual callback/transfer succeeded, all confirmed writes resolved, or security exhausted its wrong-answer budget.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "resolution_ready",
+                "operator": "equals",
+                "operand": "yes"
+              },
+              {
+                "variable": "security_state",
+                "operator": "equals",
+                "operand": "failed"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "lookup",
+          "description": "The staged security call completed both checks successfully.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "logic": "and",
+                "conditions": [
+                  {
+                    "variable": "record_mode",
+                    "operator": "equals",
+                    "operand": "security"
+                  },
+                  {
+                    "variable": "security_result_state",
+                    "operator": "equals",
+                    "operand": "verified"
+                  },
+                  {
+                    "variable": "security_state",
+                    "operator": "equals",
+                    "operand": "verified"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "identity",
+          "description": "The completed security action needs the next unpassed answer, a retry of the failed question, or a clarification.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "logic": "and",
+                "conditions": [
+                  {
+                    "variable": "record_mode",
+                    "operator": "equals",
+                    "operand": "security"
+                  },
+                  {
+                    "logic": "or",
+                    "conditions": [
+                      {
+                        "variable": "security_result_state",
+                        "operator": "equals",
+                        "operand": "field_passed"
+                      },
+                      {
+                        "variable": "security_result_state",
+                        "operator": "equals",
+                        "operand": "wrong"
+                      },
+                      {
+                        "variable": "security_result_state",
+                        "operator": "equals",
+                        "operand": "hint"
+                      },
+                      {
+                        "variable": "security_result_state",
+                        "operator": "equals",
+                        "operand": "unperformed"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "decide",
+          "description": "Validate a fresh response or correction before any further bank action.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "security"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "callback"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "confirm"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "correction"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "proposal"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "refuse"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "too_much"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "paid"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "dispute"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "hardship"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "decline_support"
+              },
+              {
+                "variable": "event",
+                "operator": "equals",
+                "operand": "no_talk"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/tool_config/verify_identity/post_process_code",
+      "value": "try:\n    vars['security_result_state'] = 'unperformed'\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', None)\n    result.pop('headers', None)\n    d = result.get('data')\n    if not isinstance(d, dict):\n        d = dict()\n        result['data'] = d\n    def yes(x):\n        return x is True or isinstance(x, str) and x.lower() == 'true'\n    def no(x):\n        return x is False or isinstance(x, str) and x.lower() == 'false'\n    field = str(vars.get('security_request_field', ''))\n    if d.get('hint') == 'day_month_swapped':\n        vars['security_need_month_word'] = 'yes'\n        vars['security_result_state'] = 'hint'\n        instruction = 'Do not advance or count a wrong answer. Ask the customer to say the birth month as a word, then retry that same question.'\n    elif not yes(d.get('ok')) or field not in ['date_of_birth', 'phone_last4'] or not (yes(d.get('verified')) or no(d.get('verified'))):\n        instruction = 'The answer was not checked successfully or the response was incomplete. Do not count a wrong answer or advance. Explain briefly and ask only for a complete readable answer to the current unpassed question; never re-ask a passed question.'\n    elif yes(d.get('verified')):\n        if field == 'date_of_birth':\n            vars['dob_passed'] = 'yes'\n            vars['security_need_month_word'] = 'no'\n            vars['security_state'] = 'phone_last4'\n        elif vars.get('dob_passed') == 'yes':\n            vars['phone_passed'] = 'yes'\n        if vars.get('dob_passed') == 'yes' and vars.get('phone_passed') == 'yes' and yes(d.get('all_verified')):\n            vars['security_state'] = 'verified'\n            vars['security_result_state'] = 'verified'\n            instruction = 'Both security questions passed. Proceed immediately to the authorized silent account lookup; disclose nothing until it returns.'\n        else:\n            vars['security_result_state'] = 'field_passed'\n            instruction = 'Ask only for the last four digits of the phone number on file. Preserve leading zeroes and wait for all four digits.' if field == 'date_of_birth' else 'Full bank verification was not confirmed. Explain that verification remains incomplete; do not re-ask passed questions, look up or disclose the account.'\n    else:\n        count = int(vars.get('wrong_total', 0)) + 1\n        left = d.get('wrong_answers_left')\n        if isinstance(left, int) and not isinstance(left, bool) and 0 <= left <= 3:\n            count = max(count, 3-left)\n        vars['wrong_total'] = count\n        vars['security_result_state'] = 'wrong'\n        if count >= 3:\n            vars['security_state'] = 'failed'\n            instruction = 'Three wrong answers have ended verification. Direct the customer to the mobile app or a branch; disclose no debt. Complete the not_verified/failed closing.'\n        else:\n            vars['security_state'] = field\n            instruction = 'That answer did not pass. Ask only the same failed question again; do not re-ask a passed question, advance or disclose account information.'\n    vars['identity_feedback'] = instruction\n    d['what_to_do_next'] = instruction\n    d['security_route'] = str(vars.get('security_state', 'date_of_birth'))\nexcept Exception:\n    vars['security_result_state'] = 'unperformed'\n    vars['identity_feedback'] = 'The check could not be interpreted. Explain that verification is incomplete; ask only the current unpassed question and do not look up the account.'\n    if isinstance(result, dict):\n        result.pop('header', None)\n        result.pop('headers', None)\n        result['data'] = dict(what_to_do_next=vars['identity_feedback'], security_route=str(vars.get('security_state', 'date_of_birth')))\n"
+    },
+    {
+      "op": "replace",
+      "path": "/tool_config/get_account/post_process_code",
+      "value": "try:\n    vars['account_state'] = 'failed'\n    vars['account_products'] = []\n    vars['account_retry_permitted'] = 'no'\n    vars['operational_hold'] = 'Account lookup did not complete.'\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', None)\n    result.pop('headers', None)\n    if str(result.get('status_code', '')) == '500':\n        vars['account_retry_permitted'] = 'yes'\n    d = result.get('data')\n    if not isinstance(d, dict):\n        d = dict()\n        result['data'] = d\n    good = d.get('ok') is True or isinstance(d.get('ok'), str) and d.get('ok').lower() == 'true'\n    if good and isinstance(d.get('products'), list) and 1 <= len(d['products']) <= 3 and vars.get('security_state') == 'verified':\n        vars['account_state'] = 'loaded'\n        vars['account_retry_permitted'] = 'no'\n        vars['operational_hold'] = ''\n        d['what_to_do_next'] = 'Calculate the calendar and product facts immediately, then state every product and its complete debt before the payment question.'\n    else:\n        d['products'] = []\n        d['what_to_do_next'] = 'Say the account lookup did not complete. Do not invent debt information, notes or a closing outcome.' + (' If the customer requests a repeat, use the available account-retry action; this API 500 recorded nothing.' if vars['account_retry_permitted'] == 'yes' else '')\n    d['account_route'] = vars['account_state']\nexcept Exception:\n    vars['account_state'] = 'failed'\n    vars['account_products'] = []\n    vars['account_retry_permitted'] = 'no'\n    vars['operational_hold'] = 'Account lookup result unavailable.'\n    if isinstance(result, dict):\n        result.pop('header', None)\n        result.pop('headers', None)\n        result['data'] = dict(products=[], account_route='failed', what_to_do_next='Explain that the account lookup failed; do not invent debt figures or a closing outcome.')\n"
+    },
+    {
+      "op": "replace",
+      "path": "/tool_config/create_promise/post_process_code",
+      "value": "import json\ntry:\n    vars['promise_write_state'] = 'failed'\n    vars['resolution_ready'] = 'no'\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', None)\n    result.pop('headers', None)\n    d = result.get('data')\n    if not isinstance(d, dict):\n        d = dict()\n        result['data'] = d\n    def read(name, fallback):\n        x = vars.get(name, fallback)\n        return json.loads(x) if isinstance(x, str) and x else x\n    request = read('promise_request', dict())\n    rows = read('product_state', [])\n    records = read('recorded_promises', [])\n    counts = read('promise_counts', dict())\n    pid = str(request.get('product_id', ''))\n    p = next((p for p in rows if p.get('product_id') == pid), False)\n    good = d.get('ok') is True or isinstance(d.get('ok'), str) and d.get('ok').lower() == 'true'\n    if not p:\n        instruction = 'The response cannot be matched to a product. Explain that the record cannot be confirmed; do not repeat blindly or claim success.'\n        vars['operational_hold'] = 'Unmatched promise response.'\n    elif any(r.get('product_id') == pid for r in records):\n        p['state'] = 'recorded'\n        p['reason'] = ''\n        vars['promise_write_state'] = 'already_recorded'\n        instruction = 'This product already has a successful recorded promise. Preserve it. Do not retry, replace it or add a service_error note for a duplicate request.'\n    elif good:\n        vars['promise_write_state'] = 'succeeded'\n        saved = dict(request)\n        saved['promise_id'] = str(d.get('promise_id', ''))\n        records.append(saved)\n        p['state'] = 'recorded'\n        p['reason'] = ''\n        instruction = 'Say: You will receive a text message confirming this promise.'\n    elif int(counts.get(pid, 0)) < 2:\n        vars['promise_write_state'] = 'retry_once'\n        instruction = 'The promise was not recorded. Immediately retry create_promise exactly once with the identical confirmed product, amount and date. Do not claim success.'\n    else:\n        p['state'] = 'note'\n        p['reason'] = 'service_error'\n        vars['promise_write_state'] = 'exhausted'\n        instruction = 'Say that the promise for ' + str(p.get('label', 'the affected product')) + ' could not be recorded. Do not retry it again. Keep all successful promises.'\n    pending = [q for q in rows if q.get('state') == 'pending']\n    if p and vars['promise_write_state'] in ['succeeded', 'already_recorded', 'exhausted']:\n        instruction += ' Immediately call create_promise for the next confirmed pending product shown in remaining_promises.' if pending else ' Proceed to final reconciliation; do not repeat successful writes. Defer all required notes until final non-transfer resolution.'\n    if p and not any(q.get('state') in ['open', 'pending'] for q in rows):\n        vars['resolution_ready'] = 'yes'\n    vars['product_state'] = rows\n    vars['recorded_promises'] = records\n    vars['product_facts'] = json.dumps(rows)\n    vars['pending_facts'] = json.dumps([q for q in rows if q.get('state') in ['pending', 'recorded']])\n    d['remaining_promises'] = pending\n    d['what_to_do_next'] = instruction\n    d['write_route'] = vars['resolution_ready']\nexcept Exception:\n    vars['resolution_ready'] = 'no'\n    vars['promise_write_state'] = 'failed'\n    vars['operational_hold'] = 'Promise result could not be reconciled.'\n    if isinstance(result, dict):\n        result.pop('header', None)\n        result.pop('headers', None)\n        result['data'] = dict(write_route='no', what_to_do_next='Explain that the promise result cannot be confirmed. Do not claim recording or retry blindly.')\n"
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/reconcile/code",
+      "value": "import json\ntry:\n    vars['resolution_ready'] = 'no'\n    vars['close_ready'] = 'no'\n    vars['closing_facts'] = ''\n    vars['notes_facts'] = '[]'\n    vars['notes_needed'] = []\n    vars['close_outcome'] = ''\n    vars['close_reason'] = ''\n    vars['operational_hold'] = ''\n    def read(name, default):\n        value = vars.get(name, default)\n        return json.loads(value) if isinstance(value, str) and value else value\n    rows = read('product_state', [])\n    recorded = read('recorded_promises', [])\n    notes = read('successful_notes', [])\n    needed = []\n    outcome = ''\n    reason = ''\n    instruction = ''\n    if vars.get('transfer_state') == 'succeeded':\n        outcome = 'transferred'\n        reason = str(vars.get('transfer_reason', ''))\n        if reason not in ['human', 'support', 'restructuring'] or notes:\n            raise ValueError('Invalid transfer reconciliation')\n        instruction = 'Confirm the successful connection to the requested team.'\n    elif vars.get('callback_state') == 'succeeded':\n        outcome = 'not_reached'\n        reason = 'callback'\n        instruction = 'Confirm the callback date and time: ' + str(vars.get('callback_date_ready', '')) + ' ' + str(vars.get('callback_time_ready', '')) + '.'\n    elif vars.get('security_state') == 'failed':\n        outcome = 'not_verified'\n        reason = 'failed'\n        instruction = 'Tell the customer to use the mobile app or a branch. Disclose no account information.'\n    elif vars.get('identity_exit') in ['unclear', 'wrong_number', 'deceased', 'no_callback', 'declined']:\n        reason = str(vars['identity_exit'])\n        outcome = 'not_verified' if reason == 'declined' else 'not_reached'\n        instruction = 'Disclose no account information.'\n        if reason == 'deceased':\n            instruction += ' Say I am sorry for your loss if not already said; ask nothing else.'\n    elif vars.get('transfer_requested') == 'yes':\n        raise ValueError('Requested transfer has not succeeded; no notes permitted')\n    else:\n        if vars.get('security_state') != 'verified' or not isinstance(rows, list) or not rows:\n            raise ValueError('No verified resolved account')\n        recorded_ids = [str(p.get('product_id', '')) for p in recorded if isinstance(p, dict)]\n        dispositions = []\n        failures = []\n        for p in rows:\n            pid = str(p.get('product_id', ''))\n            if pid in recorded_ids:\n                continue\n            r = str(p.get('reason', ''))\n            if p.get('state') != 'note' or r not in ['refused', 'hardship', 'dispute', 'paid', 'service_error']:\n                raise ValueError('Unresolved product')\n            item = dict(product_id=pid, reason=r)\n            dispositions.append(item)\n            if r == 'service_error':\n                failures.append(str(p.get('label', 'the affected product')))\n            if not any(n.get('product_id') == pid and n.get('reason') == r for n in notes if isinstance(n, dict)):\n                needed.append(item)\n        if recorded_ids:\n            outcome = 'promise'\n            instruction = 'Confirm only actually recorded promises. If not yet spoken after the last success, say You will receive a text message confirming this promise.'\n        elif dispositions and all(p['reason'] == 'paid' for p in dispositions):\n            outcome = 'paid'\n            instruction = 'Explain, if not already explained, that payments can take one business day to appear.'\n        else:\n            outcome = 'no_promise'\n            reason = next(p['reason'] for p in dispositions if p['reason'] != 'paid')\n            instruction = 'Do not claim an unrecorded promise.'\n        for label in failures:\n            instruction += ' If not already said, explain that the promise for ' + label + ' could not be recorded.'\n    vars['close_outcome'] = outcome\n    vars['close_reason'] = reason\n    vars['notes_needed'] = needed\n    vars['notes_facts'] = json.dumps(needed)\n    vars['close_ready'] = 'yes' if not needed else 'no'\n    vars['closing_facts'] = instruction + ' Thank the speaker and say goodbye before the final bank call. Final outcome: ' + outcome + (('/' + reason) if reason else '') + '.'\nexcept Exception:\n    vars['resolution_ready'] = 'no'\n    vars['close_ready'] = 'no'\n    vars['notes_needed'] = []\n    vars['notes_facts'] = '[]'\n    vars['closing_facts'] = 'An unresolved operation prevents a truthful final outcome. Explain that it has not completed; do not claim success, emit notes, close or hang up.'\n    vars['operational_hold'] = 'Unresolved operation or inconsistent recorded state.'\n"
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/finalize/tools",
+      "value": [
+        "add_note",
+        "close_call",
+        "transfer_to_agent"
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/finalize/task_message",
+      "value": "Final instructions: {{closing_facts}}. Operational hold: {{operational_hold}}. Notes required: {{notes_facts}}. Close permission: {{close_ready}}. Close state: {{close_state}}. Final bank sequence started: {{finalization_started}}. Account retry permitted: {{account_retry_permitted}}. Account state and product labels: {{product_facts}}.\nIf an operational hold is nonempty, truthfully explain the operation has not completed; do not invent an outcome or hang up. For an account lookup failure with account_retry_permitted=yes, a customer-requested repeat uses the available account-retry action. Otherwise do not invent a retry path. If close itself failed, no further bank call is allowed.\nBefore the first final note or close, handle a customer interruption first. For a human request ask once whether you can help, and if they insist CALL transfer_to_agent/general. For restructuring CALL transfer_to_agent/restructuring unless hardship takes precedence. For hardship give one short sympathy sentence, offer support, and CALL transfer_to_agent/support if accepted. Do not begin any note while resolving these requests. A payment correction, paid/dispute claim or other changed disposition must be validated before final actions. A transfer abandons unrecorded proposals and prohibits every note.\nWhen the conversation is resolved, give all outstanding actual-success confirmations, the exact text-message sentence after recorded promises, and every required failed-product explanation, callback confirmation, security guidance, sympathy or payment-appearance explanation. Thank the speaker and say goodbye. Then CALL add_note for each listed product without a promise, in account order. Never note on a requested or successful transfer path and never repeat a successful note. After notes start, perform only the remaining final actions; do not reopen negotiation or transfer. On failure follow the result instruction and do not close prematurely.\nOnce close_ready=yes and required speech is complete, CALL close_call exactly once with the reconciled outcome/reason. Omit reason for promise and paid. It is the last bank call. A successful close leads to silent hangup. Never retry a failed close or hang up without successful close. Do not ask optional questions during this final sequence."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/finalize/extraction_schema",
+      "value": [
+        {
+          "name": "event",
+          "type": "string",
+          "enum_values": [
+            "",
+            "correction",
+            "proposal",
+            "refuse",
+            "too_much",
+            "paid",
+            "dispute",
+            "hardship",
+            "decline_support",
+            "no_talk"
+          ],
+          "description": "Before final bank actions only, capture a verified customer's changed payment terms or disposition. A proposed date/amount is correction/proposal, never refusal. paid concerns current arrears; historical payoff/closure is dispute. Hardship without a voluntary proposal precedes simultaneous restructuring. Human requests, restructuring without hardship, and support acceptance remain empty so dialogue can transfer. Empty if no substantive interruption.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "scope",
+          "type": "string",
+          "description": "Actual product_id affected, all only if expressly applicable to all products, or current if unambiguous. Never guess a product or allocate a total.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "amount_text",
+          "type": "string",
+          "description": "Only the customer's newly proposed corrected amount as a plain numeric string. Empty when unchanged.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "date_phrase",
+          "type": "string",
+          "description": "Only the newly proposed date. Normalize spoken day/year numbers while retaining a named month or literal relative expression. Preserve this/next and ambiguous numeric source order. Never infer from the real clock.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "hardship_mentioned",
+          "type": "string",
+          "enum_values": [
+            "yes",
+            "no"
+          ],
+          "description": "yes for illness, family death or job loss in this response, including alongside a voluntary proposal; otherwise no.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "amount_scope",
+          "type": "string",
+          "enum_values": [
+            "",
+            "per_product",
+            "combined"
+          ],
+          "description": "per_product only for an amount expressly for one product or expressly for EACH identified product; combined for a total across products. Otherwise empty.",
+          "min_confidence": 0.7
+        }
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/finalize/transitions",
+      "value": [
+        {
+          "target_node": "end",
+          "description": "The sole close_call actually succeeded.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "close_state",
+                "operator": "equals",
+                "operand": "succeeded"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "reconcile",
+          "description": "A transfer performed before final notes actually succeeded.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "resolution_ready",
+                "operator": "equals",
+                "operand": "yes"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "decide",
+          "description": "Validate a substantive payment interruption before any final note or closing attempt.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "logic": "and",
+                "conditions": [
+                  {
+                    "variable": "finalization_started",
+                    "operator": "equals",
+                    "operand": "no"
+                  },
+                  {
+                    "variable": "security_state",
+                    "operator": "equals",
+                    "operand": "verified"
+                  },
+                  {
+                    "variable": "event",
+                    "operator": "is_set"
+                  },
+                  {
+                    "variable": "event",
+                    "operator": "not_equals",
+                    "operand": ""
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "lookup",
+          "description": "Use only when the customer requests repetition of an account lookup that returned a confirmed API 500, account_retry_permitted=yes, security remains verified, and no final note or close has started. Never use for successful lookups or promise writes.",
+          "is_tool_call": true,
+          "condition": {
+            "operator": "matches_intent",
+            "description": "The customer requests repeating the failed account lookup and its confirmed API 500 explicitly permits repetition."
+          }
+        }
+      ]
+    },
+    {
+      "op": "replace",
+      "path": "/tool_config/add_note/pre_process_code",
+      "value": "try:\n    vars['finalization_started'] = 'yes'\n    vars['close_ready'] = 'no'\n    vars['note_request'] = dict()\n    body = config.get('body', dict())\n    if isinstance(body, dict):\n        vars['note_request'] = dict(product_id=str(body.get('product_id', '')), reason=str(body.get('reason', '')))\n    vars['note_write_state'] = 'pending_response'\nexcept Exception:\n    vars['note_request'] = dict()\n    vars['note_write_state'] = 'pending_response'\n"
+    },
+    {
+      "op": "replace",
+      "path": "/tool_config/close_call/pre_process_code",
+      "value": "import json\ntry:\n    vars['finalization_started'] = 'yes'\n    vars['close_state'] = 'pending_response'\n    body = config.get('body', dict())\n    if isinstance(body, dict):\n        outcome = str(vars.get('close_outcome', ''))\n        reason = str(vars.get('close_reason', ''))\n        if vars.get('transfer_state') == 'succeeded':\n            outcome = 'transferred'\n            reason = str(vars.get('transfer_reason', ''))\n        elif outcome not in ['not_reached', 'not_verified']:\n            records = vars.get('recorded_promises', [])\n            if isinstance(records, str):\n                records = json.loads(records)\n            if isinstance(records, list) and records:\n                outcome = 'promise'\n                reason = ''\n        if outcome:\n            body['outcome'] = outcome\n        if outcome in ['promise', 'paid']:\n            body.pop('reason', None)\n        elif reason:\n            body['reason'] = reason\n        vars['close_request'] = dict(outcome=body.get('outcome', ''), reason=body.get('reason', ''))\nexcept Exception:\n    vars['close_state'] = 'pending_response'\n"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/4/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/5/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/6",
+      "value": {
+        "name": "partial_phone_never_reaches_bank_action",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "security",
+          "security_state": "phone_last4",
+          "dob_passed": "yes",
+          "phone_passed": "no",
+          "security_answer": "zero six",
+          "wrong_total": 1
+        },
+        "expect_vars": {
+          "decision_route": "identity",
+          "record_mode": "",
+          "pending_facts": "",
+          "wrong_total": 1,
+          "security_result_state": "idle"
+        }
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/checks/7/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/8/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/9/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/10/node",
+      "value": "record"
+    },
+    {
+      "op": "replace",
+      "path": "/checks/11/node",
+      "value": "record"
+    },
+    {
+      "op": "add",
+      "path": "/checks/1/expect_vars/product_state",
+      "value": [
+        {
+          "product_id": "syn_car_45",
+          "label": "car loan",
+          "type": "car_loan",
+          "past_due": 1500,
+          "floor": 500,
+          "days_late": 45,
+          "band": "late",
+          "deadline": "2027-01-06",
+          "allowed_dates": [
+            "2026-12-28",
+            "2026-12-29",
+            "2026-12-30",
+            "2026-12-31",
+            "2027-01-04",
+            "2027-01-05",
+            "2027-01-06"
+          ],
+          "attempt_limit": 2,
+          "attempt1_nominal": "2026-12-24",
+          "attempt1_date": "",
+          "attempts": 0,
+          "floor_offered": false,
+          "full_too_much": false,
+          "vague_count": 0,
+          "rejected": [],
+          "state": "open",
+          "reason": "",
+          "amount": 1500,
+          "date": "",
+          "offer_amount": 1500,
+          "offer_date": "2026-12-25",
+          "date_adjustment": ""
+        }
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "completed_split_phone_preserves_leading_zeroes_before_bank",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "security",
+          "security_state": "phone_last4",
+          "dob_passed": "yes",
+          "phone_passed": "no",
+          "security_answer": "zero zero six two",
+          "wrong_total": 1
+        },
+        "expect_vars": {
+          "decision_route": "record",
+          "record_mode": "security",
+          "prepared_security_field": "phone_last4",
+          "prepared_security_answer": "0062",
+          "security_result_state": "awaiting",
+          "wrong_total": 1
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "complete_numeric_dob_is_staged_in_day_month_order",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "security",
+          "security_state": "date_of_birth",
+          "dob_passed": "no",
+          "security_answer": "03/09/1987",
+          "wrong_total": 0
+        },
+        "expect_vars": {
+          "decision_route": "record",
+          "prepared_security_field": "date_of_birth",
+          "prepared_security_answer": "1987-09-03",
+          "wrong_total": 0
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "partial_dob_does_not_consume_attempt",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "security",
+          "security_state": "date_of_birth",
+          "dob_passed": "no",
+          "security_answer": "3 September",
+          "wrong_total": 2
+        },
+        "expect_vars": {
+          "decision_route": "identity",
+          "record_mode": "",
+          "wrong_total": 2
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "numeric_retry_after_swap_hint_waits_for_month_word",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "security",
+          "security_state": "date_of_birth",
+          "dob_passed": "no",
+          "security_need_month_word": "yes",
+          "security_answer": "09/03/1987",
+          "wrong_total": 1
+        },
+        "expect_vars": {
+          "decision_route": "identity",
+          "record_mode": "",
+          "wrong_total": 1
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "missing_verified_is_not_a_wrong_answer",
+        "node": "record",
+        "tool": "verify_identity",
+        "hook": "post",
+        "vars": {
+          "security_request_field": "phone_last4",
+          "security_state": "phone_last4",
+          "dob_passed": "yes",
+          "phone_passed": "no",
+          "wrong_total": 2
+        },
+        "result": {
+          "data": {
+            "ok": true
+          }
+        },
+        "expect_vars": {
+          "security_state": "phone_last4",
+          "wrong_total": 2,
+          "security_result_state": "unperformed"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "impossible_callback_clock_uses_invalid_proposal_budget",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "event": "callback",
+          "date_phrase": "today",
+          "callback_time": "25:00",
+          "callback_invalid_count": 1
+        },
+        "expect_vars": {
+          "decision_route": "reconcile",
+          "callback_invalid_count": 2,
+          "identity_exit": "no_callback"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "below_floor_offer_retains_customer_date",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "proposal",
+          "scope": "current",
+          "amount_text": "50",
+          "date_phrase": "2026-10-20",
+          "current_index": 0,
+          "product_state": [
+            {
+              "product_id": "syn_date_floor",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 75,
+              "deadline": "2026-10-23",
+              "allowed_dates": [
+                "2026-10-14",
+                "2026-10-20",
+                "2026-10-23"
+              ],
+              "state": "open",
+              "amount": 300,
+              "date": "",
+              "offer_amount": 300,
+              "offer_date": "2026-10-14",
+              "floor_offered": false
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "collect",
+          "confirmation_state": "none",
+          "product_state": [
+            {
+              "product_id": "syn_date_floor",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 75,
+              "deadline": "2026-10-23",
+              "allowed_dates": [
+                "2026-10-14",
+                "2026-10-20",
+                "2026-10-23"
+              ],
+              "state": "open",
+              "amount": 300,
+              "date": "",
+              "offer_amount": 75,
+              "offer_date": "2026-10-20",
+              "floor_offered": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "floor_acceptance_uses_preserved_date",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "accept",
+          "scope": "current",
+          "current_index": 0,
+          "product_state": [
+            {
+              "product_id": "syn_floor_accept",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 75,
+              "deadline": "2026-10-23",
+              "allowed_dates": [
+                "2026-10-14",
+                "2026-10-20",
+                "2026-10-23"
+              ],
+              "state": "open",
+              "amount": 300,
+              "date": "",
+              "offer_amount": 75,
+              "offer_date": "2026-10-20",
+              "floor_offered": true
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "record",
+          "confirmation_state": "awaiting",
+          "pending_facts": "[{\"product_id\": \"syn_floor_accept\", \"label\": \"personal loan\", \"amount\": 75.0, \"date\": \"2026-10-20\", \"adjustment\": \"\", \"state\": \"pending\"}]"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "selected_product_becomes_current_before_next_acceptance",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "too_much",
+          "scope": "syn_selected_second",
+          "current_index": 0,
+          "split_started": "yes",
+          "product_state": [
+            {
+              "product_id": "syn_selected_first",
+              "label": "personal loan",
+              "past_due": 600,
+              "floor": 200,
+              "state": "open"
+            },
+            {
+              "product_id": "syn_selected_second",
+              "label": "car loan",
+              "past_due": 900,
+              "floor": 300,
+              "state": "open",
+              "offer_date": "2026-10-16",
+              "floor_offered": false
+            }
+          ]
+        },
+        "expect_vars": {
+          "current_index": 1,
+          "decision_route": "collect",
+          "next_instruction": "Offer the floor of 300 for car loan on 2026-10-16 once. Explain that the rest stays overdue. Obtain agreement; do not ask how much they can pay."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "initial_affordability_rejection_starts_attempt_one_on_prescribed_day",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "too_much",
+          "scope": "all",
+          "split_started": "no",
+          "current_index": 0,
+          "product_state": [
+            {
+              "product_id": "syn_first_offer",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 100,
+              "deadline": "2026-10-23",
+              "attempt1_date": "2026-10-16",
+              "attempts": 0,
+              "attempt_limit": 2,
+              "state": "open",
+              "floor_offered": false,
+              "offer_amount": 300,
+              "offer_date": "2026-10-14"
+            },
+            {
+              "product_id": "syn_next_offer",
+              "label": "car loan",
+              "past_due": 600,
+              "floor": 200,
+              "state": "open"
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "collect",
+          "current_index": 0,
+          "next_instruction": "Offer personal loan: 100 on 2026-10-16. Explain that the rest stays overdue."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "combined_total_is_neither_allocated_nor_multiplied",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "proposal",
+          "scope": "all",
+          "amount_scope": "combined",
+          "amount_text": "400",
+          "date_phrase": "2026-10-20",
+          "product_state": [
+            {
+              "product_id": "syn_total_a",
+              "label": "personal loan",
+              "past_due": 600,
+              "floor": 200,
+              "state": "open"
+            },
+            {
+              "product_id": "syn_total_b",
+              "label": "car loan",
+              "past_due": 900,
+              "floor": 300,
+              "state": "open"
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "collect",
+          "confirmation_state": "none",
+          "pending_facts": "[]",
+          "product_state": [
+            {
+              "product_id": "syn_total_a",
+              "label": "personal loan",
+              "past_due": 600,
+              "floor": 200,
+              "state": "open"
+            },
+            {
+              "product_id": "syn_total_b",
+              "label": "car loan",
+              "past_due": 900,
+              "floor": 300,
+              "state": "open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "ambiguous_exact_date_does_not_consume_vague_period_budget",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "proposal",
+          "scope": "current",
+          "date_phrase": "10/11/2026",
+          "product_state": [
+            {
+              "product_id": "syn_ambiguous_day",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 100,
+              "deadline": "2026-10-23",
+              "state": "open",
+              "amount": 300,
+              "date": "",
+              "offer_amount": 300,
+              "offer_date": "2026-10-14",
+              "vague_count": 1
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "collect",
+          "confirmation_state": "none",
+          "product_state": [
+            {
+              "product_id": "syn_ambiguous_day",
+              "label": "personal loan",
+              "past_due": 300,
+              "floor": 100,
+              "deadline": "2026-10-23",
+              "state": "open",
+              "amount": 300,
+              "date": "",
+              "offer_amount": 300,
+              "offer_date": "",
+              "vague_count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "declined_support_discards_prior_unrecorded_agreement",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "decline_support",
+          "scope": "all",
+          "hardship_active": "yes",
+          "confirmation_state": "awaiting",
+          "product_state": [
+            {
+              "product_id": "syn_before_hardship",
+              "label": "personal loan",
+              "past_due": 500,
+              "floor": 100,
+              "amount": 500,
+              "date": "2026-10-20",
+              "state": "pending"
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "reconcile",
+          "confirmation_state": "none",
+          "pending_facts": "[]",
+          "product_state": [
+            {
+              "product_id": "syn_before_hardship",
+              "label": "personal loan",
+              "past_due": 500,
+              "floor": 100,
+              "amount": 500,
+              "date": "",
+              "state": "note",
+              "reason": "hardship"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "readback_paid_claim_replaces_unrecorded_proposal",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "paid",
+          "scope": "current",
+          "confirmation_state": "awaiting",
+          "product_state": [
+            {
+              "product_id": "syn_readback_paid",
+              "label": "personal loan",
+              "past_due": 500,
+              "floor": 100,
+              "amount": 500,
+              "date": "2026-10-20",
+              "state": "pending"
+            }
+          ]
+        },
+        "expect_vars": {
+          "decision_route": "reconcile",
+          "confirmation_state": "none",
+          "pending_facts": "[]",
+          "next_instruction": "Explain that payments can take one business day to appear."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "correction_clears_stale_resolution_before_new_confirmation",
+        "node": "decide",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_state": "verified",
+          "event": "correction",
+          "scope": "current",
+          "date_phrase": "2026-10-21",
+          "resolution_ready": "yes",
+          "close_ready": "yes",
+          "confirmation_state": "confirmed",
+          "product_state": [
+            {
+              "product_id": "syn_reconfirm",
+              "label": "personal loan",
+              "past_due": 500,
+              "floor": 100,
+              "amount": 200,
+              "date": "2026-10-20",
+              "offer_amount": 200,
+              "offer_date": "2026-10-20",
+              "deadline": "2026-10-23",
+              "allowed_dates": [
+                "2026-10-20",
+                "2026-10-21",
+                "2026-10-23"
+              ],
+              "state": "pending"
+            }
+          ]
+        },
+        "expect_vars": {
+          "resolution_ready": "no",
+          "close_ready": "no",
+          "confirmation_state": "awaiting",
+          "confirmed_promises": [],
+          "decision_route": "record",
+          "pending_facts": "[{\"product_id\": \"syn_reconfirm\", \"label\": \"personal loan\", \"amount\": 200.0, \"date\": \"2026-10-21\", \"adjustment\": \"\", \"state\": \"pending\"}]"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "reconciliation_consumes_resolution_flag_and_explains_failed_product",
+        "node": "reconcile",
+        "hook": "code",
+        "vars": {
+          "security_state": "verified",
+          "resolution_ready": "yes",
+          "product_state": [
+            {
+              "product_id": "syn_saved_final",
+              "label": "personal loan",
+              "state": "recorded",
+              "reason": ""
+            },
+            {
+              "product_id": "syn_failed_final",
+              "label": "car loan",
+              "state": "note",
+              "reason": "service_error"
+            }
+          ],
+          "recorded_promises": [
+            {
+              "product_id": "syn_saved_final",
+              "amount": 200,
+              "date": "2026-10-20"
+            }
+          ],
+          "successful_notes": []
+        },
+        "expect_vars": {
+          "resolution_ready": "no",
+          "close_outcome": "promise",
+          "close_reason": "",
+          "close_ready": "no",
+          "notes_needed": [
+            {
+              "product_id": "syn_failed_final",
+              "reason": "service_error"
+            }
+          ],
+          "closing_facts": "Confirm only actually recorded promises. If not yet spoken after the last success, say You will receive a text message confirming this promise. If not already said, explain that the promise for car loan could not be recorded. Thank the speaker and say goodbye before the final bank call. Final outcome: promise."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "failed_duplicate_cannot_downgrade_recorded_promise",
+        "node": "record",
+        "tool": "create_promise",
+        "hook": "post",
+        "vars": {
+          "promise_request": {
+            "product_id": "syn_duplicate",
+            "amount": 200,
+            "date": "2026-10-20"
+          },
+          "promise_counts": {
+            "syn_duplicate": 2
+          },
+          "product_state": [
+            {
+              "product_id": "syn_duplicate",
+              "state": "recorded",
+              "reason": ""
+            }
+          ],
+          "recorded_promises": [
+            {
+              "product_id": "syn_duplicate",
+              "amount": 200,
+              "date": "2026-10-20",
+              "promise_id": "syn_original_receipt"
+            }
+          ]
+        },
+        "result": {
+          "data": {
+            "ok": false,
+            "error": "promise already exists"
+          }
+        },
+        "expect_vars": {
+          "promise_write_state": "already_recorded",
+          "resolution_ready": "yes",
+          "product_state": [
+            {
+              "product_id": "syn_duplicate",
+              "state": "recorded",
+              "reason": ""
+            }
+          ],
+          "recorded_promises": [
+            {
+              "product_id": "syn_duplicate",
+              "amount": 200,
+              "date": "2026-10-20",
+              "promise_id": "syn_original_receipt"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "confirmed_lookup_500_exposes_requested_retry",
+        "node": "lookup",
+        "tool": "get_account",
+        "hook": "post",
+        "vars": {
+          "security_state": "verified",
+          "account_retry_permitted": "no"
+        },
+        "result": {
+          "status": "error",
+          "status_code": 500,
+          "data": {
+            "ok": false,
+            "error": "temporary failure"
+          }
+        },
+        "expect_vars": {
+          "account_state": "failed",
+          "account_products": [],
+          "account_retry_permitted": "yes"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "first_note_marks_final_sequence_and_does_not_unlock_close",
+        "node": "finalize",
+        "tool": "add_note",
+        "hook": "pre",
+        "vars": {
+          "finalization_started": "no",
+          "close_ready": "yes"
+        },
+        "config": {
+          "body": {
+            "customer_id": "syn_final_boundary",
+            "product_id": "syn_final_note",
+            "reason": "refused"
+          }
+        },
+        "expect_vars": {
+          "finalization_started": "yes",
+          "close_ready": "no",
+          "note_write_state": "pending_response",
+          "note_request": {
+            "product_id": "syn_final_note",
+            "reason": "refused"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,499 @@
+{
+ "agent_id": "c83cbea5-a075-4997-adf9-301a6154ec3f",
+ "simulation_id": "00b363ae-958d-41cd-bb33-3f430fa46d12",
+ "iteration_id": "789e13ba-e15d-41ca-ada0-871bc89ec41d",
+ "seconds": 1,
+ "passed": 1,
+ "total": 10,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-01",
+   "family": "Happy path",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-02",
+   "family": "Third party",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-03",
+   "family": "Identity",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-04",
+   "family": "Dates",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-05",
+   "family": "Hardship",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-06",
+   "family": "Amounts",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-07",
+   "family": "Dates",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-08",
+   "family": "Already paid",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-09",
+   "family": "Restructuring",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  },
+  {
+   "id": "PUB-10",
+   "family": "Tool failure",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-01",
+   "level": "easy",
+   "family": "Happy path",
+   "pass": false,
+   "failed": [
+    "outcome ('transferred', 'human'), expected ('promise', None)",
+    "promises [], expected [('p1', 420.0, '2026-10-14')]",
+    "transfers [{'queue': 'general'}], expected []",
+    "conversation: - Both security questions were successfully verified before the get_account function was called. - The word 'collections' was never mentioned in the conversation. - The 'create_promise' function was never called, which violates the requirement for it to be called exactly once. - Consequently, the required text-message sentence was not spoken."
+   ],
+   "call_id": "34a4cd5f-9e7b-4fd3-a462-9136dd7d3d6b",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "transfer_to_agent",
+    "close_call"
+   ],
+   "customer_id": "c_b857a607-546",
+   "slowest_turn_s": 1.7,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-02",
+   "level": "medium",
+   "family": "Third party",
+   "pass": false,
+   "failed": [
+    "callbacks [{'date': '2026-10-15', 'time': '11:00'}, {'date': '2026-10-15', 'time': '11:00'}, {'date': '2026-10-15', 'time': '11:00'}], expected [{'date': '2026-10-15', 'time': '11:00'}]"
+   ],
+   "call_id": "45592779-f5ab-44d9-9cc6-6bd5f6c6d5dc",
+   "tools": [
+    "schedule_callback",
+    "schedule_callback",
+    "schedule_callback",
+    "close_call"
+   ],
+   "customer_id": "c_08ad0296-2f1",
+   "slowest_turn_s": 4.8,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-03",
+   "level": "medium",
+   "family": "Identity",
+   "pass": false,
+   "failed": [
+    "conversation: no verdict"
+   ],
+   "call_id": "e7f31de9-b7e6-41cb-9b0f-f68f1ab97df1",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "verify_identity",
+    "close_call"
+   ],
+   "customer_id": "c_0064c50f-3e1",
+   "slowest_turn_s": 3.7,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-04",
+   "level": "medium",
+   "family": "Dates",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 1250.0, '2026-10-23')]",
+    "the call was not closed with close_call",
+    "conversation: no verdict"
+   ],
+   "call_id": "da4f4b5f-9f6e-40e6-b28b-7f54ff882486",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account"
+   ],
+   "customer_id": "c_4a59781b-a4e",
+   "slowest_turn_s": 10.5,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-05",
+   "level": "medium",
+   "family": "Hardship",
+   "pass": false,
+   "failed": [
+    "outcome ('no_promise', 'refused'), expected ('no_promise', 'hardship')",
+    "conversation: The assistant failed to meet all the success criteria. While it correctly provided exactly one sentence of sympathy in Message 8 ('I am sorry to hear that, Mr Novak.') and did not attempt to persuade the customer to pay the past-due amount after their refusal, it failed two other constraints. First, the support team (specialist) was offered twice\u2014once in Message 8 and again in Message 10\u2014violating"
+   ],
+   "call_id": "6232d089-fdfc-438d-8baf-a3dd8aaa8f28",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "close_call"
+   ],
+   "customer_id": "c_867b207c-133",
+   "slowest_turn_s": 32.1,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-06",
+   "level": "hard",
+   "family": "Amounts",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 637.5, '2026-10-16')]",
+    "the call was not closed with close_call",
+    "conversation: The conversation failed all three specific success criteria. First, the agent violated the prohibition on asking the customer for a payment amount by asking 'How much would you be able to pay?' in [Message 14]. Second, while the agent offered the minimum payment in [Message 16], they omitted the mandatory note stating that the rest of the balance would remain overdue. Third, the agent explicitly s"
+   ],
+   "call_id": "0b6c347b-2d14-4a82-bed6-746fcd7b4ace",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account"
+   ],
+   "customer_id": "c_2ea77a0e-23c",
+   "slowest_turn_s": 23.5,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-07",
+   "level": "hard",
+   "family": "Dates",
+   "pass": false,
+   "failed": [
+    "outcome ('transferred', 'support'), expected ('promise', None)",
+    "promises [], expected [('p1', 540.0, '2026-10-27')]",
+    "transfers [{'queue': 'support'}], expected []",
+    "conversation: The agent failed to meet all of the success criteria. Specifically, the agent never asked for an exact payment day, did not engage in any negotiation regarding October 26th or 27th, and no promise was recorded for Tuesday, October 27th. Instead of collecting a payment promise, the agent transferred the call to a support team at message 10."
+   ],
+   "call_id": "7751778d-8c99-496c-b478-e8301fbbfa82",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "transfer_to_agent",
+    "close_call"
+   ],
+   "customer_id": "c_9661fdca-dda",
+   "slowest_turn_s": 2.0,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-08",
+   "level": "medium",
+   "family": "Already paid",
+   "pass": false,
+   "failed": [
+    "conversation: no verdict"
+   ],
+   "call_id": "a3e0bf6a-a798-4e84-8631-29d683db13fe",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "close_call"
+   ],
+   "customer_id": "c_5adb3ced-d24",
+   "slowest_turn_s": 3.4,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-09",
+   "level": "medium",
+   "family": "Restructuring",
+   "pass": true,
+   "failed": [],
+   "call_id": "9f629344-65c6-4e73-9769-8bec38402fc0",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "transfer_to_agent",
+    "close_call"
+   ],
+   "customer_id": "c_3a7b7466-094",
+   "slowest_turn_s": 2.6,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-10",
+   "level": "hard",
+   "family": "Tool failure",
+   "pass": false,
+   "failed": [
+    "outcome ('transferred', 'human'), expected ('promise', None)",
+    "promises [], expected [('p1', 365.0, '2026-10-16')]",
+    "transfers [{'queue': 'general'}], expected []",
+    "conversation: The call failed to meet the success criteria for the following reasons: - There are no promises in the ledger. Although the user offered to pay the full amount this Friday in [Message 9], the agent reported a technical issue in [Message 10] and transferred the call instead of recording the promise. - The agent used the word 'recorded' in [Message 0] ('this call is recorded'), which violates the se"
+   ],
+   "call_id": "bcaf375c-210a-415e-a924-1a86f5f61d78",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "transfer_to_agent",
+    "close_call"
+   ],
+   "customer_id": "c_f55a45e6-632",
+   "slowest_turn_s": 16.3,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-01",
+    "level": "easy",
+    "family": "Happy path",
+    "pass": false,
+    "failed": [
+     "outcome ('transferred', 'human'), expected ('promise', None)",
+     "promises [], expected [('p1', 420.0, '2026-10-14')]",
+     "transfers [{'queue': 'general'}], expected []",
+     "conversation: - Both security questions were successfully verified before the get_account function was called. - The word 'collections' was never mentioned in the conversation. - The 'create_promise' function was never called, which violates the requirement for it to be called exactly once. - Consequently, the required text-message sentence was not spoken."
+    ],
+    "call_id": "34a4cd5f-9e7b-4fd3-a462-9136dd7d3d6b",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "transfer_to_agent",
+     "close_call"
+    ],
+    "customer_id": "c_b857a607-546",
+    "slowest_turn_s": 1.7,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-02",
+    "level": "medium",
+    "family": "Third party",
+    "pass": false,
+    "failed": [
+     "callbacks [{'date': '2026-10-15', 'time': '11:00'}, {'date': '2026-10-15', 'time': '11:00'}, {'date': '2026-10-15', 'time': '11:00'}], expected [{'date': '2026-10-15', 'time': '11:00'}]"
+    ],
+    "call_id": "45592779-f5ab-44d9-9cc6-6bd5f6c6d5dc",
+    "tools": [
+     "schedule_callback",
+     "schedule_callback",
+     "schedule_callback",
+     "close_call"
+    ],
+    "customer_id": "c_08ad0296-2f1",
+    "slowest_turn_s": 4.8,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-03",
+    "level": "medium",
+    "family": "Identity",
+    "pass": false,
+    "failed": [
+     "conversation: no verdict"
+    ],
+    "call_id": "e7f31de9-b7e6-41cb-9b0f-f68f1ab97df1",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "verify_identity",
+     "close_call"
+    ],
+    "customer_id": "c_0064c50f-3e1",
+    "slowest_turn_s": 3.7,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-04",
+    "level": "medium",
+    "family": "Dates",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 1250.0, '2026-10-23')]",
+     "the call was not closed with close_call",
+     "conversation: no verdict"
+    ],
+    "call_id": "da4f4b5f-9f6e-40e6-b28b-7f54ff882486",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account"
+    ],
+    "customer_id": "c_4a59781b-a4e",
+    "slowest_turn_s": 10.5,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-05",
+    "level": "medium",
+    "family": "Hardship",
+    "pass": false,
+    "failed": [
+     "outcome ('no_promise', 'refused'), expected ('no_promise', 'hardship')",
+     "conversation: The assistant failed to meet all the success criteria. While it correctly provided exactly one sentence of sympathy in Message 8 ('I am sorry to hear that, Mr Novak.') and did not attempt to persuade the customer to pay the past-due amount after their refusal, it failed two other constraints. First, the support team (specialist) was offered twice\u2014once in Message 8 and again in Message 10\u2014violating"
+    ],
+    "call_id": "6232d089-fdfc-438d-8baf-a3dd8aaa8f28",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "close_call"
+    ],
+    "customer_id": "c_867b207c-133",
+    "slowest_turn_s": 32.1,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-06",
+    "level": "hard",
+    "family": "Amounts",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 637.5, '2026-10-16')]",
+     "the call was not closed with close_call",
+     "conversation: The conversation failed all three specific success criteria. First, the agent violated the prohibition on asking the customer for a payment amount by asking 'How much would you be able to pay?' in [Message 14]. Second, while the agent offered the minimum payment in [Message 16], they omitted the mandatory note stating that the rest of the balance would remain overdue. Third, the agent explicitly s"
+    ],
+    "call_id": "0b6c347b-2d14-4a82-bed6-746fcd7b4ace",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account"
+    ],
+    "customer_id": "c_2ea77a0e-23c",
+    "slowest_turn_s": 23.5,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-07",
+    "level": "hard",
+    "family": "Dates",
+    "pass": false,
+    "failed": [
+     "outcome ('transferred', 'support'), expected ('promise', None)",
+     "promises [], expected [('p1', 540.0, '2026-10-27')]",
+     "transfers [{'queue': 'support'}], expected []",
+     "conversation: The agent failed to meet all of the success criteria. Specifically, the agent never asked for an exact payment day, did not engage in any negotiation regarding October 26th or 27th, and no promise was recorded for Tuesday, October 27th. Instead of collecting a payment promise, the agent transferred the call to a support team at message 10."
+    ],
+    "call_id": "7751778d-8c99-496c-b478-e8301fbbfa82",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "transfer_to_agent",
+     "close_call"
+    ],
+    "customer_id": "c_9661fdca-dda",
+    "slowest_turn_s": 2.0,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-08",
+    "level": "medium",
+    "family": "Already paid",
+    "pass": false,
+    "failed": [
+     "conversation: no verdict"
+    ],
+    "call_id": "a3e0bf6a-a798-4e84-8631-29d683db13fe",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "close_call"
+    ],
+    "customer_id": "c_5adb3ced-d24",
+    "slowest_turn_s": 3.4,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-09",
+    "level": "medium",
+    "family": "Restructuring",
+    "pass": true,
+    "failed": [],
+    "call_id": "9f629344-65c6-4e73-9769-8bec38402fc0",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "transfer_to_agent",
+     "close_call"
+    ],
+    "customer_id": "c_3a7b7466-094",
+    "slowest_turn_s": 2.6,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-10",
+    "level": "hard",
+    "family": "Tool failure",
+    "pass": false,
+    "failed": [
+     "outcome ('transferred', 'human'), expected ('promise', None)",
+     "promises [], expected [('p1', 365.0, '2026-10-16')]",
+     "transfers [{'queue': 'general'}], expected []",
+     "conversation: The call failed to meet the success criteria for the following reasons: - There are no promises in the ledger. Although the user offered to pay the full amount this Friday in [Message 9], the agent reported a technical issue in [Message 10] and transferred the call instead of recording the promise. - The agent used the word 'recorded' in [Message 0] ('this call is recorded'), which violates the se"
+    ],
+    "call_id": "bcaf375c-210a-415e-a924-1a86f5f61d78",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "transfer_to_agent",
+     "close_call"
+    ],
+    "customer_id": "c_f55a45e6-632",
+    "slowest_turn_s": 16.3,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

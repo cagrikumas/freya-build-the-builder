@@ -1,0 +1,33 @@
+{
+  "arguments": [
+    "443c6e24-bdce-4133-90b5-802bc30df0b1",
+    "--brief",
+    "B",
+    "--out",
+    "/home/ahmetkumas/Desktop/freya2/results/20261011-mapping-b.json"
+  ],
+  "sessions": {
+    "PUB-11": {
+      "customer_id": "c_054c2ce4-23a",
+      "first_name": "Sofia",
+      "last_name": "Almeida",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-12": {
+      "customer_id": "c_77dda42b-4d2",
+      "first_name": "Marcus",
+      "last_name": "Bell",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-13": {
+      "customer_id": "c_46990501-2b9",
+      "first_name": "Elena",
+      "last_name": "Rossi",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "bcc05068-d5c0-485c-a208-a8bff95f6b85"
+}

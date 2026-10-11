@@ -1,0 +1,9 @@
+{
+  "kind": "practice_only_recovery",
+  "at": "2026-10-11T14:55:21.544418+00:00",
+  "source": "results/platform-mapping-b.workflow.json",
+  "sha256": "4199e5ba3f0dca6a01d5e1e6e0f3b4e8e6fac964059f4e5572cc2c016d1b01e9",
+  "workflow_id": "b034a904-0df3-46ef-a6f0-e511e5109055",
+  "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+  "version": 2
+}

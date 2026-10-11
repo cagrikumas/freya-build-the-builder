@@ -103,3 +103,17 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
 - Cloudflare için Node 22 ve Wrangler proje içine kuruldu; deploy --dry-run
   geçti. Hesap kimlik bilgileri ayrı private/cloudflare dizininde tutulacak.
   Kişisel hesap bilgisi bekleniyor; login, hesap seçimi veya deploy yapılmadı.
+
+## 18.32 İstanbul — final örneklerini otomatik sınama
+
+- Builder, belge klasöründeki örnek konuşmalardan müşteri senaryoları ve bağımsız
+  başarı ölçütleri üretebiliyor. Freya simülasyonu, görüşme kayıtları, otomatik
+  düzeltme ve aynı senaryolarla tekrar kontrol tek builder koşusuna dahil.
+- Düzeltme mevcut senaryo/başarı ölçütlerini veya yerel kontrolleri gevşetemez.
+  Eksik konuşma ya da değerlendirme sonucu belirsiz sayılır; politika hatası
+  diye otomatik düzeltilmez. Belirsiz/kötüleşen tekrar eski workflow'a döner.
+- 47 yerel test başarılı. Bu sayı canlı müşteri başarı oranı değildir; yeni
+  final testi hattı henüz gerçek Freya konuşmasıyla çalıştırılmadı.
+- Kullanıcı birincilik hedefini açıkça vurguladı. Düşük panel oranları soruldu;
+  gerçek ajan hataları ile başlamayan görüşmelerin ayrımı açıklandı. Yeni B
+  derlemesi sürüyor, canlı sonuç henüz yok. Cloudflare hesabı yanıtı bekleniyor.

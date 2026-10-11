@@ -1,0 +1,82 @@
+{
+  "arguments": [
+    "c83cbea5-a075-4997-adf9-301a6154ec3f",
+    "--brief",
+    "A",
+    "--out",
+    "results/20261011-after-fix-a-retry.json"
+  ],
+  "sessions": {
+    "PUB-01": {
+      "customer_id": "c_b857a607-546",
+      "first_name": "Daniel",
+      "last_name": "Reyes",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-02": {
+      "customer_id": "c_08ad0296-2f1",
+      "first_name": "Maria",
+      "last_name": "Costa",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-03": {
+      "customer_id": "c_0064c50f-3e1",
+      "first_name": "Owen",
+      "last_name": "Park",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-04": {
+      "customer_id": "c_4a59781b-a4e",
+      "first_name": "Lena",
+      "last_name": "Hoffmann",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-05": {
+      "customer_id": "c_867b207c-133",
+      "first_name": "Tomas",
+      "last_name": "Novak",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-06": {
+      "customer_id": "c_2ea77a0e-23c",
+      "first_name": "Priya",
+      "last_name": "Nair",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-07": {
+      "customer_id": "c_9661fdca-dda",
+      "first_name": "Samuel",
+      "last_name": "Ortiz",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-08": {
+      "customer_id": "c_5adb3ced-d24",
+      "first_name": "Hannah",
+      "last_name": "Schmidt",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-09": {
+      "customer_id": "c_3a7b7466-094",
+      "first_name": "Victor",
+      "last_name": "Ionescu",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-10": {
+      "customer_id": "c_f55a45e6-632",
+      "first_name": "Grace",
+      "last_name": "Lin",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "00b363ae-958d-41cd-bb33-3f430fa46d12"
+}

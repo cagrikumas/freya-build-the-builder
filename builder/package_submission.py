@@ -57,9 +57,15 @@ def main():
     if status.strip():
         raise SystemExit('Commit the source, exports and traces first; the working tree must be clean.')
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    command = 'python3 builder/build.py {case_folder} {mock_url}'
+    if start.get('max_seconds', 3600) != 3600:
+        command += ' --max-seconds ' + str(start['max_seconds'])
+    if start.get('slot', 'final') != 'final':
+        import shlex
+        command += ' --slot ' + shlex.quote(start['slot'])
     form = {'team': a.team, 'repo': a.repo, 'commit': commit,
             'members': [{'name': a.name, 'email': a.email}],
-            'run_command': 'python3 builder/build.py {case_folder} {mock_url}',
+            'run_command': command,
             'workflow': result['export'], 'trace': result['trace'], 'mock_url': a.mock_url.rstrip('/')}
     print(json.dumps(form, indent=2))
 

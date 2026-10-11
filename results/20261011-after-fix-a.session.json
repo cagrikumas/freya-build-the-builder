@@ -1,0 +1,81 @@
+{
+  "arguments": [
+    "c83cbea5-a075-4997-adf9-301a6154ec3f",
+    "--brief",
+    "A",
+    "--out",
+    "results/20261011-after-fix-a.json"
+  ],
+  "sessions": {
+    "PUB-01": {
+      "customer_id": "c_e68c779c-203",
+      "first_name": "Daniel",
+      "last_name": "Reyes",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-02": {
+      "customer_id": "c_e45b2df6-73e",
+      "first_name": "Maria",
+      "last_name": "Costa",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-03": {
+      "customer_id": "c_1a6e0e03-21a",
+      "first_name": "Owen",
+      "last_name": "Park",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-04": {
+      "customer_id": "c_8ebfa8b9-8bc",
+      "first_name": "Lena",
+      "last_name": "Hoffmann",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-05": {
+      "customer_id": "c_69477cbf-e9a",
+      "first_name": "Tomas",
+      "last_name": "Novak",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-06": {
+      "customer_id": "c_8353841c-d55",
+      "first_name": "Priya",
+      "last_name": "Nair",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-07": {
+      "customer_id": "c_f4149820-ab7",
+      "first_name": "Samuel",
+      "last_name": "Ortiz",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-08": {
+      "customer_id": "c_b08f63d4-783",
+      "first_name": "Hannah",
+      "last_name": "Schmidt",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-09": {
+      "customer_id": "c_03d5d72e-1f3",
+      "first_name": "Victor",
+      "last_name": "Ionescu",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-10": {
+      "customer_id": "c_8031f9c1-f4c",
+      "first_name": "Grace",
+      "last_name": "Lin",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  }
+}
