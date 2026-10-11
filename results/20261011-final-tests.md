@@ -92,7 +92,15 @@ tek tırnaklı Python sözlük metni; v3 normalleştiricisi yalnız JSON okuyord
 Bu fark hem özgün mesajlarla yerel olarak hem sürüm3 canlı görüşmesinde
 `335b4dec-e1a0-4d98-a446-34f5698edef6` doğrulandı.
 
-## Üçüncü otomatik düzeltme (v4, sürüyor)
+V3 öncelikli grubunun ham sonucu: 8 başarılı, 3 başarısız, 1 değerlendirme
+zaman aşımı nedeniyle belirsiz. Tüm 12 görüşme 19:40:02 UTC’ye kadar bitti.
+Belirsiz sonuç başarılı sayılmadı. HTTP404 dışında kalan iki başarısızlık:
+`EXTRA01` teşekkürle başlayan kısmi GBP isteğinin bitirme sayılması;
+`EXTRA08` e-posta isteğinin SMS diye çıkarılması ardından bitiş düğümünün
+hesaplanmış ret cümlesini izlemeyip onay/gönderim uydurması ve vedaları
+tekrarlaması. PDF çağrısı yoktu. Ham kayıtlar korunmuştur.
+
+## Üçüncü otomatik düzeltme (v4)
 
 `traces/20261011T193910Z-final` çalışması 19:39:10 UTC’de başladı.
 Değişmemiş v3 üretimini, 79 kontrolü, 12 temel senaryoyu ve tek gerçek
@@ -113,3 +121,25 @@ Teslim formundaki sıfırdan üretim komutu 5400 saniyelik bütçe kullanır;
 yukarıdaki 1200 saniyelik süre yalnız önceki tamamlanmış üretimi içeri alan
 artımlı düzeltmeye aittir. Tam oturum kaydı tüm önceki model çağrılarını ve
 yeni düzeltme oturumunu birlikte saklar.
+
+
+V4 19:44:55 UTC’de tamamlandı. 94 yerel kontrol, platform ve açılış
+kontrolleri geçti; önceki 79 kontrol aynen korundu. Uygun kart yok HTTP404
+ve gerçek teknik hata HTTP500 senaryoları 19:45:36 UTC’de **2/2 geçti**.
+
+## Son dar kapsamlı düzeltme (v5, sürüyor)
+
+`traces/20261011T194542Z-final` çalışması 19:45:42 UTC’de 900 saniyelik
+bütçeyle başladı. Değişmemiş v4 üretimi ve kalan iki gerçek v3 başarısız
+çağrısı kullanılır; v4’te aynı bitiş düğümünün değişmediği önceden doğrulandı.
+Hedef: belgelenmiş terminal ile hesaplanan bitiş cümlesini söyleyip gerçekten
+kapatma; e-posta/SMS ayrımı ve teşekkürle birleşen devam isteğini doğru
+çıkarma. Ajan elle düzenlenmedi. 94 kontrol, açılış kontrolü ve 12 temel
+senaryo değiştirilmeden korunmak zorundadır.
+
+```sh
+python3 builder/build.py {case_folder} {mock_url} \
+  --refine-run traces/20261011T193910Z-final \
+  --repair-feedback traces/20261011T194542Z-final/refinement-evidence.json \
+  --max-seconds 900
+```
