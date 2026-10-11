@@ -49,4 +49,36 @@ python3 builder/build.py {case_folder} {mock_url} \
 
 Üretimin kendi süre kapısı 12 görüşme için gereken üst sınırı karşılamadığı
 için bu testleri atladı. Aynı değişmemiş v2 üzerinde bağımsız gerçek Freya
-testi 19:12:49 UTC’de başlatıldı; sonuç bekleniyor.
+testi 19:12:49 UTC’de başlatıldı.
+
+V2 üzerindeki üç grup tamamlandı:
+
+| Grup | Geçen | Toplam | Ham sonuç dosyası |
+|---|---:|---:|---|
+| Korunan temel senaryolar | 10 | 12 | `20261011-final-v2-baseline.json` |
+| Farklı müşteri ve hata durumları | 10 | 12 | `20261011-final-v2-stress.json` |
+| Onay, para birimi, kart değişimi ve kaynak açıklığı | 10 | 12 | `20261011-final-v2-remaining.json` |
+| Toplam | 30 | 36 | Tüm sonuçlar ve görüşmeler aynen saklandı |
+
+Ham altı başarısız sonucun dördünde gerçek neden doğrulandı: HTTP404 uyarısının
+normal cevap işleyicisi dışında kalması, konu dışı deturdan geçerli kart
+seçimine dönememe, doğru çıkarılan kart adının güven eşiğinde elenmesi ve
+seçili kartı anan açık onayın yeni kart seçimi sayılarak silinmesi.
+
+Diğer iki ham başarısızlığın kaynak ve gerçek konuşma incelemeleri
+`20261011-final-v2-melis-judge-review.md` ve
+`20261011-final-v2-kerem-judge-review.md` dosyalarındadır. Sonuçlar yeniden
+etiketlenmedi. İletişim servisi sorgusunu açıkça adlandıran ek Melis testi ve
+bankanın örneğindeki ayrı onay/işlem sonucu/üçüncü kişi sırasını koruyan ek
+Kerem testi geçti. Eski senaryolar değiştirilmedi.
+
+Son gruptaki iki görüşme bir süre hiç mesaj üretmeden `initiating` durumunda
+kaldı; platform daha sonra yeni görüşme denemeleriyle grubu tamamladı. Grup
+durdurulmadı ve tamamlanmamış görüşmeler başarılı sayılmadı.
+
+## İkinci otomatik düzeltme (v3, sürüyor)
+
+`traces/20261011T192924Z-final` çalışması 19:29:24 UTC’de başladı. Tamamlanan
+v2 üretimi ve dört gerçek başarısız görüşmenin 298 özgün mesajı girdi olarak
+kullanıldı. Kaynak kod değiştirilmedi; mevcut 60 yerel kontrol ve 12 temel
+senaryo korunmak zorunda. Yeni sürümün canlı sonucu henüz yok.
