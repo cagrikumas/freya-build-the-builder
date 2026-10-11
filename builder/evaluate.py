@@ -25,11 +25,26 @@ def validate_scenarios(scenarios):
             raise ValueError('Scenario variables must come from a documented synthetic customer')
 
 
+def scenario_batches(scenarios):
+    """Stable first-fit groups; identical fixture signatures never run together."""
+    batches, signatures = [], []
+    for index, scenario in enumerate(scenarios):
+        signature = json.dumps(scenario['variables'], sort_keys=True)
+        for batch, seen in zip(batches, signatures):
+            if len(batch) < 12 and signature not in seen:
+                batch.append(index)
+                seen.add(signature)
+                break
+        else:
+            batches.append([index])
+            signatures.append({signature})
+    return batches
+
+
 def evaluation_seconds(scenarios, max_call_seconds=300):
     """Reserve complete call waves plus control/analysis time before starting."""
-    fixtures = [json.dumps(s['variables'], sort_keys=True) for s in scenarios]
-    concurrency = 1 if len(set(fixtures)) != len(fixtures) else min(3, len(scenarios))
-    return ((len(scenarios) + concurrency - 1) // concurrency) * max_call_seconds + 180
+    return sum(((len(batch) + 2) // 3) * max_call_seconds + 180
+               for batch in scenario_batches(scenarios))
 
 
 def summarize_runs(scenarios, persona_ids, runs, calls):
@@ -195,7 +210,8 @@ def compact_feedback(summary, workflow=None, *, max_rows=12):
 
     overall_stats = {'truncated_values': 0, 'omitted_bulk_fields': 0}
     result = {key: metadata(summary[key], overall_stats) for key in
-              ('total', 'passed', 'failed', 'conclusive', 'simulation_id', 'iteration_id', 'status', 'reason')
+              ('total', 'passed', 'failed', 'conclusive', 'simulation_id', 'iteration_id',
+               'simulation_ids', 'iteration_ids', 'status', 'reason')
               if key in summary}
     result['rows'] = []
     result['feedback_limits'] = {'total_json_chars': FEEDBACK_MAX_CHARS,
@@ -374,7 +390,10 @@ def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_cal
     handler = signal.getsignal(signal.SIGALRM)
     # Never replace an earlier enclosing deadline with a later local deadline.
     owns_alarm = not previous[0] or budget < previous[0]
-    progress = {'persona_ids': persona_ids, 'simulation_id': None}
+    progress = {'persona_ids': persona_ids, 'simulation_id': None,
+                'simulation_ids': [], 'iteration_ids': [], 'batches': [],
+                'rows': [{'name': s['name'], 'outcome': 'inconclusive',
+                          'reason': 'Not started; an earlier batch may be unresolved'} for s in scenarios]}
     def expired(sig, frame):
         raise EvaluationTimeout('Document example evaluation time limit reached')
     if owns_alarm:
@@ -385,15 +404,13 @@ def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_cal
                              persona_ids=persona_ids, max_call_seconds=max_call_seconds,
                              expires=started + budget)
     except EvaluationTimeout as error:
-        result = {'passed': None, 'failed': 0, 'total': len(scenarios), 'conclusive': False,
-                  'rows': [], 'status': 'evaluation_timeout', 'reason': str(error), **progress}
+        result = _aggregate_examples(progress, status='evaluation_timeout', reason=str(error))
         trace('example_evaluation_inconclusive', **result,
               action='Retain this simulation ID; do not start another simulation while its status is unresolved')
         return result
     except RuntimeError as error:
         if 'concurrent simulations' not in str(error).lower(): raise
-        result = {'passed': None, 'failed': 0, 'total': len(scenarios), 'conclusive': False,
-                  'rows': [], 'status': 'workspace_busy', 'reason': str(error), **progress}
+        result = _aggregate_examples(progress, status='workspace_busy', reason=str(error))
         trace('example_evaluation_inconclusive', **result,
               action='Leave the existing workspace simulation unchanged; do not retry creation')
         return result
@@ -406,7 +423,7 @@ def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_cal
 
 
 def _run_examples(freya, agent_id, scenarios, trace, progress, *, persona_ids, max_call_seconds, expires):
-    """One simulation, fixed event phone models, original criteria reusable for repair."""
+    """Sequential simulations, original personas and criteria reusable for repair."""
     validate_scenarios(scenarios)
     if persona_ids is None:
         created = freya.create_personas([{
@@ -420,10 +437,43 @@ def _run_examples(freya, agent_id, scenarios, trace, progress, *, persona_ids, m
     if len(persona_ids) != len(scenarios) or len(set(persona_ids)) != len(persona_ids):
         raise ValueError('Each scenario needs a distinct persona')
     progress['persona_ids'] = persona_ids
+    for batch_number, indices in enumerate(scenario_batches(scenarios), 1):
+        if time.monotonic() >= expires:
+            raise EvaluationTimeout('Document example evaluation time limit reached')
+        info = {'batch': batch_number, 'scenario_indices': indices, 'status': 'not_started',
+                'conclusive': False}
+        progress['batches'].append(info)
+        summary = _run_example_batch(freya, agent_id, [scenarios[i] for i in indices], trace,
+                                     progress, info, persona_ids=[persona_ids[i] for i in indices],
+                                     max_call_seconds=max_call_seconds, expires=expires)
+        for index, row in zip(indices, summary['rows']):
+            progress['rows'][index] = row
+        info.update({key: summary[key] for key in
+                     ('simulation_id', 'iteration_id', 'status', 'passed', 'failed', 'conclusive')})
+        if not summary['conclusive']:
+            break
+    summary = _aggregate_examples(progress)
+    trace('example_evaluation_end', **{k: v for k, v in summary.items() if k != 'rows'})
+    return summary
+
+
+def _aggregate_examples(progress, *, status=None, reason=None):
+    rows = progress['rows']
+    conclusive = (bool(progress['batches']) and all(b.get('conclusive') for b in progress['batches'])
+                  and all(r['outcome'] in ('pass', 'fail') for r in rows) and status is None)
+    result = {**progress, 'total': len(rows), 'passed': sum(r['outcome'] == 'pass' for r in rows),
+              'failed': sum(r['outcome'] == 'fail' for r in rows), 'conclusive': conclusive,
+              'status': status or ('completed' if conclusive else 'inconclusive')}
+    if reason is not None:
+        result['reason'] = reason
+    return result
+
+
+def _run_example_batch(freya, agent_id, scenarios, trace, progress, info, *, persona_ids,
+                       max_call_seconds, expires):
+    """Run one conflict-free batch, completing it before the next POST."""
     variables = {pid: s['variables'] for pid, s in zip(persona_ids, scenarios)}
-    # Identical fixtures may share state in the bank mock; never race those calls.
-    fixtures = [json.dumps(s['variables'], sort_keys=True) for s in scenarios]
-    concurrency = 1 if len(set(fixtures)) != len(fixtures) else min(3, len(scenarios))
+    concurrency = min(3, len(scenarios))
     body = {'agentId': agent_id, 'name': 'Builder document examples', 'mode': 'chat',
             'selectedPersonaIds': persona_ids, 'customerVariablesMap': variables,
             'maxConcurrentCalls': concurrency, 'runsPerPersona': 1,
@@ -435,6 +485,8 @@ def _run_examples(freya, agent_id, scenarios, trace, progress, *, persona_ids, m
     created = freya.api('POST', '/api/v2/simulations', body)
     sim_id = (created.get('simulation') or created)['id']
     progress['simulation_id'] = sim_id
+    progress['simulation_ids'].append(sim_id)
+    info.update(simulation_id=sim_id, status='running')
     trace('example_simulation_created', simulation_id=sim_id, persona_ids=persona_ids,
           concurrency=concurrency, criteria='Document-derived internal checks; not the hidden event score')
     while True:
@@ -448,12 +500,17 @@ def _run_examples(freya, agent_id, scenarios, trace, progress, *, persona_ids, m
     iterations = result.get('iterations', result.get('items', [])) if isinstance(result, dict) else result
     if not iterations: raise RuntimeError('Simulation has no iteration')
     it_id = iterations[0]['id']
+    progress['iteration_id'] = it_id
+    progress['iteration_ids'].append(it_id)
+    info['iteration_id'] = it_id
     detail = freya.get_iteration(sim_id, it_id)
     runs = detail.get('runs', [])
     calls = {}
     for run in runs:
         if run.get('callId'): calls[run['callId']] = freya.get_call(run['callId'])
     summary = summarize_runs(scenarios, persona_ids, runs, calls)
+    summary['conclusive'] = summary['conclusive'] and status == 'completed'
     summary.update(simulation_id=sim_id, iteration_id=it_id, status=status, persona_ids=persona_ids)
-    trace('example_evaluation_end', **{k: v for k, v in summary.items() if k != 'rows'})
+    trace('example_batch_end', batch=info['batch'],
+          **{k: v for k, v in summary.items() if k != 'rows'})
     return summary

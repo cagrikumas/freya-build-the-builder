@@ -19,6 +19,7 @@ KIT = ROOT / 'build-the-builder-v3' / 'build-the-builder'
 sys.path.insert(0, str(KIT))
 from model import call, recover_answer
 from compile_resume import import_failed_compile
+from resume_refine import import_completed_run
 from session_trace import append_record, redact_secrets
 from validate import validate, check_examples
 from assemble import assemble
@@ -100,11 +101,15 @@ def main():
     ap.add_argument('inputs', nargs='+', help='A case folder and mock URL, or practice briefs and OpenAPI JSON')
     ap.add_argument('--slot')
     ap.add_argument('--resume-compile', type=Path, help='Recover only malformed JSON from an unchanged, fully traced failed compiler call')
+    ap.add_argument('--refine-run', type=Path, help='Import a completed immutable run and automatically repair measured runtime failures')
+    ap.add_argument('--repair-feedback', type=Path, help='Persisted observed conversation evidence for --refine-run')
     ap.add_argument('--offline', action='store_true', help='Compile and verify locally, without Freya calls')
     ap.add_argument('--practice', choices=['A', 'B', 'all'])
     ap.add_argument('--style', choices=['pieces', 'corrects', 'talkative', 'asks_back', 'in_words'])
     ap.add_argument('--max-seconds', type=int, default=3600, help='Local build deadline, default 3600 seconds')
     args = ap.parse_args()
+    if bool(args.refine_run) != bool(args.repair_feedback) or (args.refine_run and args.resume_compile):
+        ap.error('--refine-run needs --repair-feedback and cannot combine with --resume-compile')
     folder_mode = len(args.inputs) == 2 and Path(args.inputs[0]).is_dir()
     mock_url = args.inputs[1].rstrip('/') if folder_mode else None
     if folder_mode:
@@ -193,40 +198,68 @@ def main():
         if derive_api:
             compiler_instructions += '\nThe case supplies its service contract in documents rather than OpenAPI. Add an openapi field to your output containing a complete OpenAPI 3 specification derived strictly from that service contract. Preserve endpoint paths, methods, body fields, types, enumerations and response shapes. Set servers to the supplied deployed mock URL. Your tool_config and workflow must use this derived schema. Do not import the practice bank tools or policy.\n'
         prompt = compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUT DOCUMENTS\n' + documents
-        if args.resume_compile:
+        if args.refine_run:
             input_hashes = [{'path': str(p.relative_to(ROOT)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs]
-            raw = import_failed_compile(args.resume_compile, run_dir, prompt, input_hashes, trace)
-            artifact = recover_answer(raw, 'Recover malformed compiler JSON without changing its policy', trace, run_dir,
-                                      timeout=min(600, int(remaining()-20)), original_call_id='model-01')
+            artifact, imported_api = import_completed_run(args.refine_run, run_dir, prompt, input_hashes, trace)
+            if api != imported_api:
+                raise ValueError('Current deployed API differs from the previous run')
+            evidence = json.loads(args.repair_feedback.read_text())
+            if not isinstance(evidence, dict) or not evidence.get('conclusive') or not evidence.get('rows'):
+                raise ValueError('Refinement needs conclusive recorded conversation evidence')
+            (run_dir / 'refinement-evidence.json').write_text(redact(evidence))
+            feedback = compact_feedback(evidence, artifact['workflow'])
+            (run_dir / 'refinement-feedback.json').write_text(redact(feedback))
+            trace('refinement_feedback', source=str(args.repair_feedback),
+                  sha256=hashlib.sha256(args.repair_feedback.read_bytes()).hexdigest(),
+                  original_scenarios=len(artifact.get('scenarios', [])))
+            repair = call(prompt + '\n\n# VERIFIED PRIOR ARTIFACT\n' + json.dumps(artifact)
+                          + '\n\n# OBSERVED LIVE FAILURES\n' + redact(feedback)
+                          + '\nRepair runtime and interpretation causes demonstrated by this evidence. '
+                          'Treat platform state persistence as a merge: clear consumed events and transient values with explicit neutral assignments, never rely on vars.pop/del removing persisted variables. '
+                          'Do not hardcode customer names, identifiers, fixture values or test answers. '
+                          'Preserve smoke, scenarios and every existing check exactly; append regression checks. '
+                          'Return only JSON {"issues": [...], "patches": [...]} using JSON Patch into the artifact; replace entire affected code strings. '
+                          'Audit the whole corrected control flow, not only the first observed symptom. Do not weaken tests.',
+                          'Automatically refine an unchanged generated agent using actual live conversation evidence',
+                          trace, run_dir, timeout=min(900, int(remaining()-600)), images=images)
+            (run_dir / 'refinement-patches.json').write_text(redact(repair))
+            artifact = preserve_tests(artifact, apply_patches(artifact, repair['patches']))
+            trace('refinement_applied', issues=repair.get('issues', []))
         else:
-            artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
-        pre_audit_errors = pre_audit_static_errors(artifact, api, mock_url)
-        trace('pre_audit_static_validation', errors=pre_audit_errors, code_executed=False)
-        audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
-        audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact)
-                     + '\n\n# PRE-AUDIT STATIC VALIDATION\n' + json.dumps(pre_audit_errors)
-                     + '\nThese diagnostics only assemble and statically validate the draft; generated code has not run. Correct their causes. Post-audit validation remains authoritative.',
-                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(1200, int(remaining()-30)), images=images)
-        trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
-        (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
-        if not audit.get('approved'):
-            def repair_audit_path(original, edits, error):
-                trace('audit_patch_error', index=error.index, error=str(error))
-                if remaining() < 180:
-                    raise error
-                repair_prompt = ('The audit contains an invalid JSON Pointer. Return only {"path":"/correct/pointer"} for the failed edit. '
-                    'Preserve its operation, value and intended audit correction. Inspect the ACTUAL candidate and the preceding edits; '
-                    'array indexes are zero-based. Never redirect a correction to an unrelated field just to make it apply. '
-                    'If the intended correction has no unambiguous target, return {"error":"reason"}. '
-                    'Do not return an artifact or other changes.\n# CANDIDATE\n' + json.dumps(original)
-                    + '\n# AUDIT ISSUES\n' + json.dumps(audit.get('issues', []))
-                    + '\n# ORDERED EDITS\n' + json.dumps(edits)
-                    + '\n# FAILED EDIT\n' + json.dumps({'index': error.index, 'error': str(error)}))
-                correction = call(repair_prompt, 'Repair an invalid audit JSON Pointer without changing its operation or value',
-                                  trace, run_dir, timeout=min(240, int(remaining()-30)))
-                trace('audit_patch_pointer_correction', index=error.index, correction=correction)
-                return correction
-            artifact = audit['artifact'] if 'artifact' in audit else apply_with_path_repair(artifact, audit['patches'], repair_audit_path)
+            if args.resume_compile:
+                input_hashes = [{'path': str(p.relative_to(ROOT)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs]
+                raw = import_failed_compile(args.resume_compile, run_dir, prompt, input_hashes, trace)
+                artifact = recover_answer(raw, 'Recover malformed compiler JSON without changing its policy', trace, run_dir,
+                                          timeout=min(600, int(remaining()-20)), original_call_id='model-01')
+            else:
+                artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
+            pre_audit_errors = pre_audit_static_errors(artifact, api, mock_url)
+            trace('pre_audit_static_validation', errors=pre_audit_errors, code_executed=False)
+            audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
+            audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact)
+                         + '\n\n# PRE-AUDIT STATIC VALIDATION\n' + json.dumps(pre_audit_errors)
+                         + '\nThese diagnostics only assemble and statically validate the draft; generated code has not run. Correct their causes. Post-audit validation remains authoritative.',
+                         'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(1200, int(remaining()-30)), images=images)
+            trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
+            (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
+            if not audit.get('approved'):
+                def repair_audit_path(original, edits, error):
+                    trace('audit_patch_error', index=error.index, error=str(error))
+                    if remaining() < 180:
+                        raise error
+                    repair_prompt = ('The audit contains an invalid JSON Pointer. Return only {"path":"/correct/pointer"} for the failed edit. '
+                        'Preserve its operation, value and intended audit correction. Inspect the ACTUAL candidate and the preceding edits; '
+                        'array indexes are zero-based. Never redirect a correction to an unrelated field just to make it apply. '
+                        'If the intended correction has no unambiguous target, return {"error":"reason"}. '
+                        'Do not return an artifact or other changes.\n# CANDIDATE\n' + json.dumps(original)
+                        + '\n# AUDIT ISSUES\n' + json.dumps(audit.get('issues', []))
+                        + '\n# ORDERED EDITS\n' + json.dumps(edits)
+                        + '\n# FAILED EDIT\n' + json.dumps({'index': error.index, 'error': str(error)}))
+                    correction = call(repair_prompt, 'Repair an invalid audit JSON Pointer without changing its operation or value',
+                                      trace, run_dir, timeout=min(240, int(remaining()-30)))
+                    trace('audit_patch_pointer_correction', index=error.index, correction=correction)
+                    return correction
+                artifact = audit['artifact'] if 'artifact' in audit else apply_with_path_repair(artifact, audit['patches'], repair_audit_path)
         for attempt in range(4):
             path = run_dir / f'candidate-{attempt}.json'
             path.write_text(json.dumps(artifact, indent=2))

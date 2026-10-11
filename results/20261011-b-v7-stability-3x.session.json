@@ -1,0 +1,35 @@
+{
+  "arguments": [
+    "443c6e24-bdce-4133-90b5-802bc30df0b1",
+    "--brief",
+    "B",
+    "--reps",
+    "3",
+    "--out",
+    "/home/ahmetkumas/Desktop/freya2/results/20261011-b-v7-stability-3x.json"
+  ],
+  "sessions": {
+    "PUB-11": {
+      "customer_id": "c_96002099-e16",
+      "first_name": "Sofia",
+      "last_name": "Almeida",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-12": {
+      "customer_id": "c_85b9dc2b-f68",
+      "first_name": "Marcus",
+      "last_name": "Bell",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-13": {
+      "customer_id": "c_2109bab6-820",
+      "first_name": "Elena",
+      "last_name": "Rossi",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "f0438663-21d7-43d1-9fc4-6a73529a9eff"
+}

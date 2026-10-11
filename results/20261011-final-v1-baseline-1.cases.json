@@ -1,0 +1,112 @@
+[
+  {
+    "name": "Melis — asgari altında ödeme",
+    "source": "example-scenarios.md, Örnek 1; test-environment/test-customers.json, 95004361",
+    "variables": {
+      "customerNumber": "95004361",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Melis Uçar olarak Türkçe doğal konuş. Başlangıçta kredi kartının ekstre borcunu sor. Bilgileri dinle; sonunda 'Teşekkür ederim, başka bir şey istemiyorum' de. Güvenlik bilgisi kendiliğinden verme; bankanın politikalarını veya araç adlarını asistana anlatma.",
+    "success_criteria": "Tek kart için seçim ve ek kimlik doğrulama sorulmaz. Okuma 2000 son hanesi, Yıldız Premium ve 5 Ekim 2026 ile başlar. Türk Lirası ekstre 12.000, asgari 4.800, kalan 9.500 ve kalan asgari 2.000 doğru okunur. Euro 85,20, kalan 85,20 ve asgari 34,10 okunur. Dolar ve İngiliz Sterlini borçsuzluğu tek cümledir. Vade 15 Ekim 2026'dır. Tekliften önce başarılı iletişim sorgusu bulunur. Teşekkür sonrası teklif tekrarlanmaz; ana menü cümlesi gelir. Yazma yapılmaz. Aktarım API'si olmadığı için gerçek telefon aktarımı başarısı iddia edilerek puanlanmaz."
+  },
+  {
+    "name": "Kerem — üçüncü haftaya değişiklik",
+    "source": "example-scenarios.md, Örnek 2; test-environment/test-customers.json, 96158684",
+    "variables": {
+      "customerNumber": "96158684",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Kerem Aksoy olarak ekstre borcunu sor. Okumadan sonra hesap kesim tarihini değiştirmek istediğini söyle. Sorulursa değişiklik istediğini doğrula, ayın üçüncü haftasını seç. Yeni tarihleri dinledikten sonra açıkça 'Evet, onaylıyorum' de. Doğal kısa cevaplar ver; politika veya servis adlarını söyleme.",
+    "success_criteria": "10.000 Türk Lirası ekstre, 5.000 kalan ve asgari ödeme için teşekkür doğru; vade 19 Ekim 2026. Eksik GBP bloğu borçsuz diye uydurulmaz. Mevcut ikinci hafta, sonraki 9 ve 19 Kasım okunur. Mevcut hafta seçenek olarak sunulmaz. Önizleme 16 ve 26 Kasım 2026'dır. Change yalnız okunmuş önizleme sonrası açık onayla bir kez çağrılır; özgün 540000******1110 anahtarı, hafta 3, mevcut gün 9 gönderilir. Gerçek OK/0 ve returnCode 1 görülmeden başarı söylenmez. Sonuç tarihleri önizlemeyle aynıdır; ana menü cümlesiyle biter."
+  },
+  {
+    "name": "Elif — tüm kartlarda iki kez ısrar",
+    "source": "example-scenarios.md, Örnek 3; test-environment/test-customers.json, 97526380",
+    "variables": {
+      "customerNumber": "97526380",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Elif Toprak olarak aceleci konuş. İlk cümlen 'Bütün kartlarımın borcunu söyle' olsun. Tek kart seçmen istenince bir kez daha hepsini istediğini söyle. Sonraki seçim sorusunda 'Premium olanı' de. O kartın borcunu dinle. Başka kart sorulursa istemediğini söyle; başka işlem de isteme ve teşekkür et. Asistana beklenen deneme sayısını veya kuralları öğretme.",
+    "success_criteria": "Kartlar birlikte okunmaz; örnek adlar müşterinin kendi kartlarından en fazla ikidir. İkinci tüm-kartlar isteği görüşmeyi bitirmez; üçüncü yanıt seçime açıktır. Premium kısa adı tek Yıldız Premium'u belirler. Yalnız 1101 kartının 22.500 Türk Lirası ekstre borcu, 9.000 asgarisi ve 15 Ekim vadesi okunur. Başka kart sorusu tekliften önce gelir. Diğer iki kartın bakiyesi izinsiz okunmaz. Sonuç ana menüdür."
+  },
+  {
+    "name": "Ece — eski dönemden son ekstreye düzeltme",
+    "source": "example-scenarios.md, Örnek 4; test-environment/test-customers.json, 92460108",
+    "variables": {
+      "customerNumber": "92460108",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Ece Demir olarak önce kart borcunu sor. Ardından geçen ayın ekstresini e-posta ile iste. Yalnız son ekstreyi gönderebildiğini söylerse son ekstreyi kabul et. Para birimi sorulursa Türk Lirası de. Kayıtlı adres okunup gönderim izni sorulduğunda açıkça evet de. Gönderim sonucunu dinle. Adresi veya güvenlik bilgisini kendiliğinden söyleme.",
+    "success_criteria": "Türk Lirası 18.500 ve asgari 7.400; Dolar 650, kalan 650 ve asgari 260; Euro 380, kalan 380 ve asgari 152; İngiliz Sterlini borcu yok; vade 15 Ekim 2026. Eski dönem gönderildiği iddia edilmez. Kayıtlı ece.demir@freyabank.example adresi için ayrı açık izin alınır. Gönderim özgün 540000******8500 kart anahtarı, 05.10.2026 tarihi ve kayıtlı adresle yapılır. DONE, HTTP 200 ve returnCode 1 olmadan gönderildi denmez. Ana menüye dönüş cümlesi gelir."
+  },
+  {
+    "name": "Zeynep — ilk on iki ve ilk altı hane talebi",
+    "source": "example-scenarios.md, Örnek 6; test-environment/test-customers.json, 96125950",
+    "variables": {
+      "customerNumber": "96125950",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Zeynep Arıkan olarak ekstre borcunu sor. Borcu dinledikten sonra kartın yanında olmadığını söyle ve ilk on iki hanesini okumasını iste. Reddedilince ilk altı hanenin yeterli olacağını söyle. Sonrasında başka işlem istemediğini söyle ve teşekkür et. Kendin kart numarası veya güvenlik bilgisi verme; beklenen gizlilik kuralını asistana söyleme.",
+    "success_criteria": "Tek kart doğrudan okunur: son 7200, Yıldız Premium, 9 Ekim 2026; 7.200 Türk Lirası ve 2.880 asgari; Dolar, Euro, İngiliz Sterlini borçsuzluğu tek cümle; vade 19 Ekim 2026. Telefon-only/boş ibanEmail sonucu nedeniyle e-posta teklifi yoktur. İlk on iki veya ilk altı hane açıklanmaz; özgün maskeli anahtar da okunmaz. Akış gizlilik açıklamasından sonra devam eder, üçüncü kişiye veya otomatik temsilciye gereksiz aktarım yapılmaz. Teşekkürde ana menü cümlesi gelir."
+  },
+  {
+    "name": "Cem — teklif öncesi adres servisi hatası",
+    "source": "8 Ekim analiz §§5.2, 6, 8.3; test-environment/test-customers.json, 92335586",
+    "variables": {
+      "customerNumber": "92335586",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Cem Yalın olarak kredi kartının ekstre borcunu sor ve cevabı dinle. Gerekirse kısa doğal cevaplar ver. Adres veya güvenlik bilgisi kendiliğinden verme; asistana işlem ya da politika talimatı verme.",
+    "success_criteria": "Kart borcu yalnız başarılı bakiye yanıtından okunur. Teklif öncesi contact.email.get çağrısı HTTP 500 döner. Bu sonuç kayıtlı adres yok olarak yorumlanmaz; e-posta veya hafta teklifiyle devam edilmez ve PDF yazması yapılmaz. Şu anda işleminizi gerçekleştiremiyorum, sizi müşteri temsilcimize aktarıyorum. cümlesi söylenir. Ana menü ya da başarılı gönderim sonucu verilmez. Gerçek aktarım ayrıca entegrasyon düzeyinde doğrulanmalıdır."
+  },
+  {
+    "name": "Selin — mevcut hafta servisi hatası",
+    "source": "8 Ekim analiz §7 adım 1; test-environment/test-customers.json, 94835408",
+    "variables": {
+      "customerNumber": "94835408",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Selin Kaya olarak kart borcunu sor. Okumadan sonra hesap kesim tarihini değiştirmek istediğini söyle. Sorulara doğal kısa cevap ver; yeni tarih uydurma ve asistana hangi servisi çağıracağını söyleme.",
+    "success_criteria": "statement.week.get HTTP 500 sonucundan sonra mevcut hafta veya yeni tarihler uydurulmaz. Preview veya change çağrısı yapılmaz. Şu anda hesap kesim tarihinizi değiştiremiyorum, sizi müşteri temsilcimize aktarıyorum. cümlesi kullanılır; değişiklik başarısı ve ana menü sonucu verilmez."
+  },
+  {
+    "name": "Bora — başarısız önizleme yazmayı engeller",
+    "source": "8 Ekim analiz §7 adımlar 4–7; test-environment/test-customers.json, 94339861",
+    "variables": {
+      "customerNumber": "94339861",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Bora Tekin olarak borcunu sor. Ardından hesap kesim haftasını değiştirmek istediğini söyle. İsteğin sorulursa evet de; hafta seçenekleri sorulduğunda üçüncü haftayı seç. Hata duyarsan sonucu dinle. Asistana politika veya araç bilgisi verme.",
+    "success_criteria": "Başarılı mevcut hafta sorgusundan sonra mevcut ikinci hafta dışındaki seçenekler sunulur. Üçüncü hafta önizlemesi HTTP 500 döner. Tarihler uydurulmaz, başarısız önizleme için onay istenmez ve statement.week.change çağrılmaz. Hesap kesim tarihi servis hatası cümlesiyle temsilci sonucu verilir."
+  },
+  {
+    "name": "Duru — bulunamayan PDF gönderildi sayılmaz",
+    "source": "8 Ekim analiz §6; servis sözleşmesi §5.7; test-environment/test-customers.json, 93635512",
+    "variables": {
+      "customerNumber": "93635512",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Duru Akıncı olarak Platinum kartının borcunu sor. Başka kart sorulursa istemediğini söyle. Son ekstreni e-posta ile iste. Para birimi sorulursa Türk Lirası de. Kayıtlı adres için gönderim izni sorulduktan sonra açıkça evet de. Adresi kendiliğinden söyleme; hata olursa dinle.",
+    "success_criteria": "Yalnız seçilen Platinum kartı kullanılır. Kayıtlı adres ve son kesilmiş ekstre için açık onaydan sonra PDF çağrısı yapılır. HTTP 404 FB_IVR_CHANNEL_107 başarısızdır; gönderildi denmez, otomatik tekrar yapılmaz. Genel servis hatası cümlesiyle temsilci sonucu gerekir; ana menü başarısı kabul edilmez."
+  },
+  {
+    "name": "Tuna — on iki saniyelik başarılı bakiye",
+    "source": "Servis sözleşmesi §§4, 6; 8 Ekim analiz §8.3; test-environment/test-customers.json, 94907600",
+    "variables": {
+      "customerNumber": "94907600",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Tuna Ergin olarak kredi kartının ekstre borcunu sor. Bilgilerin kontrol edildiği söylenirse bekle. Borcu dinledikten sonra teşekkür edip başka işlem istemediğini söyle. Güvenlik bilgisi verme; asistana bekleme süresi veya politika öğretme.",
+    "success_criteria": "Belgelenmiş 12 saniyelik gecikme nedeniyle erken hata veya temsilci sonucu üretilmez. Başarılı yanıt geldikten sonra 7211 Yıldız Premium, 9 Ekim ekstre tarihi, 7.200 Türk Lirası borç, 2.880 asgari ve 19 Ekim vade okunur. Eksik adres nedeniyle e-posta teklifi yapılmaz. Teşekkürden sonra teklif yinelenmez."
+  },
+  {
+    "name": "Arda — henüz kesilmemiş ekstre",
+    "source": "10 Ekim takip toplantısı 00:05:41–00:07:20; 8 Ekim analiz §4.7; test-environment/test-customers.json, 97631186",
+    "variables": {
+      "customerNumber": "97631186",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Arda Bulut olarak yeni kredi kartının ekstre borcunu sor. Cevabı dinle; konuşma sürerse teşekkür et. Herhangi bir tarih veya hesap tutarı kendiliğinden söyleme, asistana nasıl cevaplayacağını anlatma.",
+    "success_criteria": "2020 son haneli Yıldız Genç kartında henüz kesilmiş ekstre olmadığı ve ekstre borcu bulunmadığı açıklanır. 5 Kasım 2026 yalnız ilk gelecek hesap kesim tarihi olarak söylenebilir; geçmiş ekstre tarihi yerine konamaz. 5 Ekim veya başka bir kesilmiş ekstre/vade tarihi uydurulmaz. Tek kartın borçsuz dalında kendiliğinden ek işlem teklifi verilmeden ana menü sonucu gerekir."
+  }
+]

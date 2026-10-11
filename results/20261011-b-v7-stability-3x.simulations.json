@@ -1,0 +1,38 @@
+[
+  {
+    "run": 1,
+    "simulation_id": "99789a33-dbf1-4692-833f-7d6f5c2fa083",
+    "iteration_id": "8b7b8eb9-3e74-48e1-8833-a581d279ef72",
+    "passed": 2,
+    "total": 3,
+    "call_ids": [
+      "5231b2dc-a7f3-4bda-b650-549872f03205",
+      "9afebfe9-e2a6-4335-95da-987d62b69e72",
+      "7c7a2c6e-150d-4a2d-964d-7b58769f3463"
+    ]
+  },
+  {
+    "run": 2,
+    "simulation_id": "5c9e5cc7-80e5-4665-843a-d80ecda53b98",
+    "iteration_id": "74915607-d603-4804-a81e-d3be4a17e984",
+    "passed": 3,
+    "total": 3,
+    "call_ids": [
+      "bbda1aa4-374d-43a2-8bb6-e69059135535",
+      "f75fb33b-24cb-4ecb-9ae4-ea1c89712843",
+      "eee8c21d-f5cf-42e7-a56c-02c76d368ac1"
+    ]
+  },
+  {
+    "run": 3,
+    "simulation_id": "f0438663-21d7-43d1-9fc4-6a73529a9eff",
+    "iteration_id": "89659f7a-c765-4fcb-b1bf-fa1f6bada0e5",
+    "passed": 3,
+    "total": 3,
+    "call_ids": [
+      "df5c7b47-a43d-457f-a422-123116a8374f",
+      "2755e100-3319-4ec5-a2fe-470ace3a7c9b",
+      "33f72b9f-1737-4707-a8d7-ede3ce351097"
+    ]
+  }
+]
