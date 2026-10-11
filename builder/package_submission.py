@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate two finished build exports and prepare the official submission form."""
+"""Validate the final export and prepare the current single-case submission form."""
 import argparse
 import hashlib
 import json
@@ -24,8 +24,8 @@ def load_result(path):
         raise ValueError('Builder source changed after this run; rebuild before final submission')
     if events[-1].get('result') != result:
         raise ValueError('Result file disagrees with the completed build trace')
-    if events[-1]['seconds'] > 1800:
-        raise ValueError('Build exceeded the event time limit')
+    if events[-1]['seconds'] > start.get('max_seconds', 3600):
+        raise ValueError('Build exceeded its recorded deadline')
     export = ROOT / result['export']
     if hashlib.sha256(export.read_bytes()).hexdigest() != result['sha256']:
         raise ValueError(f'Export changed after this run: {export}')
@@ -41,22 +41,26 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--team', required=True)
     ap.add_argument('--repo', required=True)
-    ap.add_argument('--hidden-1', required=True, type=Path, help='Completed trace directory or result.json')
-    ap.add_argument('--hidden-2', required=True, type=Path)
+    ap.add_argument('--final', required=True, type=Path, help='Completed trace directory or result.json')
+    ap.add_argument('--mock-url', required=True)
+    ap.add_argument('--name', required=True, help='Solo member name')
+    ap.add_argument('--email', required=True, help='Solo member email')
     a = ap.parse_args()
     if not a.repo.startswith('https://github.com/'):
         ap.error('Use the GitHub repository URL required by the event')
-    results = {name: load_result(p) for name, p in [('hidden-1', a.hidden_1), ('hidden-2', a.hidden_2)]}
-    if results['hidden-1']['workflow_id'] == results['hidden-2']['workflow_id']:
-        raise ValueError('The two hidden briefs must have separate workflow exports')
+    result = load_result(a.final)
+    events = [json.loads(line) for line in (ROOT / result['trace']).read_text().splitlines() if line.strip()]
+    start = next(e for e in events if e.get('event') == 'build_start')
+    if not start.get('folder_mode') or start.get('mock_url') != a.mock_url.rstrip('/'):
+        raise ValueError('Final trace must come from the case folder and this exact mock URL')
     status = subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True)
     if status.strip():
         raise SystemExit('Commit the source, exports and traces first; the working tree must be clean.')
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     form = {'team': a.team, 'repo': a.repo, 'commit': commit,
-            'run_command': 'python3 builder/build.py {brief_path} {tool_api_path}',
-            'workflows': {k: v['export'] for k, v in results.items()},
-            'traces': {k: v['trace'] for k, v in results.items()}}
+            'members': [{'name': a.name, 'email': a.email}],
+            'run_command': 'python3 builder/build.py {case_folder} {mock_url}',
+            'workflow': result['export'], 'trace': result['trace'], 'mock_url': a.mock_url.rstrip('/')}
     print(json.dumps(form, indent=2))
 
 

@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import time
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 KIT = ROOT / 'build-the-builder-v3' / 'build-the-builder'
@@ -21,6 +22,8 @@ from assemble import assemble
 from freya_client import bind_workspace
 from patches import apply_patches
 from http_transport import install_curl_transport
+from documents import read_folder
+from smoke import run_smoke
 
 
 def load_env():
@@ -38,21 +41,34 @@ def load_env():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('inputs', nargs='+', type=Path, help='One or more briefs, then the matching OpenAPI JSON')
+    ap.add_argument('inputs', nargs='+', help='A case folder and mock URL, or practice briefs and OpenAPI JSON')
     ap.add_argument('--slot')
     ap.add_argument('--offline', action='store_true', help='Compile and verify locally, without Freya calls')
     ap.add_argument('--practice', choices=['A', 'B', 'all'])
     ap.add_argument('--style', choices=['pieces', 'corrects', 'talkative', 'asks_back', 'in_words'])
-    ap.add_argument('--max-seconds', type=int, default=1740)
+    ap.add_argument('--max-seconds', type=int, help='Local build deadline; 3600 for a folder, 1740 for practice')
     args = ap.parse_args()
-    if not 60 <= args.max_seconds <= 1800: ap.error('max-seconds must be 60..1800')
-    inputs = [p.resolve() for p in args.inputs]
-    api_paths = [p for p in inputs if p.suffix.lower() == '.json']
-    briefs = [p for p in inputs if p.suffix.lower() != '.json']
-    if len(api_paths) != 1 or not briefs: ap.error('Supply at least one brief and exactly one tool API JSON')
-    api = json.loads(api_paths[0].read_text())
-    if 'openapi' not in api: ap.error('The JSON input must be an OpenAPI specification')
-    slot = args.slot or briefs[-1].stem
+    folder_mode = len(args.inputs) == 2 and Path(args.inputs[0]).is_dir()
+    mock_url = args.inputs[1].rstrip('/') if folder_mode else None
+    if folder_mode:
+        parsed = urlsplit(mock_url)
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            ap.error('The deployed mock must have a plain HTTPS URL without credentials, query or fragment')
+        folder = Path(args.inputs[0]).resolve()
+        inputs = sorted(p for p in folder.rglob('*') if p.is_file() and not any(v.startswith('.') for v in p.relative_to(folder).parts))
+        api = None
+        slot = args.slot or 'final'
+        if args.practice: ap.error('The public scorer is only for the practice briefs')
+    else:
+        inputs = [Path(p).resolve() for p in args.inputs]
+        api_paths = [p for p in inputs if p.suffix.lower() == '.json']
+        briefs = [p for p in inputs if p.suffix.lower() != '.json']
+        if len(api_paths) != 1 or not briefs: ap.error('Supply a case folder and mock URL, or practice briefs and one API JSON')
+        api = json.loads(api_paths[0].read_text())
+        if 'openapi' not in api: ap.error('The JSON input must be an OpenAPI specification')
+        slot = args.slot or briefs[-1].stem
+    args.max_seconds = args.max_seconds or (3600 if folder_mode else 1740)
+    if not 60 <= args.max_seconds <= 10800: ap.error('max-seconds must be 60..10800')
     if not re.fullmatch(r'[a-zA-Z0-9_-]+', slot): ap.error('Invalid slot name')
     load_env()
     import freya
@@ -74,7 +90,7 @@ def main():
     def remaining(): return args.max_seconds - (time.monotonic() - started)
     def deadline(sig, frame): raise TimeoutError('Builder deadline reached')
     signal.signal(signal.SIGALRM, deadline); signal.alarm(args.max_seconds)
-    trace('build_start', slot=slot, offline=args.offline, max_seconds=args.max_seconds,
+    trace('build_start', slot=slot, offline=args.offline, max_seconds=args.max_seconds, folder_mode=folder_mode, mock_url=mock_url,
           builder_files={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((ROOT / 'builder').glob('*')) if p.is_file()},
           inputs=[{'path': str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs])
     final = None
@@ -82,14 +98,45 @@ def main():
         if not args.offline:
             install_curl_transport(freya)
             bind_workspace(freya, trace)
-        documents = '\n\n'.join(f'### INPUT {p.name}\n{p.read_text()}' for p in inputs)
+        images = []
+        if folder_mode:
+            documents, images, manifest = read_folder(folder, run_dir)
+            trace('documents_read', files=manifest, images=len(images))
+            (run_dir / 'documents.txt').write_text(documents)
+            # Prefer the mock's published contract when supplied. Otherwise the
+            # compiler derives it from the service documents, never from memory.
+            for path in inputs:
+                if path.suffix.lower() == '.json':
+                    value = json.loads(path.read_text())
+                    if isinstance(value, dict) and 'openapi' in value:
+                        if api is not None: raise ValueError('Multiple OpenAPI inputs are ambiguous')
+                        api = value
+            if api is None and not args.offline:
+                from http_transport import request
+                try:
+                    value = request('GET', mock_url + '/openapi.json', {'User-Agent': 'Freya-hackathon-builder'})
+                    if isinstance(value, dict) and 'openapi' in value:
+                        api = value
+                        trace('mock_contract_read', url=mock_url + '/openapi.json')
+                except (RuntimeError, ValueError) as e:
+                    trace('mock_contract_unavailable', error=str(e), action='Infer schema from the supplied service contract')
+            if api is not None:
+                api['servers'] = [{'url': mock_url}]
+                (run_dir / 'tool-api.json').write_text(json.dumps(api, indent=2))
+                documents += '\n\n### DEPLOYED MOCK OPENAPI\n' + json.dumps(api)
+            documents += '\n\n### DEPLOYMENT\nAll phone tools must use this mock base URL: ' + mock_url
+        else:
+            documents = '\n\n'.join(f'### INPUT {p.name}\n{p.read_text()}' for p in inputs)
         docs = '\n\n'.join((KIT / 'docs' / p).read_text() for p in ['workflow-format.md', 'tools-and-code.md'])
         compiler_instructions = (ROOT / 'builder' / 'compile_prompt.md').read_text()
+        derive_api = api is None
+        if derive_api:
+            compiler_instructions += '\nThe case supplies its service contract in documents rather than OpenAPI. Add an openapi field to your output containing a complete OpenAPI 3 specification derived strictly from that service contract. Preserve endpoint paths, methods, body fields, types, enumerations and response shapes. Set servers to the supplied deployed mock URL. Your tool_config and workflow must use this derived schema. Do not import the practice bank tools or policy.\n'
         prompt = compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUT DOCUMENTS\n' + documents
-        artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(720, int(remaining()-20)))
+        artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(900 if folder_mode else 720, int(remaining()-20)), images=images)
         audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
         audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact),
-                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(660, int(remaining()-30)))
+                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(900 if folder_mode else 660, int(remaining()-30)), images=images)
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
         if not audit.get('approved'):
@@ -98,6 +145,12 @@ def main():
             path = run_dir / f'candidate-{attempt}.json'
             path.write_text(json.dumps(artifact, indent=2))
             try:
+                if derive_api:
+                    api = artifact['openapi']
+                    if not isinstance(api, dict) or 'openapi' not in api or not api.get('paths'):
+                        raise ValueError('No usable OpenAPI was derived from the service contract')
+                    api['servers'] = [{'url': mock_url}]
+                    (run_dir / 'tool-api.json').write_text(json.dumps(api, indent=2))
                 workflow = assemble(artifact, api)
                 errors = validate(workflow, api)
                 if not errors: errors += check_examples(workflow, artifact.get('checks', []))
@@ -113,7 +166,7 @@ def main():
                     trace('platform_validation', success=False, error=str(e))
             if not errors: break
             if attempt == 3 or remaining() < 180: raise RuntimeError('Validation failed: ' + '; '.join(errors))
-            artifact = call(prompt + '\n\n# REPAIR REQUIRED\nPrevious artifact:\n' + json.dumps(artifact) + '\nFailures:\n' + json.dumps(errors) + '\nReturn the full corrected artifact. Fix causes, never weaken checks to conceal policy errors.', 'Repair locally or platform-detected compilation defects', trace, run_dir, timeout=min(600, int(remaining()-20)))
+            artifact = call(prompt + '\n\n# REPAIR REQUIRED\nPrevious artifact:\n' + json.dumps(artifact) + '\nFailures:\n' + json.dumps(errors) + '\nReturn the full corrected artifact. Fix causes, never weaken checks to conceal policy errors.', 'Repair locally or platform-detected compilation defects', trace, run_dir, timeout=min(900 if folder_mode else 600, int(remaining()-20)), images=images)
         (run_dir / 'workflow.json').write_text(json.dumps(workflow, indent=2))
         if args.offline:
             final = {'workflow': str(run_dir / 'workflow.json'), 'trace': str(trace_path)}
@@ -123,6 +176,30 @@ def main():
         if 'version' not in ids:
             ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
         trace('published', **ids, nodes=len(workflow['nodes']), tools=sum(len(n.get('tools', [])) + len(n.get('pre_actions', [])) for n in workflow['nodes'].values()))
+        if folder_mode:
+            if artifact.get('smoke'):
+                trace('smoke_test_start', name=artifact['smoke'].get('name', 'Opening from the case documents'))
+                smoke_result = run_smoke(freya, ids['workflow_id'], artifact['smoke'])
+                trace('smoke_test_end', **smoke_result)
+                if not smoke_result['passed']:
+                    if remaining() < 180: raise RuntimeError('Published workflow failed its opening smoke check')
+                    repaired = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OPENING SMOKE FAILURE\n' + json.dumps(smoke_result) + '\nReturn JSON with issues and patches (JSON Patch into the artifact). Repair the runtime or policy cause; do not remove or weaken expectations from the source documents.',
+                                    'Repair an observed opening/runtime failure', trace, run_dir, timeout=min(600, int(remaining()-120)), images=images)
+                    if any(p.get('path', '') == '' or p['path'].split('/')[1] == 'smoke' for p in repaired['patches']):
+                        raise ValueError('Automatic smoke repair must preserve the original test')
+                    artifact = apply_patches(artifact, repaired['patches'])
+                    (run_dir/'smoke-repair.json').write_text(json.dumps(repaired, indent=2))
+                    workflow = assemble(artifact, api)
+                    errors = validate(workflow, api) + check_examples(workflow, artifact.get('checks', []))
+                    if errors: raise RuntimeError('Smoke repair validation failed: ' + '; '.join(errors))
+                    freya.validate_workflow(slot, workflow)
+                    ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
+                    trace('smoke_repair_published', **ids)
+                    smoke_result = run_smoke(freya, ids['workflow_id'], artifact['smoke'])
+                    trace('smoke_test_end', **smoke_result)
+                    if not smoke_result['passed']: raise RuntimeError('Opening smoke check failed after automatic repair')
+            else:
+                trace('smoke_test_skipped', reason='No usable synthetic test variables supplied by the documents')
         if args.practice:
             out_path = run_dir / 'practice.json'
             cmd = [sys.executable, str(ROOT / 'builder' / 'practice.py'), ids['agent_id'], '--out', str(out_path)]

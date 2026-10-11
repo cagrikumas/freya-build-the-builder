@@ -10,3 +10,7 @@ __pycache__/
 build-the-builder-v3.zip
 private/
 notes/hackathon-page-*.txt
+.tools/
+node_modules/
+.wrangler/
+results/*-calls/

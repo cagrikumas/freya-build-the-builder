@@ -6,6 +6,11 @@ business calendars, deadlines, limits, persuasion, product handling, notes, tran
 closing codes and terminology. No rule or value may come from memory or another
 bank. A later amendment overrides an earlier extract. Explicit precedence matters.
 An example in documentation illustrates syntax, never the bank's policy.
+Use the language, forms of address, monetary notation and date conventions of
+the supplied case. Read all file types, sheet names, tables and attached flow
+diagrams. The practice bank's endpoints and collection rules are not defaults
+for a different case. Examples of conversations are evidence of intended
+behavior; reconcile them with explicit amendments and the service contract.
 
 Your output is JSON with these fields:
 
@@ -24,6 +29,13 @@ Your output is JSON with these fields:
   and fresh synthetic data. Include weekend/holiday dates, band edges, failed
   security answers, split inputs, and successful versus failed writes where code
   handles them. Do not require external calls.
+- `smoke`: when the documents include synthetic test customers, provide a name,
+  an initial caller `message` in the case language, and `variables` from one
+  documented test customer. Optional `expected_fragments` must be short exact
+  phrases explicitly required in the opening by the source policy. This runs
+  just one chat turn after publication and then ends the synthetic chat. It is
+  a startup check, not a full policy score. Never invent test identities. Omit
+  smoke if the documents provide no usable synthetic customer variables.
 
 The workflow is what gets evaluated. Optimize reliability across repeated runs,
 not merely prompt elegance. The phone model is fixed and relatively small.
@@ -60,6 +72,15 @@ the complete conversation history. Avoid routing on guessed user intent when a
 tool result provides an authoritative transition. An account lookup must be
 unreachable before all security checks succeed. A failed security answer must
 not be treated as success. A correction before validation is not a failed attempt.
+Gate entry to EVERY account discussion/write stage on verified identity AND
+successful account loading, including exception/fallback routes. A code failure
+must never send an unverified caller to an account conversation with empty facts.
+Do not reuse a payment-write conversation as a security-answer executor. If
+complete answers need deterministic validation, use a dedicated engine-run
+verification step after validation, then return to a speaking security step.
+Clear stale tool-result flags before each new attempt. Routes may be suppressed
+until the node has spoken, so a delayed route must preserve a newly supplied
+answer rather than consume it as acknowledgment of the previous tool result.
 
 Expose only tools appropriate to the stage. Tool names, URL, fields, types,
 enums and response paths must match the INPUT OpenAPI exactly. Resolve local

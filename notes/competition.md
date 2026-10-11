@@ -1,3 +1,29 @@
+# Güncel final kuralları — 11 Ekim 2026, 18.00 İstanbul kontrolü
+
+Resmi sayfa bugün değiştirildi: https://www.freyavoice.ai/hackathon
+
+- Tek Türkçe final vakası; 20.00 İstanbul’da Submit sekmesinde ve e-postada ZIP.
+- Girdi bir klasör: Markdown, Word, PDF, Excel; analiz, akış çizimi, duyurular,
+  servis sözleşmesi, test müşterileri, soru-cevap ve altı örnek görüşme.
+- Banka servisleri Cloudflare Workers üzerinde katılımcının kendi mock’u olmalı.
+  Servis sözleşmesi ve test müşterileri esas alınacak, sonuçlar açıklanana kadar
+  çalışır tutulacak. Final ajanı yalnız bu mock’u çağırabilir.
+- Teslim 23.00 İstanbul: tek workflow JSON, onu üreten tek trace, repo/commit,
+  üyelerin ad/e-postası ve mock_url. Komut: case_folder + mock_url.
+- Önceki iki hidden-brief biçimi ve 30 dakikalık sınır güncel sayfada yok.
+  Builder’ın yerel süre sınırı klasör için 60 dakika; pratik için 29 dakika.
+- Final belgelerinden hiçbir kural/değer/isim builder koduna veya promptlarına
+  elle yazılamaz; ajan elle düzenlenemez. Genel hata düzeltmesi yapılabilir.
+- Değerlendirme: gizli müşteriler ve workflow incelemesi; ağırlıklar açıklanmıyor.
+  Trace puanlanmıyor, üretimin dürüstlüğünü doğrulamak için okunuyor.
+- Kişisel Cloudflare hesabı bilgisi kullanıcıya soruldu; henüz giriş/deploy yok.
+- Güncel B testi 2/3: PUB-11 ve PUB-13 geçti; PUB-12’de güvenlik adımı ile
+  ortak işlem adımı arasındaki gecikmiş geçiş yeni yanıtı işleyemedi. Bu gözlem
+  genel derleyici/audit talimatına eklendi.
+
+---
+Aşağıdaki kayıtlar sayfa değişikliğinden önceki tarihsel çalışma notlarıdır.
+
 # Freya × Y Combinator — çalışma kaydı
 
 Kaynak: https://www.freyavoice.ai/hackathon — 11 Ekim 2026, başlangıç kiti v3.

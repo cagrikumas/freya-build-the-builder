@@ -25,12 +25,12 @@ def json_object(text):
         raise
 
 
-def call(prompt, purpose, trace, run_dir, timeout=600):
+def call(prompt, purpose, trace, run_dir, timeout=600, images=None):
     # Preserve the locally selected Codex model unless explicitly configured.
     config = Path(os.environ.get('CODEX_HOME', str(Path.home() / '.codex'))) / 'config.toml'
     match = re.search(r'^model\s*=\s*"([^"]+)"', config.read_text(), re.M) if config.exists() else None
     model = os.environ.get('BUILDER_MODEL') or (match.group(1) if match else None)
-    trace('model_call_start', model=model, purpose=purpose)
+    trace('model_call_start', model=model, purpose=purpose, images=[str(p) for p in (images or [])])
     seq = len(list(run_dir.glob('model-*.prompt.txt'))) + 1
     stem = run_dir / f'model-{seq:02d}'
     stem.with_suffix('.prompt.txt').write_text(prompt)
@@ -53,6 +53,8 @@ def call(prompt, purpose, trace, run_dir, timeout=600):
     effort = re.search(r'^model_reasoning_effort\s*=\s*"([^"]+)"', config.read_text(), re.M) if config.exists() else None
     if effort:
         cmd += ['-c', 'model_reasoning_effort=' + json.dumps(effort.group(1))]
+    for picture in images or []:
+        cmd += ['--image', str(Path(picture).resolve())]
     cmd += ['-']
     env = os.environ.copy()
     # Phone-agent secrets never need to reach the model transport.
@@ -60,7 +62,7 @@ def call(prompt, purpose, trace, run_dir, timeout=600):
         if key.startswith('FREYA_'):
             env.pop(key)
     started = time.monotonic()
-    instruction = 'This is a text-only compilation request. Do not call any tools, inspect files, edit files, delegate, or browse. All source material is below. Return the requested JSON object only, without Markdown.\n\n'
+    instruction = 'This is a compilation request over supplied documents and any attached images. Do not call any tools, inspect files, edit files, delegate, or browse. All source material is supplied here. Return the requested JSON object only, without Markdown.\n\n'
     # Persist events during generation, so a timeout still leaves a reviewable trace.
     events_path = stem.with_suffix('.events.jsonl')
     stderr_path = stem.with_suffix('.stderr.txt')

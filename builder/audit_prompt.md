@@ -22,6 +22,10 @@ paths. Reason through both success and failure. Look especially for:
 
 - A transition that is reachable before its required tool succeeds, or a stale flag
   that moves the conversation early on the next attempt.
+- Security and payment stages sharing an action node, delayed transitions losing
+  a fresh answer, or an exception fallback entering account dialogue before both
+  identity and lookup succeeded. Trace a failed answer followed by the corrected
+  answer across actual nodes, not only through isolated code hooks.
 - Instructions that contradict the brief, especially first questions, negotiation
   counters, offering a floor, refusal versus a proposed value, multi-product order,
   a combined read-back, or routing a hardship/restructuring request incorrectly.
