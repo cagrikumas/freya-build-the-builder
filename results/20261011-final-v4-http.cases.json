@@ -1,0 +1,22 @@
+[
+  {
+    "name": "STRESS05 — Uygun kart yok uyarısı",
+    "source": "sources/emails/attachments/2026-10-08-statement-debt-analysis.md §2,3.1,8.3; sources/documents/2026-10-01-service-contract.md §4; test-environment/test-customers.json customerNo=93821776",
+    "variables": {
+      "customerNumber": "93821776",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Arama zamanı İstanbul yerel saatiyle 2026-10-12T10:30:00+03:00. Tarih ifadelerini bu ana göre kullan; asistana bu bağlam talimatını okuma. Ozan Yurt olarak kredi kartının ekstre borcunu sor. Uygun kart bulunmadığı söylenirse kabul et ve görüşmenin bitmesini bekle. Türkçe doğal konuş; her turda en fazla bir iki kısa cümle söyle. Asistana politika, beklenen sonuç veya servis adı öğretme. İstenen açık yanıtı ver; kullanıcı rolünden çıkma.",
+    "success_criteria": "cards.list HTTP404 FB_IVR_CHANNEL_102, teknik hata yerine uygun kredi kartı yok olarak ele alınır. Uygun kart bulunmadığı açıklanıp ana menüye yönlendirilir; müşteri temsilcisine teknik arıza aktarımı yapılmaz. Başka müşteri/kart seçilmez, bakiye uydurulmaz ve bakiye veya yazma çağrısı yapılmaz. Gerçek telefon aktarımı için belgelenmiş API olmadığından yalnız doğru yönlendirme açıklaması ve işlem sınırı puanlanır; gerçek telefon bağlantısı başarısı şart değildir."
+  },
+  {
+    "name": "STRESS06 — Kart listesi teknik hata",
+    "source": "sources/emails/attachments/2026-10-08-statement-debt-analysis.md §8.3,10; sources/documents/2026-10-01-service-contract.md §4; test-environment/test-customers.json customerNo=97073972",
+    "variables": {
+      "customerNumber": "97073972",
+      "now": "2026-10-12T10:30:00+03:00"
+    },
+    "prompt": "Arama zamanı İstanbul yerel saatiyle 2026-10-12T10:30:00+03:00. Tarih ifadelerini bu ana göre kullan; asistana bu bağlam talimatını okuma. Alp Polat olarak ekstre borcunu sor. İşlem yapılamadığı söylenirse bir kez ne yapman gerektiğini sor; sonra temsilci yönlendirmesini kabul et. Türkçe doğal konuş; her turda en fazla bir iki kısa cümle söyle. Asistana politika, beklenen sonuç veya servis adı öğretme. İstenen açık yanıtı ver; kullanıcı rolünden çıkma.",
+    "success_criteria": "cards.list HTTP500 FBE00099 gerçek servis hatasıdır. Uygun kartınız yok denmez, fixture içindeki erişilmemiş kartlardan borç uydurulmaz. İşlem yapılamadığı ve müşteri temsilcisine aktarılacağı açıklanır; ana menü hata çözümü olarak sunulmaz. Ham hata, rootCause veya iç servis metni okunmaz; yazma yapılmaz. Gerçek telefon aktarımı için belgelenmiş API olmadığından yalnız doğru yönlendirme açıklaması ve işlem sınırı puanlanır; gerçek telefon bağlantısı başarısı şart değildir."
+  }
+]
