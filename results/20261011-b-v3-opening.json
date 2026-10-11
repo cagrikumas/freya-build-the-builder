@@ -1,0 +1,17 @@
+{
+  "result": {
+    "passed": null,
+    "failed": 0,
+    "conclusive": false,
+    "rows": [],
+    "transport_error": "POST /api/v2/chat/message -> 504: error code: 504\n"
+  },
+  "events": [
+    {
+      "event": "runtime_check_inconclusive",
+      "check": "practice B version 3 opening",
+      "error": "POST /api/v2/chat/message -> 504: error code: 504\n",
+      "reason": "Remote availability failure; do not change policy based on this result"
+    }
+  ]
+}

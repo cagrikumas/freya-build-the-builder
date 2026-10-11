@@ -1,0 +1,42 @@
+### INPUT FILE BRIEF.md
+# Synthetic reader integration check
+This is a synthetic delivery appointment desk, not a debt-collection task.
+All dialogue is Turkish. Identify the organisation as Nova Teslimat and ask for the parcel code.
+Do not ask for any bank identity information or discuss debts.
+Read the current appointment with lookup_slot. Offer an available weekday appointment, Monday-Friday.
+Read back the parcel code, proposed date and time, ask confirmation, then call save_slot.
+Claim a saved change only when its response ok is true. On a failed save, apologise and finish without claiming success. Do not retry.
+Say goodbye and end the call. There is no bank closing or transfer endpoint.
+The hours table is in hours.docx; the later amendment below overrides it.
+Call dates use now, not the machine clock. Customer variables and identifiers are in customers.xlsx.
+## Later amendment, version 2
+The end of the available window is now 16:00 inclusive, overriding the older 17:00 in the Word table. Start remains 09:00 inclusive.
+## Example conversation
+Caller wants their parcel appointment moved to Friday at 15:00 and confirms the complete read-back.
+Use the one synthetic fixture from the spreadsheet. When asked, provide its parcel code including leading zeroes. Answer briefly and naturally.
+
+
+### INPUT FILE README.md
+Read BRIEF.md first. hours.docx supplies the original hours. customers.xlsx has synthetic call variables. flow.pdf contains a raster-only sequence diagram. openapi.json is the authoritative service contract. This is only a local pre-final reader check.
+
+### INPUT FILE customers.xlsx
+
+SHEET: Synthetic call variables (state=visible)
+A1="parcel_code" | B1="now"
+A2="000317" | B2="2026-10-14T11:00"
+
+### INPUT FILE flow.pdf
+
+
+ATTACHED IMAGE 1: flow.pdf / page-1.png
+
+### INPUT FILE hours.docx
+PART word/document.xml
+Original hours, version 1
+TABLE
+"Start" | "09:00"
+"End" | "17:00"
+END TABLE
+
+### INPUT FILE openapi.json
+{"openapi": "3.0.3", "info": {"title": "Synthetic appointment test", "version": "1"}, "servers": [{"url": "https://mock.example.invalid"}], "paths": {"/lookup_slot": {"post": {"operationId": "lookup_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}}, "required": ["parcel_code"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}, "/save_slot": {"post": {"operationId": "save_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}, "date": {"type": "string", "format": "date"}, "time": {"type": "string"}}, "required": ["parcel_code", "date", "time"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}}}

@@ -2,13 +2,28 @@ from pathlib import Path
 import sys
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'builder'))
-from freya_client import bind_workspace
+from freya_client import bind_workspace, availability_check
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_remote_test_outage_is_explicitly_inconclusive_without_retry(self):
+        action = Mock(side_effect=RuntimeError('POST /api/v2/chat/message -> 504: gateway timeout'))
+        trace = Mock()
+        result = availability_check(action, trace, 'opening')
+        self.assertIsNone(result['passed'])
+        self.assertFalse(result['conclusive'])
+        self.assertEqual(result['failed'], 0)
+        self.assertEqual(action.call_count, 1)
+        self.assertEqual(trace.call_args.args[0], 'runtime_check_inconclusive')
+
+    def test_workflow_or_auth_errors_are_not_hidden_as_availability_problems(self):
+        for message in ['POST -> 400: invalid workflow', 'POST -> 401: unauthorised', 'POST -> 500: cannot start workflow']:
+            with self.assertRaises(RuntimeError):
+                availability_check(Mock(side_effect=RuntimeError(message)), Mock(), 'opening')
+
     def test_every_operation_uses_authenticated_workspace(self):
         calls = []
         client = SimpleNamespace(workspace_id=lambda: 'personal-test-workspace',

@@ -1,0 +1,222 @@
+{
+  "approved": false,
+  "issues": [
+    "validate_proposal leaves proposal_input_state='ready' after rejecting a complete proposal. The proposal prompt then instructs immediate validation of complete inputs, allowing an invalid weekend or 17:00 request to cycle without waiting for a correction.",
+    "Parcel-code corrections are handled only in confirm. Corrections during proposal, or during intake while a successful lookup transition is delayed, have no extraction or priority route to invalidate the old lookup. The workflow can continue using the previous parcel.",
+    "After a parcel correction in confirm, authorize returns to intake, whose first-entry-only TTS action does nothing on re-entry. The workflow can wait for another caller message instead of immediately processing the corrected code already supplied."
+  ],
+  "patches": [
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/intake/on_enter",
+      "value": {
+        "type": "llm"
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/intake/on_enter_first_entry_only",
+      "value": false
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/intake/extraction_schema/-",
+      "value": {
+        "name": "confirmation_action",
+        "type": "string",
+        "enum_values": [
+          "waiting",
+          "change_parcel"
+        ],
+        "description": "Yalnız son müşteri mesajını değerlendir. Daha önce sorgulanmış gönderi kodunu düzeltiyorsa change_parcel; düzeltme henüz tamamlanmamışsa veya tarih/saat düzeltmesiyle birlikteyse de change_parcel. İlk kez verilen ve henüz sorgulanmamış kod için waiting. Diğer mesajlarda waiting; önceki düzeltme durumunu taşıma.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/intake/transitions/0",
+      "value": {
+        "target_node": "authorize",
+        "description": "Bitirme isteğini veya sorgulanmış gönderi koduna yapılan düzeltmeyi, önceki sorgu sonucuyla ilerlemeden işle.",
+        "condition": {
+          "logic": "or",
+          "conditions": [
+            {
+              "variable": "cancel_requested",
+              "operator": "equals",
+              "operand": "yes"
+            },
+            {
+              "variable": "confirmation_action",
+              "operator": "equals",
+              "operand": "change_parcel"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/proposal/extraction_schema/-",
+      "value": {
+        "name": "confirmation_action",
+        "type": "string",
+        "enum_values": [
+          "waiting",
+          "change_parcel"
+        ],
+        "description": "Yalnız son müşteri mesajını değerlendir. Sorgulanmış gönderi kodunu düzeltiyorsa change_parcel; düzeltme henüz tamamlanmamışsa veya tarih/saat düzeltmesiyle birlikteyse de change_parcel. Diğer mesajlarda waiting; eski bir düzeltme durumunu taşıma.",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/proposal/transitions/0",
+      "value": {
+        "target_node": "authorize",
+        "description": "Bitirme isteğini veya gönderi kodu düzeltmesini, eski koda ait öneriyi değerlendirmeden işle.",
+        "condition": {
+          "logic": "or",
+          "conditions": [
+            {
+              "variable": "cancel_requested",
+              "operator": "equals",
+              "operand": "yes"
+            },
+            {
+              "variable": "confirmation_action",
+              "operator": "equals",
+              "operand": "change_parcel"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/proposal/extraction_schema/2/description",
+      "value": "Müşterinin tarih ve saat ifadesi birlikte tamamlandıysa ready; eksik veya devam eden parçalar varsa waiting. Önceki önerinin geçersiz olduğu açıklanıp düzeltme istendiyse, eski tamamlanmış öneriyi yeniden ready sayma: müşterinin yeni düzeltmesi veya yeni seçimi tamamlanana kadar waiting kullan. Bu değer uygunluk veya nihai kayıt onayı değildir."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/proposal/task_message",
+      "value": "Gönderi kodu: {{lookup_code}}. Bu kod için en son başarılı sorgudaki mevcut randevu: {{current_appointment_text}}. Hesaplanan uygun örnek seçenek: {{offer_text}}. Son tarih ifadesi: {{requested_date_text}}. Son saat ifadesi: {{requested_time_text}}. Girdi durumu: {{proposal_input_state}}. Doğrulama açıklaması: {{validation_feedback}}. Bu kod için en son sorgulanan mevcut randevu henüz sesli okunmadıysa önce oku; başka bir gönderinin randevusunun daha önce okunması yeterli değildir. Gönderi kodu düzeltilmişse eski kodun önerisiyle devam etme. Harici servis aracı çağırma; burada yalnız sunulan transition_to_validate_proposal geçiş aracı kullanılabilir. Girdi durumu ready ise mevcut randevuyu okuduktan sonra transition_to_validate_proposal çağır; yeni müşteri mesajı veya fazladan onay bekleme. Girdi durumu waiting ise bu aracı çağırma: doğrulama açıklaması varsa geçersiz veya eksik unsuru kısaca açıkla, yalnız gerekli düzeltmeyi iste ve müşterinin yanıtını bekle. Geçersiz öneriyi değiştirmeden tekrar değerlendirmeye gönderme. Henüz tercih yoksa hesaplanan uygun örnek seçeneği sun. Daha önce verilen ve değiştirilmeyen tarih veya saati koru. Belirsiz tarih için gün, ay ve yılı netleştir; eksik saat parçalarının tamamlanmasını bekle. Tarih veya saati sessizce değiştirme. Bu aşamada kaydedildiğini söyleme ve nihai kayıt onayı isteme."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/confirm/extraction_schema/0/description",
+      "value": "Yalnız en son müşteri mesajını değerlendir; eski bir onayı taşıma. İşlemi ve görüşmeyi açıkça bitirme cancel. Gönderi kodu düzeltmesi varsa, tarih/saat de birlikte değiştirilse veya düzeltme henüz tamamlanmasa bile change_parcel önceliklidir. Kod değişmeden tarih/saat düzeltmesi veya devam eden düzeltme edit. Yalnız en son tam kod-tarih-saat okumasından sonra gelen, hiçbir düzeltme içermeyen açık onay accept. Yalnız hayır decline; diğer yanıtlar waiting. Tam okuma yapılmadan söylenen eveti onay sayma."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/validate_proposal/code",
+      "value": "import datetime\nimport re\ntry:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = 'Üzgünüm, randevu değişikliğini tamamlayamıyorum. Hoşça kalın.'\n    if vars.get('lookup_state') == 'ready' and str(vars.get('lookup_code', '')).strip():\n        vars['proposal_state'] = 'incomplete'\n        vars['validation_feedback'] = 'Lütfen istediğiniz tarihi ve saati tamamlayın.'\n        raw_date = str(vars.get('requested_date_text', '')).strip()\n        raw_time = str(vars.get('requested_time_text', '')).strip()\n        if vars.get('proposal_input_state') == 'ready' and raw_date and raw_time:\n            anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n            text = raw_date.lower()\n            for before, after in [('ı', 'i'), ('ş', 's'), ('ğ', 'g'), ('ü', 'u'), ('ö', 'o'), ('ç', 'c')]:\n                text = text.replace(before, after)\n            text = re.sub(r'\\s+', ' ', text).strip()\n            if text.startswith('bu '):\n                text = text[3:]\n            if text.endswith(' gunu'):\n                text = text[:-5].strip()\n            day = ''\n            names = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi', 'pazar']\n            if text == 'bugun':\n                day = anchor.date()\n            elif text == 'yarin':\n                day = anchor.date() + datetime.timedelta(days=1)\n            elif text in names:\n                day = anchor.date() + datetime.timedelta(days=(names.index(text) - anchor.weekday()) % 7)\n            elif re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', text):\n                try:\n                    day = datetime.date.fromisoformat(text)\n                except Exception:\n                    day = ''\n            else:\n                match = re.fullmatch(r'([0-9]{1,2})[./]([0-9]{1,2})[./]([0-9]{4})', text)\n                if match:\n                    try:\n                        day = datetime.date(int(match.group(3)), int(match.group(2)), int(match.group(1)))\n                    except Exception:\n                        day = ''\n            time_text = re.sub(r'^saat\\s+', '', raw_time.lower()).strip()\n            time_match = re.fullmatch(r'([0-9]{1,2})(?:[:.]([0-9]{2}))?', time_text)\n            vars['proposal_state'] = 'invalid'\n            if not day:\n                vars['validation_feedback'] = 'Lütfen istediğiniz tarihi gün, ay ve yıl olarak netleştirin.'\n            elif not time_match:\n                vars['validation_feedback'] = 'Lütfen istediğiniz saati saat ve dakika olarak netleştirin.'\n            else:\n                hour = int(time_match.group(1))\n                minute = int(time_match.group(2) or '0')\n                total = hour * 60 + minute\n                if hour > 23 or minute > 59:\n                    vars['validation_feedback'] = 'Lütfen geçerli bir saat ve dakika belirtin.'\n                elif day.weekday() > 4:\n                    vars['validation_feedback'] = 'Cumartesi ve pazar günleri randevu verilemiyor. Lütfen pazartesi-cuma arasında bir tarih seçin.'\n                elif total < 540 or total > 960:\n                    vars['validation_feedback'] = 'Randevu saatlerimiz 09.00 ile 16.00 arasında; iki sınır da dahildir. Lütfen bu aralıktan bir saat seçin.'\n                elif datetime.datetime.combine(day, datetime.time(hour, minute)) < anchor:\n                    vars['validation_feedback'] = 'Bu tarih ve saat geçmişte kalıyor. Lütfen ileri bir tarih veya saat belirtin.'\n                else:\n                    vars['proposal_state'] = 'valid'\n                    vars['validation_feedback'] = ''\n                    vars['validated_code'] = str(vars.get('lookup_code', ''))\n                    vars['validated_date'] = day.isoformat()\n                    vars['validated_time'] = '%02d:%02d' % (hour, minute)\n                    vars['validated_date_spoken'] = day.strftime('%d.%m.%Y')\n                    vars['validated_time_spoken'] = '%02d.%02d' % (hour, minute)\n                    vars['validated_source_date_text'] = raw_date\n                    vars['validated_source_time_text'] = raw_time\n    if vars.get('proposal_state') in ('incomplete', 'invalid'):\n        vars['proposal_input_state'] = 'waiting'\nexcept Exception:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = 'Üzgünüm, randevu değişikliğini tamamlayamıyorum. Hoşça kalın.'\n"
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "rejected_seventeen_hundred_waits_for_fresh_correction",
+        "node": "validate_proposal",
+        "hook": "code",
+        "vars": {
+          "lookup_state": "ready",
+          "lookup_code": "000594",
+          "now": "2026-10-14T11:00",
+          "requested_date_text": "cuma",
+          "requested_time_text": "17:00",
+          "proposal_input_state": "ready",
+          "confirmation_action": "accept"
+        },
+        "expect_vars": {
+          "proposal_state": "invalid",
+          "proposal_input_state": "waiting",
+          "confirmation_action": "waiting",
+          "requested_date_text": "cuma",
+          "requested_time_text": "17:00",
+          "validated_date": "",
+          "validated_time": ""
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "missing_time_clears_stale_ready_without_discarding_date",
+        "node": "validate_proposal",
+        "hook": "code",
+        "vars": {
+          "lookup_state": "ready",
+          "lookup_code": "000594",
+          "now": "2026-10-14T11:00",
+          "requested_date_text": "cuma",
+          "requested_time_text": "",
+          "proposal_input_state": "ready"
+        },
+        "expect_vars": {
+          "proposal_state": "incomplete",
+          "proposal_input_state": "waiting",
+          "requested_date_text": "cuma",
+          "validated_date": "",
+          "validated_time": "",
+          "confirmation_action": "waiting"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "fresh_correction_after_rejection_requires_new_confirmation",
+        "node": "validate_proposal",
+        "hook": "code",
+        "vars": {
+          "lookup_state": "ready",
+          "lookup_code": "000594",
+          "now": "2026-10-14T11:00",
+          "proposal_state": "invalid",
+          "requested_date_text": "cuma",
+          "requested_time_text": "16:00",
+          "proposal_input_state": "ready",
+          "confirmation_action": "accept"
+        },
+        "expect_vars": {
+          "proposal_state": "valid",
+          "validated_date": "2026-10-16",
+          "validated_time": "16:00",
+          "confirmation_action": "waiting",
+          "validation_feedback": ""
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "parcel_correction_invalidates_old_lookup_and_retains_fresh_schedule",
+        "node": "authorize",
+        "hook": "code",
+        "vars": {
+          "lookup_state": "ready",
+          "lookup_code": "000594",
+          "proposal_state": "valid",
+          "confirmation_action": "change_parcel",
+          "requested_date_text": "2026-10-20",
+          "requested_time_text": "15:30",
+          "proposal_input_state": "ready"
+        },
+        "expect_vars": {
+          "authorization_state": "new_lookup",
+          "lookup_state": "empty",
+          "lookup_code": "",
+          "proposal_state": "empty",
+          "confirmation_action": "waiting",
+          "requested_date_text": "2026-10-20",
+          "requested_time_text": "15:30",
+          "proposal_input_state": "ready"
+        }
+      }
+    }
+  ]
+}

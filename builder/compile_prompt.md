@@ -47,7 +47,10 @@ Your output is JSON with these fields:
   not the candidate's implementation; check actual tool outcomes as well as
   speech where visible. Do not preload internal success flags or account facts
   as call inputs. Use documented customers only, and do not fabricate a bank
-  reset endpoint. Omit this field for practice briefs or unusable fixtures.
+  reset endpoint. Use this field in folder mode when usable examples and fixtures
+  are supplied. Omit it in individual-brief mode, where the official practice
+  scorer is used, or when no usable fixtures are supplied. A folder's label as
+  synthetic, sample or practice does not by itself make its examples unusable.
 
 The workflow is what gets evaluated. Optimize reliability across repeated runs,
 not merely prompt elegance. The phone model is fixed and relatively small.

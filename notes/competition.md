@@ -117,3 +117,29 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
 - Kullanıcı birincilik hedefini açıkça vurguladı. Düşük panel oranları soruldu;
   gerçek ajan hataları ile başlamayan görüşmelerin ayrımı açıklandı. Yeni B
   derlemesi sürüyor, canlı sonuç henüz yok. Cloudflare hesabı yanıtı bekleniyor.
+
+## 18.46 İstanbul — B sürüm 3 ve belge denemesi tamamlandı
+
+- Yeni B koşusu `20261011T152310Z-practice-b` 1039.53 saniyede tamamlandı.
+  İlk üretim 624.87, bağımsız denetim 411.2 saniye sürdü. Denetim 12 sorun
+  bulup otomatik düzeltti; 58 kod kontrolü ve Freya dry-run geçti.
+  11 node / 8 araç; practice-b sürüm 3 etkinleştirildi ve dışa aktarıldı.
+- Denetlenmiş B artifact'ına PUB-12 girdilerini yerelde sıralı uygulayan kod
+  tekrarında DOB bir kez, telefon iki kez doğrulandı. Sonra yalnız p1 için
+  510 / 2026-10-15 taahhüdü, p2/p3 refused notları ve tek kapanış oluştu.
+  `results/20261011-local-replay-pub12.json` bu kontrollü kod tekrarını içerir;
+  LLM konuşmasını veya gerçek bank API'sini çalıştırmaz, canlı puan değildir.
+- Değiştirilmemiş temel ajan da 18.35'te 504 verdi. Model ayarı doğrulandı:
+  experimental-5. Olay kanıtı `notes/platform-incident-20261011.md`.
+- Yeni B v3 tek açılış kontrolü de 18.46'da 504: sonuç belirsiz, yeni üç
+  müşterilik simülasyon başlatılmadı. Panelde v3'e ait yeni canlı başarı yok.
+- Word tablosu, Excel (baştaki sıfırlar), görsel PDF ve sonradan gelen değişiklik
+  içeren sentetik klasör gerçek modelle derlendi. `20261011T153340Z-reader-check`
+  607.28 saniyede ve 35 kod kontrolüyle tamamlandı. Görsel akış ve 16.00'a
+  değişen pencere doğru okundu. Bu offline deney Freya ajanı oluşturmadı.
+  Girdiler `tests/fixtures/reader-case` altında korundu.
+- Yerel suite 49 test geçti. Genel iyileştirmeler: 502/503/504 konuşma testi
+  hatası belirsiz kaydedilir ve doğrulanmış workflow yine dışa aktarılır;
+  kimlik doğrulama/şema hataları saklanmaz. Klasör modu modele açıkça belirtilir.
+- Cloudflare kişisel hesap yanıtı bekleniyor. Hesap girişi veya deploy yapılmadı.
+  Final belgeleri 20.00 İstanbul'da açılacak; final ajanı ve teslim henüz yok.

@@ -1,0 +1,1 @@
+Read BRIEF.md first. hours.docx supplies the original hours. customers.xlsx has synthetic call variables. flow.pdf contains a raster-only sequence diagram. openapi.json is the authoritative service contract. This is only a local pre-final reader check.

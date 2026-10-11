@@ -1,0 +1,1776 @@
+Independently audit this generated phone workflow against ALL the supplied bank
+documents and the tool API. Return JSON:
+{"approved": true or false, "issues": [specific defects], "patches": [JSON edits if needed]}
+
+If approved, patches is empty. Otherwise return precise JSON Patch operations:
+each has op (add, replace, remove), path (a JSON Pointer into the candidate), and
+value (except remove). Use /checks/- to append a check. Replace an entire code
+string if fixing it. Do not return a rewritten full artifact. The builder applies
+these edits deterministically and validates the resulting artifact. Keep edits
+small enough to leave time for platform validation and practice tests.
+Apply only the supplied policy. Distinguish amendments from superseded
+rules. Do not invent a default bank rule for a missing piece.
+
+The candidate may use the supplied compiler's compact serialization. Named tools
+are expanded from OpenAPI by the builder, with hooks in tool_config; code nodes'
+code strings are wrapped as code_exec. Do not flag missing expanded boilerplate
+as a defect. Preserve that compact format and every tool_config entry when fixing
+the artifact. All other platform and bank constraints still apply.
+
+Review the actual Python snippets, tool schemas, conditions, prompts and response
+paths. Reason through both success and failure. Look especially for:
+
+- A transition that is reachable before its required tool succeeds, or a stale flag
+  that moves the conversation early on the next attempt.
+- Security and payment stages sharing an action node, delayed transitions losing
+  a fresh answer, or an exception fallback entering account dialogue before both
+  identity and lookup succeeded. Trace a failed answer followed by the corrected
+  answer across actual nodes, not only through isolated code hooks.
+- Instructions that contradict the brief, especially first questions, negotiation
+  counters, offering a floor, refusal versus a proposed value, multi-product order,
+  a combined read-back, or routing a hardship/restructuring request incorrectly.
+- Numeric-only dates and split digits: an incomplete or superseded answer cannot
+  consume a security attempt. Wrong answer handling must not re-ask passed questions.
+- Calendar off-by-one errors, holidays adjacent to weekends, a Friday holiday,
+  distinct deadlines per product, a nonbusiness `now`, and policy weekday semantics.
+- Helpers that trust the real date, a hardcoded practice date, or fabricated IDs.
+- A pre-hook which changes confirmed monetary terms without another confirmation.
+- A success claim before the bank's ok response, a retry that duplicates a successful
+  write, a missing failed-product note, notes before a later transfer forbids them,
+  or a closing code inconsistent with successful promises/transfer/notes.
+- A model asked to call a tool absent from the node, missing required request
+  fields, tool parameters baked to an old answer, or double close_call paths.
+- Python code that crashes or uses unsupported modules, unreachable snippets,
+  silently stripped fields, wrong response envelopes, undefined prompt variables,
+  a passthrough deadlock, or empty speech after a tool result.
+- A required opening that exists only in on_enter. A chat may begin with the
+  caller's first message before that action; the initial task must also produce
+  the required opening if it is absent from conversation history, without
+  repeating it when a simulation already delivered it.
+- Example-conversation scenarios that coach the phone agent, preload internal
+  success states, invent customer identities, or omit a documented failure branch.
+  Test criteria must independently reflect the source policy, not accept whatever
+  the candidate happens to do. Check the fixture and source reference for each.
+
+Prefer small, concrete corrections to a wholesale redesign. Local checks must
+assert expected results computed independently from the relevant bank rule, not
+copy the implementation's answer. Add checks for any concrete code defect fixed.
+
+
+# COMPILER CONTRACT
+# Compile a bank's policy into a dependable phone workflow
+
+Read ALL supplied bank material and its accompanying API schema. The material is
+authoritative for bank identity, opening sentences, question order, retry budgets,
+business calendars, deadlines, limits, persuasion, product handling, notes, transfers,
+closing codes and terminology. No rule or value may come from memory or another
+bank. A later amendment overrides an earlier extract. Explicit precedence matters.
+An example in documentation illustrates syntax, never the bank's policy.
+Use the language, forms of address, monetary notation and date conventions of
+the supplied case. Read all file types, sheet names, tables and attached flow
+diagrams. The practice bank's endpoints and collection rules are not defaults
+for a different case. Examples of conversations are evidence of intended
+behavior; reconcile them with explicit amendments and the service contract.
+
+Your output is JSON with these fields:
+
+- `policy`: a compact but COMPLETE normalized specification. List source references,
+  overrides and the rule priority order. Enumerate all closing combinations and
+  product-note rules. Document exactly how calendar and amount rules are computed.
+- `workflow`: the complete Freya workflow, using the compact syntax below for
+  tools and code nodes. All prompts, routes and bank-specific logic are authored
+  by you from the input material.
+- `tool_config`: object keyed by bank tool name. Each value may hold `description`,
+  `field_descriptions` (map from API body field name to descriptive instruction),
+  `pre_process_code`, `post_process_code`, and `response_mapping`.
+- `checks`: an array of local code checks. Each has `name`, `node`, optional `tool`,
+  `hook` (`code`, `pre`, or `post`), `vars`, optional `config`, optional `result`,
+  and `expect_vars` and/or `expect_result`/`expect_config`. Use supplied API shapes
+  and fresh synthetic data. Include weekend/holiday dates, band edges, failed
+  security answers, split inputs, and successful versus failed writes where code
+  handles them. Do not require external calls.
+- `smoke`: when the documents include synthetic test customers, provide a name,
+  an initial caller `message` in the case language, and `variables` from one
+  documented test customer. Optional `expected_fragments` must be short exact
+  phrases explicitly required in the opening by the source policy. This runs
+  just one chat turn after publication and then ends the synthetic chat. It is
+  a startup check, not a full policy score. Never invent test identities. Omit
+  smoke if the documents provide no usable synthetic customer variables.
+- `scenarios`: when a case folder includes example conversations and usable
+  synthetic test customers, turn those examples into up to 12 end-to-end checks.
+  Each has `name`, `source` (document/section), `variables` (only documented call
+  inputs), `prompt` (instructions to the simulated customer), and
+  `success_criteria` (an independent judge's policy, outcome and honesty checks).
+  The customer must answer naturally, only reveal requested security information,
+  follow the example's intent and corrections, and never coach the agent with
+  the expected bank policy or tool names. Criteria must come from the documents,
+  not the candidate's implementation; check actual tool outcomes as well as
+  speech where visible. Do not preload internal success flags or account facts
+  as call inputs. Use documented customers only, and do not fabricate a bank
+  reset endpoint. Omit this field for practice briefs or unusable fixtures.
+
+The workflow is what gets evaluated. Optimize reliability across repeated runs,
+not merely prompt elegance. The phone model is fixed and relatively small.
+
+## Compact output syntax (the builder expands this deterministically)
+
+Do NOT repeat JSON schemas, HTTP URLs, headers, handlers or fixed tool boilerplate.
+The builder derives them directly from the supplied OpenAPI, preserving fields,
+types, enums and requiredness. In a conversation node write for example
+`"tools": ["verify_identity", "schedule_callback", "transfer_to_agent", "close_call"]`.
+For an account API node write `"pre_actions": ["get_account"]`. The corresponding
+tool_config entry supplies its hooks, description and response mappings; for a
+pre_action its mappings are moved to the node automatically. Do not duplicate
+these mappings explicitly on that node.
+
+Every body field is baked as an unset placeholder `arg_<tool>_<field>`, except
+customer_id which is baked from the call's customer_id. Never store workflow
+state under one of those arg_ names. Model values arrive in config['body'] for
+pre-hooks. The post-hook can remember pre-hook values stored under separate names.
+
+A code node has `"code": "<Python source>"` instead of pre_actions. The builder
+wraps it in code_exec. Keep its silent on_enter, passthrough, fallback and
+transitions explicit. An end_call node can omit terminal: the builder adds a
+silent end_call with message_mode=none. Deliver the required farewell before
+hangup and in the order required relative to any bank closing operation.
+This compact syntax changes serialization only, never policy.
+
+## Workflow architecture
+
+Use compact stage-specific conversation nodes, required account lookups, code
+steps for policy calculations, and terminal nodes. The following collection
+patterns apply only when those actions exist in the supplied case. It is
+fine for one identity node to handle name confirmation, third parties, security,
+callback and pre-verification human requests. In the collection node preserve
+the complete conversation history. Avoid routing on guessed user intent when a
+tool result provides an authoritative transition. If the policy requires
+verification before lookup, make the lookup unreachable until those checks
+succeed. A failed security answer must
+not be treated as success. A correction before validation is not a failed attempt.
+Enforce the policy's verification and data-loading prerequisites at EVERY
+account discussion/write stage, including exception/fallback routes. A code failure
+must never send an unverified caller to an account conversation with empty facts.
+Do not reuse a payment-write conversation as a security-answer executor. If
+complete answers need deterministic validation, use a dedicated engine-run
+verification step after validation, then return to a speaking security step.
+Clear stale tool-result flags before each new attempt. Routes may be suppressed
+until the node has spoken, so a delayed route must preserve a newly supplied
+answer rather than consume it as acknowledgment of the previous tool result.
+
+Expose only tools appropriate to the stage. Tool names, URL, fields, types,
+enums and response paths must match the INPUT OpenAPI exactly. Resolve local
+OpenAPI references. The phone agent calls only those endpoints. Use `default`,
+not `const`. Bake customer_id from the call. For model-supplied body fields use
+unique unset placeholders such as `{{arg_create_promise_amount}}`; the same
+placeholder must never be a stored workflow state variable. Declare field enums
+and descriptions on the body property's leaf. Do not add fictitious request fields.
+Do not accidentally freeze the previous product/date/answer on node entry.
+
+Perform the calculations the case actually requires. Calculate from the CALL's
+`now`, never the server clock, for policy-defined matters such as:
+business-day deadlines per product, next permissible days, persuasion offer days,
+callback windows, floors and any amount rounding. Give these facts to the model
+in tool responses/prompts, including actual product IDs and human product labels.
+The account result is a runtime value, never a public test fixture. Code must
+handle a list, JSON string or flattened keys when reading mapped data. All code
+uses only json, re, datetime (and basic built-ins), initializes fallback variables,
+is wrapped in try/except, and has no double opening or closing braces anywhere.
+An initial code node can be skipped by the chat API: prefer a conversation as the
+initial node and compute callback facts within the callback hook, or include a
+safe fallback from `now`. Account-derived calculations run after account lookup.
+The chat API can start directly with the caller's first message without running
+the initial on_enter greeting. Put the required opening in the initial node's
+task_message too, conditioned on it not already having been spoken in history.
+Do not assume an entry action ran merely because the initial node is active.
+The builder also persists declared response_mapping values from the post-hook,
+so structured lists and objects are available under your mapped variable names.
+For automatic pre_actions the flattened response prefix is the NODE name, such
+as lookup_response, not necessarily the tool name. Use the actual node name if
+you implement a flattened fallback; test that fallback with the same prefix.
+
+Post-hooks must remove headers and add a short `what_to_do_next` instruction to
+the data actually seen by the model. Cover success AND failure. Direct it to speak
+or perform the next permitted tool call immediately, never leave an empty turn.
+`result` is an envelope: its `data` is the bank body; code must check types.
+Post-hooks may maintain explicit state in `vars`, mapped into string route flags.
+Keep tool retry budgets explicit; maxRetries=0 on writes. Do not fake a bank
+success to cover an invalid request. A pre-hook may normalize representation,
+but must not silently alter a customer's confirmed amount or date. Invalid
+proposals must be explained and reconfirmed before a bank write. Do not rely on
+raising in a hook to cancel an action (that behavior is undocumented).
+
+Track successful promises and transfers from actual responses. Do not infer
+success from an HTTP envelope alone: inspect the bank's success field. Avoid
+duplicate writes. If a write failed, retry only as many times as the brief allows,
+and follow its failure outcome. Never claim a failed operation was recorded.
+No notes should be emitted early if the brief forbids notes on a later transfer;
+defer such notes until final resolution. Pending promises are distinct from
+recorded promises. A later transfer must not record unconfirmed or merely agreed
+promises if the policy forbids it. Preserve valid recorded promises.
+
+Follow the case's closing protocol exactly once. If it supplies a bank closing
+operation, obey its required ordering (including making it the last bank call
+when specified), and gate completion on its actual success. If there is no such
+operation, do not invent one. Say required confirmations and farewell before
+the silent end_call. Do not add a duplicate lifecycle close. Omit optional
+closing reasons for outcomes that require none.
+Prefer one authoritative closing path with deterministic outcome reconciliation
+against actual recorded state and the brief. A transfer takes precedence if the
+brief says so. Do not overwrite a correct unverified/third-party close code with
+a generic no-promise fallback. Never disclose protected account information
+outside the case's verification and privacy rules.
+
+## Conversation robustness
+
+Interpret the corrected portion of a sentence, not the first mentioned value.
+Assemble digits spread over turns before validating. Preserve leading zeroes.
+Do not validate a partial answer. Normalize spoken numbers, dates and codes
+to the API's prescribed representation. Security answers must come from the
+customer. Ask only for missing pieces, and retry only the failed question.
+Use the supplied date interpretation rules, including weekday conventions.
+An unrelated event/date in small talk is not a payment proposal.
+Brief-specific refusal/clarification limits still apply to questions asked back.
+
+Cover every policy branch: unclear name, wrong number, deceased, relative offers
+to pay, invalid callbacks, suspicion/AI/human questions, refusal of identity,
+wrong answers and hints, all-product opening, already-paid versus historical
+dispute, hardship taking precedence over ordinary negotiation, restructuring,
+partial payment, per-product attempts, ambiguous/late/nonbusiness dates,
+read-back corrections, duplicate promise requests, and write failures. Only
+apply a branch when the supplied policy defines it; never import its wording
+or thresholds from another brief. State the full debt before asking for payment
+when required. Do not introduce extra questions that prematurely solicit refusal.
+
+Never ask the customer for an amount if policy requires agent-led offers.
+Do not count a proposed date or amount as refusal where the policy distinguishes
+them. Track attempts per product, respect early/late limits, avoid repeating
+rejected offers. For multiple products, follow source order and read-back rules.
+The user may change one element at confirmation: revalidate and confirm anew.
+No extraneous internal explanations, node names, tool names or implementation
+details in customer-facing dialogue. Keep questions short and sequential.
+
+## Platform invariants
+
+- No nulls and no agent_config. Valid node_type, node name matches its key.
+- All workflow test_variables values must be strings.
+- No tools on code/api_request nodes; no pre_actions on conversation nodes.
+- response_mapping on the tool for conversation tools, on the node for pre_actions.
+- Mapping paths start with data.; boolean conditions accept true and True or
+  preferably use explicit string state. Avoid stale success flags in retries.
+- Top-level condition groups use logic=or; nest and-groups if needed.
+- Every passthrough node has a final always transition and fallback target.
+- Nodes holding ongoing conversation need no unconditional self-transition.
+- Only the terminal handler performs hangup, after the required closing protocol.
+- No context_variables dependency: the platform can silently strip it.
+- No placeholder substitution inside code. Use vars directly.
+- Tools must trigger actions, not merely describe them. After any result the
+  phone model must either speak or call the next permitted tool.
+- Stay within 4-9 nodes unless the policy truly requires more. Avoid long chains
+  that delay speech. Do not expose optional workflow architecture to the customer.
+
+Do a final adversarial policy coverage review internally before returning JSON.
+
+
+# PLATFORM REFERENCE
+# Workflow format
+
+This page describes the workflow JSON that defines a Freya agent. Read it before you write a builder. Tools, API calls and code are in [tools-and-code.md](tools-and-code.md). The REST calls are in [api.md](api.md).
+
+Some statements are marked "verified in a working builder". Those come from a builder that created a 6-node workflow through the REST API and whose agent passed its practice cases.
+
+## What a workflow is
+
+A workflow describes a conversation as a graph. Each **node** is one step of the conversation and has its own prompt. **Transitions** move the conversation from one node to the next. A transition fires on what the user said or on the value of a variable.
+
+When you create a workflow through the API, the platform creates an agent for it. You run simulations against that agent.
+
+## Three model calls per turn
+
+After each user message the platform makes three separate model calls. They do not share a prompt.
+
+```text
+user message
+    |
+    v
+1. EXTRACTION   reads the message, stores variables
+2. ROUTING      decides whether to leave the node
+3. DIALOGUE     writes the agent's reply
+```
+
+| Call | What it sees | What it produces |
+|---|---|---|
+| Extraction | Recent conversation messages and the current node's `extraction_schema` | Variable values |
+| Routing | Recent conversation messages and the transition descriptions. It does not see the dialogue prompt | The transition to take, or none |
+| Dialogue | `system_prompt`, `role_message`, `task_message`, the full conversation history, and the node's `tools` | The reply, or a tool call |
+
+Consequences:
+
+- A routing instruction inside `task_message` has no effect on routing. Routing reads only transitions.
+- The dialogue model can call only the tools in the current node's `tools` array. Everything else (API calls on entry, code, ending the call) is run by the workflow engine.
+- Deterministic conditions (variable checks) need no model call. They are evaluated in code.
+
+## Top-level keys
+
+```json
+{
+  "initial_node": "greeting",
+  "system_prompt": "You are the assistant of a dental clinic. Speak English.",
+  "nodes": {},
+  "global_nodes": {},
+  "test_variables": { "customer_id": "c_test" }
+}
+```
+
+| Key | Type | Required | Meaning |
+|---|---|---|---|
+| `initial_node` | string | yes | Key of the node where every call starts |
+| `nodes` | object | yes | Map of node key to node definition |
+| `system_prompt` | string | no | Global rules. Part of the dialogue prompt in every node |
+| `global_nodes` | object | no | Interrupt handlers that can fire from any node. See "Global nodes" |
+| `test_variables` | object | no | Default values for call variables. See "Variables" |
+| `context_variables` | object | no | A state block of chosen variables for the dialogue model. See "Context variables" |
+| `tools` | array | no | Workflow-level lifecycle tools. See tools-and-code.md |
+| `agent_config` | object | no | Model and call settings. See below |
+| `nodePositions` | object | no | Layout for the visual editor. The working builder omits it |
+
+**`agent_config`**: omit it. The platform fills in defaults. It holds model, voice and timeout settings that a builder for this event does not need. In a simulation you choose the models with the override fields described in api.md.
+
+**No `null` values.** The schema is strict. Leave an optional field out, or set an optional string to `""`. A `null` fails validation.
+
+The REST API takes the workflow inside a request body `{"name": "...", "workflow": {...}}`. The object described on this page is the value of `workflow`.
+
+## Node types
+
+| `node_type` | Purpose | Speaks to the user | Carries |
+|---|---|---|---|
+| `conversation` | A dialogue step | yes | `task_message`, `tools`, `extraction_schema`, `transitions` |
+| `api_request` | Runs an HTTP call on entry | usually not | `pre_actions`, node-level `response_mapping`, `transitions` |
+| `code` | Runs a Python snippet on entry | usually not | `pre_actions` with a `code_exec` function, `transitions` |
+| `end_call` | Ends the call | optional farewell | `terminal` |
+
+Other node types exist: `transfer_call`, `integration`, `knowledge_base`, `reschedule_call`, `invoke_agent`, `exit`. Telephony, voice settings, knowledge base and integrations also exist on the platform. You do not need any of them here and this page does not describe them.
+
+The platform strips fields that do not belong to a node type, without an error:
+
+- `tools` is kept only on `conversation` nodes.
+- `pre_actions` is kept only on `api_request` and `code` nodes (and the other non-conversation action types).
+
+So a node cannot have both. If a call must run before a conversation node, put it in its own `api_request` node in front.
+
+## Node fields
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `name` | string | | Node name. Use the same value as the node's key, in `snake_case` |
+| `node_type` | string | | One of the types above |
+| `task_message` | string | | The instruction for the dialogue model in this node |
+| `role_message` | string | | Extra persona text for this node. Rarely needed |
+| `on_enter` | object | `{"type": "llm"}` | What happens on entry. See "Entry behaviour" |
+| `on_enter_first_entry_only` | boolean | `false` | Run the entry behaviour only on the first visit |
+| `transitions` | array | | Outgoing transitions, in priority order |
+| `routing_prompt` | string | | Extra context for the routing model in this node |
+| `loop_condition` | string | | Intent description for staying in the node. See "Loop conditions" |
+| `loop_prompt` | string | | Replaces `task_message` from the second turn in the node |
+| `extraction_schema` | array | | Variables to extract from user speech in this node |
+| `tools` | array | | Tools the dialogue model may call. `conversation` nodes only |
+| `pre_actions` | array | | Calls the engine runs on entry. `api_request` and `code` nodes |
+| `response_mapping` | array | | For `pre_actions` nodes: maps the call result to variables. Node level |
+| `passthrough` | boolean | `false` | Route right after entry, without waiting for the user |
+| `passthrough_default_transition` | string | | Target node for a passthrough node |
+| `max_node_turns` | integer | `10` | Cap on user turns spent in the node |
+| `max_turn_transition` | string | | Target node when the cap is reached |
+| `terminal` | object | | The end-call function. `end_call` nodes only |
+| `disable_inactivity_monitor` | boolean | `false` | Switch off silence check-ins for this node |
+| `suppress_tool_results` | boolean | `false` | Hide raw call results from the dialogue model. See tools-and-code.md |
+| `truncation_strategy` | string | `keep_all` | How much history the dialogue model sees. See "Limits" |
+| `truncation_window_size` | integer | `10` | Number of recent messages kept by `keep_recent` and `summarize` |
+| `reasoning_override` | string | `auto` | `enabled` or `disabled` forces model reasoning on or off for this node. Only models that support such a switch react to it |
+
+A per-node `idle_config` (silence timeouts) and per-node speech settings also exist. They matter on voice calls only.
+
+## Prompts
+
+The dialogue model receives one system message built from three parts:
+
+```text
+system_prompt        workflow level, the same in every node
+role_message         node level, optional
+## Current Task
+task_message         node level, what to do now
+```
+
+| Field | Level | Use it for |
+|---|---|---|
+| `system_prompt` | workflow | Identity, language, tone, rules that hold in every node |
+| `role_message` | node | A different persona for one node. Most workflows leave it out |
+| `task_message` | node | What the agent must do in this step |
+| `loop_prompt` | node | A replacement for `task_message` after the first turn in the node |
+| `on_enter` | node | What the agent does when it enters the node |
+
+Rules for `task_message`:
+
+- Write instructions for the model, not a script.
+- Cover this node's job only.
+- Do not describe routing or name other nodes. The model does not know about nodes. Text such as "then move to the lookup node" makes it narrate steps that have not happened.
+- If the node has tools, refer to them by name and say when to call them. Do not repeat the tool descriptions.
+- In a node without tools, state that no tool call is allowed in this turn. If the node has a `loop_prompt`, put that rule in both prompts.
+
+Example:
+
+```json
+{
+  "name": "collect_details",
+  "node_type": "conversation",
+  "task_message": "Ask which service the caller wants and on which day. Ask one question at a time. If the caller is unsure about the day, offer to check the next free days.",
+  "transitions": []
+}
+```
+
+### Entry behaviour
+
+| `on_enter` | Behaviour |
+|---|---|
+| `{"type": "llm"}` | The model writes the first line from `task_message`. Default. An optional `prompt` key overrides the entry instruction for this node |
+| `{"type": "tts", "text": "..."}` | A fixed line is spoken. No model call. `{{var}}` works in `text` |
+| `{"type": "silent"}` | Nothing is said. The node waits for the user, or routes at once if it is a passthrough node |
+| `{"type": "audio", "asset_id": "..."}` | Plays a recorded asset. Not needed here |
+
+Set `on_enter_first_entry_only` to `true` when a node can be re-entered and must not repeat its opening line. This works better than a prompt rule such as "do not greet twice".
+
+### History across nodes
+
+When the conversation moves from node A to node B:
+
+- User and assistant messages are kept.
+- The system message is replaced by node B's prompts.
+- A loop prompt from node A is removed.
+
+So node B can refer to anything said earlier. Variables also stay for the whole call.
+
+## Variables
+
+All variables live in one table for the whole call. There is no per-node scope. A variable is never cleared on a transition. A later write with the same name overwrites it.
+
+| Source | How it gets in |
+|---|---|
+| Call variables | Passed when the call or simulation starts |
+| `test_variables` | Workflow-level defaults for call variables |
+| Extraction | `extraction_schema` on a node |
+| Call results | `response_mapping`, and the automatic result keys described in tools-and-code.md |
+| Code | A code node or `code_exec` tool writes into `vars` |
+| System | Set by the platform |
+
+### `{{var}}` substitution
+
+Write `{{variable_name}}` in prompts, `on_enter.text`, transition descriptions, URLs, headers and request bodies. The engine replaces it before the model or the HTTP call sees the text.
+
+| Form | Result |
+|---|---|
+| `{{customer_name}}` | The value as a string |
+| `{{amount:json}}` | The value JSON-encoded. Use it inside request bodies |
+
+Behaviour to know:
+
+- Date values are formatted for speech in the agent's language when they are substituted into a prompt.
+- An unresolved variable in a prompt stays as the literal text `{{variable_name}}`. The model sees the placeholder. In a fixed spoken line (`on_enter.text`, a terminal `spoken_message`) the agent says it aloud.
+- In a field of an engine-run call (a `pre_actions` call or a lifecycle tool) an unresolved placeholder behaves in two ways. If the value is exactly one placeholder (`"{{x}}"`), the whole field is dropped from the request. If the value mixes text and a placeholder (`"Status: {{x}}"`), the request goes out with the literal `{{x}}` in it.
+- Do not reference a variable in a mixed value unless an earlier node always sets it.
+
+### Call variables and `test_variables`
+
+Call variables are the inputs of one call, for example a customer id or the current time. In a simulation you pass them per persona in `customerVariablesMap` (see api.md).
+
+`test_variables` is a top-level object of default values. On a web call to the workflow it is merged into the call variables. A value passed with the call wins over a test variable of the same name.
+
+```json
+{
+  "test_variables": {
+    "customer_id": "c_test",
+    "first_name": "Dana",
+    "now": "2026-03-11T10:00"
+  }
+}
+```
+
+Verified in a working builder: call variables are readable as `{{customer_id}}` in prompts and tool parameters, and as `vars.get("customer_id")` in code.
+
+### System variables
+
+| Variable | Example | Meaning |
+|---|---|---|
+| `{{system.iso_utc_now}}` | `2026-03-11T14:30:00Z` | UTC timestamp of call start |
+| `{{system.todays_date_en_cst}}` | `11 March 2026 Wednesday 08:30` | English date, UTC-6 |
+| `{{system.todays_date_en_est}}` | `11 March 2026 Wednesday 09:30` | English date, UTC-5 |
+| `{{system.todays_date_tr}}` | | Turkish date with day name and time, UTC+3 |
+| `{{system.todays_date_tr.iso_8601}}` | `2026-03-11` | ISO date, UTC+3 |
+| `{{system.conversation}}` | `AGENT: hello\nUSER: hi` | Transcript so far |
+| `{{system.conversation.last-N}}` | | Last N turns. N is `1`, `5`, `10` or `20` |
+| `{{call.direction}}` | `web` | `inbound`, `outbound`, `web` or `simulation`. A chat simulation in the trial showed `web` |
+| `{{call.duration}}` | `42` | Whole seconds since call start |
+| `{{call.call_id}}` | | Platform call id |
+| `{{<node>.current_turns}}` | `2` | User turns in the node since the last entry. Resets on every transition |
+| `{{<node>.total_turns}}` | `5` | User turns in the node over the whole call |
+
+There is no `{{current_date}}` placeholder. These system dates are the real clock. If your task supplies its own "now" as a call variable, use that variable.
+
+`{{system.conversation.last-N}}` is useful in a transition description or a `routing_prompt` when the routing model needs more than the last message.
+
+### Context variables
+
+Warning from a test on 10 October: a workflow saved over the API came back without this key, and the save gave no error. Do not rely on it. Write the values the model needs into the prompt with `{{variable}}` instead.
+
+`context_variables` is a top-level key. It shows chosen variables to the dialogue model as a state block, so you do not have to write variable tables into prompt text.
+
+```json
+{
+  "context_variables": {
+    "pre_history_description": "Static call context",
+    "post_history_description": "Live state",
+    "items": [
+      { "name": "customer_tier", "placement": "pre_history", "description": "Customer tier" },
+      { "name": "attempt_count", "placement": "post_history" }
+    ]
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `items[].name` | Name of a variable in the variable table. Must match `^[a-zA-Z_]\w*$` and be unique across both placements |
+| `items[].placement` | `pre_history` or `post_history` |
+| `items[].description` | Optional label |
+| `pre_history_description`, `post_history_description` | Heading text of each section |
+
+Rules:
+
+- An item points at a variable. It does not create one. If nothing sets the variable, the row is skipped without an error.
+- `pre_history` is written once into the system prompt. Use it only for values that never change during the call.
+- `post_history` is rendered again on every turn after the chat history and is not stored in the history. Use it for values that change.
+- The block is rendered as `<CONTEXT_VARIABLES>`, one line `- name (description): value` per populated item.
+- No other keys are allowed on an item. There is no `value`, `type` or `default`.
+- It does not affect extraction or tool parameter substitution.
+
+## Transitions
+
+A transition is an object in a node's `transitions` array.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `target_node` | string | Key of the next node. May be the node itself. `__previous__` is allowed in global nodes |
+| `description` | string | What the transition is for. The routing model reads it |
+| `condition` | object | When the transition fires |
+| `is_tool_call` | boolean | The dialogue model triggers the transition by calling a tool. See "Tool-call transitions" |
+
+### Condition operators
+
+Deterministic operators check a variable in code. No model call.
+
+| Operator | Needs | True when |
+|---|---|---|
+| `equals` | `variable`, `operand` | `str(value) == str(operand)` |
+| `not_equals` | `variable`, `operand` | The inverse of `equals` |
+| `greater_than` | `variable`, `operand` | `float(value) > float(operand)` |
+| `less_than` | `variable`, `operand` | `float(value) < float(operand)` |
+| `contains` | `variable`, `operand` | `operand` is a substring of the value, ignoring case |
+| `is_set` | `variable` | The variable has any value |
+| `is_not_set` | `variable` | The variable has no value |
+| `always` | nothing | Always |
+
+The semantic operator uses the routing model.
+
+| Operator | Needs | True when |
+|---|---|---|
+| `matches_intent` | `description` | The routing model judges that the user's last message matches the description |
+
+All `matches_intent` conditions of one evaluation are judged in a single model call.
+
+### Condition shapes
+
+An unconditional transition:
+
+```json
+{ "target_node": "next_step", "description": "always", "condition": { "operator": "always" } }
+```
+
+An intent condition:
+
+```json
+{
+  "target_node": "complaint",
+  "description": "The user wants to complain",
+  "condition": { "operator": "matches_intent", "description": "The user is unhappy or wants to file a complaint" }
+}
+```
+
+Variable conditions go inside a group. The top-level group always uses `"logic": "or"`:
+
+```json
+{
+  "target_node": "order_found",
+  "description": "The lookup returned an order",
+  "condition": {
+    "logic": "or",
+    "conditions": [
+      { "variable": "order_status", "operator": "equals", "operand": "shipped" },
+      { "variable": "order_status", "operator": "equals", "operand": "delivered" }
+    ]
+  }
+}
+```
+
+For AND, nest a group inside the top-level OR. Never put `"logic": "and"` at the top level.
+
+```json
+{
+  "target_node": "priority_desk",
+  "description": "Gold customer with a late order",
+  "condition": {
+    "logic": "or",
+    "conditions": [
+      {
+        "logic": "and",
+        "conditions": [
+          { "variable": "customer_tier", "operator": "equals", "operand": "gold" },
+          { "variable": "days_late", "operator": "greater_than", "operand": 3 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The working builder uses the bare form for `always` and the grouped form for every variable check. The internal reference also shows a bare single variable condition (`{"variable": ..., "operator": ..., "operand": ...}`) directly under `condition`.
+
+### Do not route on a boolean
+
+`equals` compares strings. A boolean can arrive as `"True"` or as `"true"`, depending on how it was written into the table. A mismatch fails silently: the branch never fires and nothing reports an error.
+
+- Prefer a string value such as `verified` or `rejected`, written by your code or by the API.
+- If you must test a boolean that comes from an API response, test both spellings. Verified in a working builder:
+
+```json
+{
+  "target_node": "wrap_up",
+  "description": "The booking call succeeded",
+  "condition": {
+    "logic": "or",
+    "conditions": [
+      { "variable": "booking_ok", "operator": "equals", "operand": "true" },
+      { "variable": "booking_ok", "operator": "equals", "operand": "True" }
+    ]
+  }
+}
+```
+
+`greater_than` and `less_than` convert both sides to numbers, so `2` and `"2"` behave the same. Use them for counters.
+
+### Order of evaluation
+
+After each user message, routing runs in this order. The first match wins and routing stops.
+
+```text
+1. loop_condition of the current node    match: stay in the node, use loop_prompt
+2. the node's transitions, in list order match: go to target_node
+3. global nodes                          match: enter the global node
+4. nothing matched                       stay in the node, wait for the next user message
+```
+
+Within step 2:
+
+- Transitions are checked in list order. Put specific conditions first and broad ones last.
+- Deterministic conditions are evaluated first. If one matches, no routing model call is made.
+- If several transitions of a node have the same `target_node`, the engine merges them at load time into one transition. Its condition is the OR of the originals. If one of them is unconditional, the merged transition is unconditional.
+
+Routing also runs after a tool result arrives. Verified in a working builder: a transition on a variable that a tool's `response_mapping` sets fires in the same turn, without a further user message.
+
+When nothing matches, there is no fallback. The agent stays and answers from the same `task_message`. Make sure every realistic path has a matching transition.
+
+### `routing_prompt`
+
+A node-level string. It replaces the default intent-matching instruction of the routing model for this node. Use it when the transition descriptions cannot carry the rule, for example "stay here until both the name and the date are given".
+
+### Self-transition
+
+A last transition with `always` that targets the node itself keeps the user in the node until an earlier transition matches.
+
+```json
+{ "target_node": "collect_details", "description": "Keep collecting", "condition": { "operator": "always" } }
+```
+
+Prefer this to `loop_condition` in most cases. All routing then lives in one ordered list.
+
+### Loop conditions
+
+`loop_condition` is an intent description. The routing model checks it before all transitions. When it matches, the agent stays in the node.
+
+`loop_prompt` replaces `task_message` in the system message from the second turn in the node. The model sees one of the two, never both. Write it so that it stands alone. `{{var}}` works in it, so it can show what was already collected.
+
+```json
+{
+  "name": "collect_contact",
+  "node_type": "conversation",
+  "task_message": "Ask for the caller's full name and email address.",
+  "loop_condition": "The user has not yet given both a full name and an email address",
+  "loop_prompt": "Name so far: {{customer_name}}. Email so far: {{email}}. Ask only for what is still missing. When both are present, read them back once.",
+  "transitions": []
+}
+```
+
+Make the loop condition specific. "The user has not finished" matches everything and the agent never leaves.
+
+### Tool-call transitions
+
+Set `is_tool_call` to `true` on a transition. The dialogue model then sees the transition as a tool named `transition_to_<node>` and triggers it by calling that tool. The router does not evaluate it after each turn.
+
+```json
+{
+  "target_node": "confirm_booking",
+  "description": "The caller accepted the offered slot",
+  "is_tool_call": true,
+  "condition": { "operator": "matches_intent", "description": "The caller accepted the offered slot" }
+}
+```
+
+Use it when the agent should decide to move, for example because of something it just said or computed. The agent can acknowledge and move in the same message. The target node's `on_enter` then asks the next question. Global nodes accept the same flag.
+
+### Passthrough nodes
+
+A node with `"passthrough": true` routes right after its entry actions. It does not wait for the user. `api_request` and `code` nodes are normally passthrough nodes.
+
+- Set `passthrough_default_transition` to the next node.
+- End `transitions` with an `always` transition. A passthrough node with no matching transition deadlocks.
+- Set `on_enter` to `{"type": "silent"}`, or to a short fixed line that covers the wait.
+
+```json
+{
+  "name": "prepare",
+  "node_type": "code",
+  "passthrough": true,
+  "passthrough_default_transition": "greeting",
+  "on_enter": { "type": "silent" },
+  "pre_actions": [],
+  "transitions": [
+    { "target_node": "greeting", "description": "always", "condition": { "operator": "always" } }
+  ]
+}
+```
+
+Verified in a working builder: a passthrough `code` node can be the `initial_node`. It runs before the agent says anything.
+
+### Global nodes
+
+A global node is an interrupt handler. It can fire from any node. It is checked only after the current node's own transitions found no match.
+
+A global node has the same fields as a normal node, plus:
+
+| Field | Meaning |
+|---|---|
+| `condition` | When the global node activates. Same format as a transition condition |
+| `description` | Purpose of the node |
+| `excluded_nodes` | Array of node keys where it must not fire |
+| `is_tool_call` | Offer the global node to the dialogue model as a tool, not as a per-turn check |
+
+`__previous__` as a `target_node` or as `passthrough_default_transition` returns to the node that was interrupted.
+
+```json
+{
+  "global_nodes": {
+    "off_topic": {
+      "name": "off_topic",
+      "description": "Brings the caller back to the subject",
+      "condition": { "operator": "matches_intent", "description": "The user talks about something unrelated to their order" },
+      "task_message": "Redirect the caller to the subject.",
+      "on_enter": { "type": "tts", "text": "I can only help with your order. Let us continue." },
+      "passthrough": true,
+      "passthrough_default_transition": "__previous__",
+      "excluded_nodes": ["goodbye"],
+      "transitions": [
+        { "target_node": "__previous__", "description": "always", "condition": { "operator": "always" } }
+      ]
+    }
+  }
+}
+```
+
+Rules:
+
+- List terminal nodes in `excluded_nodes`, or the global node can loop.
+- Exclude nodes where an interrupt would do harm, for example an identity check.
+- For a plain redirect use a passthrough node with a fixed line. It is faster and more predictable than a model reply.
+- Use global nodes for interrupts that can happen anywhere. Do not copy the same transition into every node.
+
+## Extraction schema
+
+`extraction_schema` is an array on a node. After each user message the extraction model fills the listed variables from the conversation.
+
+```json
+{
+  "extraction_schema": [
+    {
+      "name": "order_number",
+      "type": "string",
+      "description": "The order number the caller reads out",
+      "validation_pattern": "^[0-9]{8}$",
+      "max_retries": 2,
+      "min_confidence": 0.8
+    },
+    {
+      "name": "request_type",
+      "type": "string",
+      "enum_values": ["status", "cancel", "change_address", "other"],
+      "description": "What the caller wants to do with the order",
+      "min_confidence": 0.7
+    }
+  ]
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `name` | string | Variable name |
+| `type` | string | `string`, `integer`, `float`, `boolean`, `date`, `datetime`, `name`, `phone_number` |
+| `description` | string | What the variable is |
+| `enum_values` | array | Allowed values. Works on every type. The old `enum` type is deprecated and becomes `string` |
+| `extraction_prompt` | string | A custom extraction template. See the warning below |
+| `validation_pattern` | string | Regular expression the value must match |
+| `min_confidence` | number | 0.0 to 1.0. Values below it are discarded. Default `0.95` |
+| `max_retries` | integer | Retries after a failed validation, with the error given to the model |
+
+How it works:
+
+1. The extraction model sees recent messages and the schema.
+2. It returns structured values.
+3. Confidence is computed from the model's token probabilities, not from a self-report.
+4. Each value is checked against `validation_pattern` and `enum_values`.
+5. On failure the model retries, up to `max_retries`.
+
+Rules:
+
+- **Set `min_confidence` on every variable.** The default of 0.95 is strict. A discarded value leaves no trace in the transcript, so it looks the same as "nothing was extracted".
+- **`extraction_prompt` replaces the whole built-in template.** It is not appended. A custom prompt must contain the input placeholders itself: `{{extractor.speech}}`, `{{extractor.conversation.last-10}}`, `{{extractor.type_preamble}}` and `{{extractor.variables_list}}`. Without them the extractor never sees the user's message and returns nothing on every turn, while dialogue and routing look healthy.
+- **Declare dates as `type: "date"`.** The date types give the extractor today's date and the rules for relative dates such as "tomorrow". A date typed as `string` gets no date anchor and the model guesses the year.
+- The built-in date rules turn vague expressions such as "next week" into a concrete date. If you need vague dates rejected, a custom prompt must say so and state that this overrides the general rules.
+- No `null`. Omit optional fields or use `""`.
+- An extracted variable is available to the same node's transitions in the same turn, and to every later node.
+
+Inside `extraction_prompt` these date placeholders resolve: `{{date.today}}`, `{{time.now}}`, `{{date.day_of_week}}`, `{{date.yesterday}}`, `{{date.tomorrow}}`, `{{date.day_after_tomorrow}}`, `{{date.next_week}}`, `{{date.end_of_month}}`, `{{date.first_next_month}}`, `{{date.next_mon}}` to `{{date.next_sun}}`, `{{date.last_mon}}` to `{{date.last_sun}}`, `{{date.fnm_mon}}` to `{{date.fnm_sun}}` (first such weekday of next month), `{{date.weeks2}}`, `{{date.weeks3}}`, `{{date.weeks2_ago}}`, `{{date.weeks3_ago}}`. Do not rely on them outside extraction prompts.
+
+**Fork on an extracted enum.** To route from one node to several paths, extract an enum and branch with `equals`. This is more reliable than several competing `matches_intent` transitions.
+
+```json
+{
+  "name": "menu",
+  "node_type": "conversation",
+  "task_message": "Tell the caller the order status in one sentence. Then ask whether they want to change the delivery address, cancel the order, or end the call.",
+  "extraction_schema": [
+    {
+      "name": "next_action",
+      "type": "string",
+      "enum_values": ["change_address", "cancel", "done"],
+      "description": "What the caller chose. Empty if unclear.",
+      "min_confidence": 0.7
+    }
+  ],
+  "transitions": [
+    { "target_node": "change_address", "description": "Change address", "condition": { "logic": "or", "conditions": [ { "variable": "next_action", "operator": "equals", "operand": "change_address" } ] } },
+    { "target_node": "cancel_order", "description": "Cancel", "condition": { "logic": "or", "conditions": [ { "variable": "next_action", "operator": "equals", "operand": "cancel" } ] } },
+    { "target_node": "goodbye", "description": "Done", "condition": { "logic": "or", "conditions": [ { "variable": "next_action", "operator": "equals", "operand": "done" } ] } },
+    { "target_node": "menu", "description": "Unclear, stay", "condition": { "operator": "always" } }
+  ]
+}
+```
+
+Use extraction for user speech. For API responses use `response_mapping` (tools-and-code.md). It is deterministic and needs no model call.
+
+## End-call nodes
+
+An `end_call` node hangs up. It has a `terminal` object and no outgoing transitions.
+
+```json
+{
+  "name": "goodbye",
+  "node_type": "end_call",
+  "on_enter": { "type": "silent" },
+  "disable_inactivity_monitor": true,
+  "transitions": [],
+  "terminal": {
+    "type": "function",
+    "function": {
+      "name": "closing_end",
+      "handler": "__function__:end_call",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message_mode": { "type": "string", "default": "custom" },
+          "spoken_message": { "type": "string", "default": "Thank you for calling. Goodbye." }
+        }
+      }
+    }
+  }
+}
+```
+
+| Parameter | Meaning |
+|---|---|
+| `message_mode` | `custom`: say `spoken_message`. `llm`: the model writes the farewell from `llm_prompt`. `none`: hang up without a farewell |
+| `spoken_message` | The fixed farewell for `custom`. `{{var}}` works |
+| `llm_prompt` | The instruction for `llm` |
+| `interruptible` | `true` opens a short window after the farewell in which the user can still speak. Default: hang up as soon as the agent stops speaking |
+| `trigger_timeout` | Length of that window in seconds |
+| `trigger_pattern_both` | Farewell phrases, separated by `\|`, that do not cancel the close. Anything else the user says in the window cancels the close and returns the turn to the agent |
+
+Rules:
+
+- **The farewell comes from the terminal, not from `on_enter`.** A node with an `on_enter` line and `message_mode: "none"` hangs up silently. Put the sentence in `spoken_message` and set `on_enter` to `{"type": "silent"}`.
+- Set `disable_inactivity_monitor` to `true` and `transitions` to `[]`.
+- **The call's `endedReason` is the terminal's `function.name`.** The node name does not affect it. Pick a name that describes the outcome.
+- Use several end-call nodes with different farewells and function names when outcomes differ.
+- If you set `interruptible`, also set `trigger_pattern_both`. Without a phrase list every polite reply cancels the hang-up. The window is timed on a wall clock and a chat simulation cannot measure it.
+
+Verified in a working builder: `message_mode: "none"` with a silent `on_enter` ends the call when the node is reached. The agent says its goodbye in the previous conversation node.
+
+## Limits
+
+| Limit | Default | Notes |
+|---|---|---|
+| `max_node_turns` | `10` | Cap on user turns in one node. Only user messages count. Tool results and agent messages do not. There is no "unlimited" value |
+| `max_turn_transition` | none | Where to go when the cap is reached. Without it the engine records the overrun and continues with normal routing, so the cap changes nothing |
+| `truncation_strategy` | `keep_all` | `keep_all`: full history. `keep_recent`: system message plus the last `truncation_window_size` messages. `summarize`: older messages are replaced by a model-written summary |
+| `truncation_window_size` | `10` | Used by `keep_recent` and `summarize` |
+| Extraction `min_confidence` | `0.95` | See "Extraction schema" |
+| Code `timeout_ms` | `30000` | See tools-and-code.md |
+
+Notes:
+
+- Truncation applies to the dialogue model only. Extraction and routing run before it.
+- Give every node that sets `max_node_turns` a `max_turn_transition`. The working builder sets `max_node_turns` to 60 and 80 on its conversation nodes without a `max_turn_transition`. Its calls ended well below those counts, so the behaviour at the cap is not confirmed by it.
+- Size the cap from real conversations. A node that handles a whole call can need dozens of user turns.
+- The maximum call length in a simulation is set with `maxCallDurationSeconds` (api.md).
+
+## Design rules
+
+- Use `snake_case` node keys that describe the step.
+- Keep dialogue in `task_message`, routing in `transitions`, data capture in `extraction_schema`.
+- Every path must reach an `end_call` node.
+- Put deterministic conditions before `matches_intent` conditions.
+- Every passthrough node ends with an `always` transition.
+- A transition back to an earlier node is supported.
+- Split a step into its own node when it has strict rules of its own or forms a clear state. Keep related optional actions together in one conversation node with several tools.
+
+## Complete example
+
+A clinic assistant. It collects a service and a day, looks up free slots, lets the model book one with a tool, and ends the call.
+
+```json
+{
+  "initial_node": "collect",
+  "system_prompt": "You are the phone assistant of a dental clinic. Speak English. Keep every turn to one or two short sentences.",
+  "test_variables": { "patient_id": "p_test", "first_name": "Dana" },
+  "global_nodes": {},
+  "nodes": {
+    "collect": {
+      "name": "collect",
+      "node_type": "conversation",
+      "on_enter": { "type": "tts", "text": "Hello {{first_name}}, this is the clinic. Which treatment would you like to book, and on which day?" },
+      "on_enter_first_entry_only": true,
+      "task_message": "Find out which treatment the caller wants (checkup, cleaning or filling) and on which day. Ask one question at a time. Do not call a tool in this turn.",
+      "extraction_schema": [
+        { "name": "treatment", "type": "string", "enum_values": ["checkup", "cleaning", "filling"], "description": "Treatment the caller wants", "min_confidence": 0.7 },
+        { "name": "wanted_day", "type": "date", "description": "Day the caller wants the appointment", "min_confidence": 0.7 }
+      ],
+      "max_node_turns": 12,
+      "max_turn_transition": "goodbye_no_booking",
+      "transitions": [
+        {
+          "target_node": "find_slots",
+          "description": "Treatment and day are known",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "logic": "and",
+                "conditions": [
+                  { "variable": "treatment", "operator": "is_set" },
+                  { "variable": "wanted_day", "operator": "is_set" }
+                ]
+              }
+            ]
+          }
+        },
+        { "target_node": "collect", "description": "Keep collecting", "condition": { "operator": "always" } }
+      ]
+    },
+    "find_slots": {
+      "name": "find_slots",
+      "node_type": "api_request",
+      "passthrough": true,
+      "passthrough_default_transition": "offer",
+      "on_enter": { "type": "silent" },
+      "disable_inactivity_monitor": true,
+      "pre_actions": [
+        {
+          "type": "function",
+          "config": { "timeoutMs": 10000, "maxRetries": 2 },
+          "function": {
+            "name": "find_slots",
+            "handler": "__function__:api_call",
+            "description": "Get free slots for a day.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string", "default": "https://api.example.com/v1/slots" },
+                "method": { "type": "string", "default": "POST" },
+                "headers": { "type": "object", "properties": { "Content-Type": { "type": "string", "default": "application/json" } } },
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "treatment": { "type": "string", "default": "{{treatment}}" },
+                    "day": { "type": "string", "default": "{{wanted_day}}" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "response_mapping": [
+        { "path": "data.slots_text", "variable": "slots_text" }
+      ],
+      "transitions": [
+        { "target_node": "goodbye_no_booking", "description": "The lookup failed", "condition": { "logic": "or", "conditions": [ { "variable": "find_slots_failure_count", "operator": "greater_than", "operand": 0 } ] } },
+        { "target_node": "offer", "description": "always", "condition": { "operator": "always" } }
+      ]
+    },
+    "offer": {
+      "name": "offer",
+      "node_type": "conversation",
+      "task_message": "Free slots: {{slots_text}}\n\nOffer the earliest slot. If the caller refuses it, offer the next one. When the caller accepts a slot, read back the treatment, the day and the time and wait for a clear yes. Then CALL book_appointment. Saying that it is booked is not enough. After the tool result, tell the caller whether the booking worked and say goodbye.",
+      "tools": [
+        {
+          "type": "function",
+          "config": { "timeoutMs": 10000, "maxRetries": 0 },
+          "function": {
+            "name": "book_appointment",
+            "handler": "__function__:api_call",
+            "description": "Book one slot. CALL it only after the caller confirmed the read-back.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string", "default": "https://api.example.com/v1/bookings" },
+                "method": { "type": "string", "default": "POST" },
+                "headers": { "type": "object", "properties": { "Content-Type": { "type": "string", "default": "application/json" } } },
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "patient_id": { "type": "string", "default": "{{patient_id}}" },
+                    "treatment": { "type": "string", "default": "{{treatment}}" },
+                    "slot_time": { "type": "string", "description": "Start time of the accepted slot, HH:MM, 24 hour", "default": "{{slot_time}}" }
+                  },
+                  "required": ["slot_time"]
+                }
+              }
+            }
+          },
+          "response_mapping": [
+            { "path": "data.booking_id", "variable": "booking_id" }
+          ]
+        }
+      ],
+      "max_node_turns": 20,
+      "max_turn_transition": "goodbye_no_booking",
+      "transitions": [
+        { "target_node": "goodbye_booked", "description": "The booking was recorded", "condition": { "logic": "or", "conditions": [ { "variable": "booking_id", "operator": "is_set" } ] } },
+        { "target_node": "goodbye_no_booking", "description": "The caller does not want any slot", "condition": { "operator": "matches_intent", "description": "The caller refused all offered slots or does not want to book" } }
+      ]
+    },
+    "goodbye_booked": {
+      "name": "goodbye_booked",
+      "node_type": "end_call",
+      "on_enter": { "type": "silent" },
+      "disable_inactivity_monitor": true,
+      "transitions": [],
+      "terminal": {
+        "type": "function",
+        "function": {
+          "name": "booked",
+          "handler": "__function__:end_call",
+          "parameters": { "type": "object", "properties": { "message_mode": { "type": "string", "default": "none" } } }
+        }
+      }
+    },
+    "goodbye_no_booking": {
+      "name": "goodbye_no_booking",
+      "node_type": "end_call",
+      "on_enter": { "type": "silent" },
+      "disable_inactivity_monitor": true,
+      "transitions": [],
+      "terminal": {
+        "type": "function",
+        "function": {
+          "name": "no_booking",
+          "handler": "__function__:end_call",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "message_mode": { "type": "string", "default": "custom" },
+              "spoken_message": { "type": "string", "default": "No appointment was booked. You can call us again at any time. Goodbye." }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+What the example shows:
+
+| Node | Feature |
+|---|---|
+| `collect` | Fixed opening line, extraction with a `date` type, AND group, self-transition, turn cap with a target |
+| `find_slots` | Passthrough `api_request` node, baked parameters, node-level `response_mapping`, failure counter, `always` fallback |
+| `offer` | A tool the model calls, a model-filled body field, tool-level `response_mapping`, routing on the mapped variable |
+| `goodbye_booked`, `goodbye_no_booking` | Two end-call nodes with different `endedReason` values |
+
+
+# Tools and code
+
+This page describes how a workflow calls HTTP APIs and runs Python. Read [workflow-format.md](workflow-format.md) first.
+
+Statements marked "verified in a working builder" come from a builder that created a 6-node workflow through the REST API. The workflow has code nodes, `api_call` tools, post-hooks and transitions on tool results. Its agent passed its practice cases. Statements marked "seen in a trial call" come from the event log of a simulation call made with that builder.
+
+## Tool function shape
+
+Every external action is a **tool function**. The shape is the same wherever you attach it.
+
+```json
+{
+  "type": "function",
+  "config": { "timeoutMs": 10000, "maxRetries": 2 },
+  "function": {
+    "name": "lookup_order",
+    "handler": "__function__:api_call",
+    "description": "Look up one order. CALL it when the caller asks about a specific order.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "default": "https://api.example.com/v1/orders/lookup" },
+        "method": { "type": "string", "default": "POST" },
+        "headers": {
+          "type": "object",
+          "properties": { "Content-Type": { "type": "string", "default": "application/json" } }
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "customer_id": { "type": "string", "default": "{{customer_id}}" },
+            "order_number": { "type": "string", "description": "Order number, digits only", "default": "{{order_number}}" }
+          },
+          "required": ["order_number"]
+        }
+      }
+    }
+  },
+  "response_mapping": [
+    { "path": "data.status", "variable": "order_status" }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `type` | Always `"function"` |
+| `function.name` | Tool name. The model calls it by this name. Result variables are named after it |
+| `function.handler` | Which runtime executes the tool. See the table below |
+| `function.description` | Read by the dialogue model when the tool is in `tools`. Ignored in `pre_actions` |
+| `function.parameters` | JSON-schema object. `properties` holds the parameters |
+| `config.timeoutMs` | Timeout of one attempt, in milliseconds |
+| `config.maxRetries` | Tool-level retries of a failed call |
+| `config.interruptible` | `false` makes the tool run in the background. See "Background tools" |
+| `config.alwaysRunsAt` | Makes the tool a lifecycle tool. See "Lifecycle tools" |
+| `response_mapping` | Tool level, for tools in `tools`. Maps the result to variables |
+| `pre_process_code` | Python hook that runs before the call |
+| `post_process_code` | Python hook that runs after the call |
+
+| Handler | Runs |
+|---|---|
+| `__function__:api_call` | An HTTP request |
+| `__function__:code_exec` | A Python snippet in a sandbox |
+| `__function__:end_call` | Hangs up. Used in the `terminal` of an `end_call` node |
+
+Handlers for integrations, knowledge search, call transfer and rescheduling also exist. They are not needed here.
+
+`api_call` parameters:
+
+| Parameter | Meaning |
+|---|---|
+| `url` | Request URL. `{{var}}` works |
+| `method` | HTTP method |
+| `headers` | Object. Each header is a property with a `default` |
+| `body` | Object. Each body field is a property under `body.properties` |
+| `connect_retries` | Transport retries. See "Retries and timeouts" |
+
+## How a parameter gets its value
+
+One key decides, per parameter: `default`.
+
+| Declaration | Who supplies the value | Does the model see the parameter |
+|---|---|---|
+| `default` with a literal, or with a `{{var}}` that has a value | The workflow. The value is **baked** | No |
+| `default` with a `{{var}}` that has no value when the node is entered | The model | Yes, named after the variable, with the property's `type`, `description` and `enum` |
+| no `default` | The model | Yes |
+| `const` | Nobody. `const` does **not** bake | It only constrains the model's own output |
+
+Rules:
+
+- **Use `default` for fixed backend config** such as `url`, `method` and auth headers. At registration the engine moves every `default` into the tool's base config, resolves `{{var}}` from the variable table, and removes the field from the schema the model sees.
+- **Never use `const` for a value you want sent.** The engine reads only `default`. A `{{var}}` inside a `const` never resolves. An `api_call` whose `url` is a `const` fails with "URL is required".
+- **Baking happens when the node is entered.** A `{{var}}` default is resolved against the variable table at that moment.
+
+The working builder uses this for every tool: `customer_id` has `"default": "{{customer_id}}"` and is baked from a call variable. Every other body field has `"default": "{{<field name>}}"`, where no variable of that name exists, so the model fills it. Verified in a working builder.
+
+Seen in a trial call: the model's arguments are stored as `<tool>_args.<field>` in the variable table, for example `lookup_order_args.order_number`. They were not stored under the bare field name.
+
+Take care that a model-filled field does not share its name with a variable that is already set when the node is entered. The value would be baked and the model would never see the parameter.
+
+### `api_call` body field rules
+
+- Declare each body field as a leaf under `body.properties.<field>`.
+- Put the field's `type`, `description` and `enum` on that leaf. Put required fields in `body.required`.
+- Give each leaf its own `default`.
+- Do not put a field spec at the top level of `parameters.properties` next to a `body.default` template object. The engine looks for the spec at `body.properties.<field>`, does not find it, and the model sees only "Template variable: name". The `enum` and `description` are lost while the call still works.
+- A body that exists only as one `body.default` object also shows as an empty form in the dashboard editor. Saving from there removes the tool.
+
+A `code_exec` tool is different: its parameters are true top-level arguments. Declare a model-filled one as a top-level property without `default`.
+
+### When a baked variable has no value
+
+| Field type | Variable unset | Variable is `""` |
+|---|---|---|
+| Normal field in an engine-run call (`pre_actions`, lifecycle tool) | The field is dropped from the request. No error | The field is sent empty |
+| `code` of `code_exec` | The literal text `{{var}}` stays in the Python source and the snippet crashes | |
+
+Fix: make sure an earlier node always sets the variable, even to a sentinel value. In code, read variables from `vars` and do not splice them in with `{{var}}`.
+
+### Constrain model-filled parameters
+
+When a value must be one of a known set, do not use a free string. The model sometimes invents a value that looks plausible.
+
+- Use an `enum` on the leaf, and list the values in the `description` as well.
+- Or use a `number` that is an index into a list, with the valid range in the description. A pre-hook or the backend turns the index into the real value.
+- If neither is possible, name the exact source in the description and tell the model to copy the value unchanged.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "queue": {
+      "type": "string",
+      "description": "Team that takes over. One of: billing, delivery, returns.",
+      "enum": ["billing", "delivery", "returns"],
+      "default": "{{queue}}"
+    }
+  },
+  "required": ["queue"]
+}
+```
+
+## `pre_actions` versus `tools`
+
+The placement decides who fires the call.
+
+| Placement | Node type | Who calls it | When |
+|---|---|---|---|
+| `pre_actions` | `api_request`, `code` | The engine | On node entry, before any model turn |
+| `tools` | `conversation` | The dialogue model | During a turn, when the model decides to |
+| Workflow-level `tools` with `config.alwaysRunsAt` | none | The engine | At call start or call end |
+
+The platform removes `tools` from non-conversation nodes and `pre_actions` from conversation nodes. It does so without an error: the JSON you sent looks fine, the create call succeeds, and the stored node has an empty array. A node cannot use both.
+
+**Use `pre_actions`** when the call must always run and the model has nothing to decide. Example: after the order number is known, always fetch the order.
+
+**Use `tools`** when the call depends on what the user says. Example: cancel the order only if the caller asks for it.
+
+Differences in behaviour:
+
+| | `pre_actions` | `tools` |
+|---|---|---|
+| Can be skipped | No | Yes. The model may not call it if the description and the prompt do not push for it |
+| Timing | Node entry | Inside a turn. The model can call a tool, speak, then call another |
+| Result in the conversation | A tool call and tool result pair is added to the history | The same |
+| `response_mapping` lives | On the **node** | On the **tool** |
+| `description` | Ignored | The only text the model reads about the tool |
+
+To run a fixed call before a tool-driven conversation, use a passthrough `api_request` node and transition from it into the conversation node. Do not build a long chain of passthrough nodes for optional actions. Put those into one conversation node with several tools.
+
+### A `pre_actions` node
+
+```json
+{
+  "name": "fetch_order",
+  "node_type": "api_request",
+  "passthrough": true,
+  "passthrough_default_transition": "present",
+  "on_enter": { "type": "silent" },
+  "pre_actions": [
+    {
+      "type": "function",
+      "config": { "timeoutMs": 10000, "maxRetries": 2 },
+      "function": {
+        "name": "get_order",
+        "handler": "__function__:api_call",
+        "description": "Get the order.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string", "default": "https://api.example.com/v1/get_order" },
+            "method": { "type": "string", "default": "POST" },
+            "headers": { "type": "object", "properties": { "Content-Type": { "type": "string", "default": "application/json" } } },
+            "body": { "type": "object", "properties": { "order_number": { "type": "string", "default": "{{order_number}}" } }, "required": [] }
+          }
+        }
+      }
+    }
+  ],
+  "response_mapping": [
+    { "path": "data.items", "variable": "items" }
+  ],
+  "transitions": [
+    { "target_node": "present", "description": "always", "condition": { "operator": "always" } }
+  ]
+}
+```
+
+The last `always` transition is mandatory. A passthrough node with no matching transition deadlocks.
+
+### Tool descriptions
+
+In `tools`, the `description` decides whether the model calls the tool.
+
+- Write it as an instruction with the trigger: "CALL it every time the caller gives an order number."
+- A plain description such as "Looks up an order" lets the model acknowledge the request in words and never call the tool. That is the most common failure of nodes with many tools.
+- If two tools could match, say which one not to use and name the other.
+- In `task_message`, put the tool rules before long reference text and state: when a rule says to use a tool, call the tool.
+- The working builder also tells the model to call one tool per message and to speak after every tool result. Verified in a working builder. In a trial call a model turn with no text and no tool call produced the error event "The model returned no speakable content".
+
+A tool is available only in the nodes that list it. Seen in a trial call: the model called a tool that the current node did not list. The result was the text "The function `<name>` is not currently available."
+
+## `response_mapping`
+
+`response_mapping` copies values from a call result into named variables. It needs no model call.
+
+```json
+{
+  "response_mapping": [
+    { "path": "data.status", "variable": "order_status" },
+    { "path": "data.items", "variable": "items" }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `path` | Dot path into the tool result |
+| `variable` | Name of the variable to set |
+
+### Placement
+
+- For a tool in `tools`: inside the tool object, next to `function` and `config`.
+- For `pre_actions`: at the **node level**. A `response_mapping` nested inside a `pre_actions` entry is ignored and the variable never appears.
+
+`extraction_schema` follows the same placement rule if you use it on a call result.
+
+### Where a result lands (trial findings)
+
+Seen in a trial call: the result of an `api_call` is an envelope around the HTTP response.
+
+```json
+{
+  "status": "success",
+  "data": { "ok": true, "verified": true, "attempts_left": 3 },
+  "message": "Successfully executed POST request",
+  "status_code": 200,
+  "header": { "Content-Type": "application/json" }
+}
+```
+
+`data` is the JSON body the API returned. `header` holds the HTTP response headers.
+
+The engine also writes every result into the variable table by itself, flattened with dots. You do not need a mapping for these. For a tool named `check_answer` whose API returned `{"ok": true, "verified": true, "attempts_left": 3}`, the trial call's variable table held:
+
+| Variable | Value |
+|---|---|
+| `check_answer_args.<field>` | Each argument the model sent |
+| `check_answer_response.status` | `success` |
+| `check_answer_response.data.ok` | `true` (a string) |
+| `check_answer_response.data.verified` | `true` (a string) |
+| `check_answer_response.data.attempts_left` | `3` |
+| `check_answer_response.message` | `Successfully executed POST request` |
+| `check_answer_response.status_code` | `200` |
+| `check_answer_response.header.<Header-Name>` | One variable per response header |
+| `check_answer_status_code` | `200` |
+| `check_answer_success_count` | Number of successful calls so far |
+
+Each call of the same tool overwrites the previous `_args` and `_response` values.
+
+### Which mapping paths work
+
+- **Start the path at the envelope, with `data.`**. If the API returns `{"ok": true}`, map `data.ok`. If it returns `{"products": [...]}`, map `data.products`. Verified in a working builder, on a tool-level mapping and on a node-level mapping.
+- A path without the `data.` prefix (for the same body: `ok`) is not confirmed. A smaller example builder uses it. In an early trial call the mapped variables stayed unset and the transitions on them never fired. The mapping paths of that call are not recorded. The builder that passed uses `data.` paths.
+- The flattened key can be used directly as a transition variable: `check_answer_response.data.verified`. Verified in a working builder, which tests the mapped variable and the flattened key in the same OR group as a safeguard.
+- Booleans arrive as strings. The trial call showed `true` in lower case in the flattened keys. Test both `"true"` and `"True"`, or map a string field.
+- A mapped list or object: the exact form it has later inside `vars` is not confirmed. The working builder reads it defensively. It accepts a list, a JSON string, and flattened keys.
+
+## Routing on tool results
+
+Routing runs again after a tool result arrives. A transition on a result variable fires in the same turn, before any further model turn. Seen in a trial call.
+
+```json
+{
+  "transitions": [
+    {
+      "target_node": "load_order",
+      "description": "The check passed",
+      "condition": {
+        "logic": "or",
+        "conditions": [
+          { "variable": "check_passed", "operator": "equals", "operand": "true" },
+          { "variable": "check_passed", "operator": "equals", "operand": "True" },
+          { "variable": "check_answer_response.data.verified", "operator": "equals", "operand": "true" },
+          { "variable": "check_answer_response.data.verified", "operator": "equals", "operand": "True" }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Rules:
+
+- On a passthrough node, end with an `always` transition so that a failed or empty response does not deadlock.
+- Use a tool result to leave a conversation node. The pattern "a closing tool sets a variable, a transition on that variable leads to an `end_call` node" is verified in a working builder.
+- To leave a node that carries out an action, do not re-test the user's earlier intent with `matches_intent`. The router looks at the latest user message and can route away before the tool was called. Extract a follow-up enum with a default such as `stay`, and branch with `equals`.
+
+### Success and failure counters
+
+The engine keeps two integer variables per call target. No mapping is needed.
+
+| Placement | Variables |
+|---|---|
+| `pre_actions` node | `<nodeId>_success_count`, `<nodeId>_failure_count` |
+| Tool in `tools` with handler `api_call` | `<toolName>_success_count`, `<toolName>_failure_count` |
+
+Seen in a trial call: `check_answer_success_count` was `2` after two successful calls, and a code node named `setup` produced `setup_success_count` with the value `1`.
+
+```json
+{
+  "transitions": [
+    { "target_node": "give_up", "description": "The lookup failed three times", "condition": { "logic": "or", "conditions": [ { "variable": "lookup_order_failure_count", "operator": "greater_than", "operand": 2 } ] } },
+    { "target_node": "ask_again", "description": "always", "condition": { "operator": "always" } }
+  ]
+}
+```
+
+### `suppress_tool_results`
+
+A node-level boolean for nodes that run API calls. With `true` the dialogue model sees only a short `{status: "success"}` summary in place of the raw response. Variables are still mapped and routing still sees them. Use it for large responses, or when the mapped variables already hold everything the model needs.
+
+### Background tools
+
+A tool with `"config": {"interruptible": false}` runs in the background. A user interruption does not cancel it. Its result arrives one or more turns later. The mapped variables, the `_response` keys and the counters are filled as usual, but not in the same turn. A transition that reads them right after the call can find them unset. Gate on the variable with `is_set`.
+
+## Retries and timeouts
+
+| Setting | Where | Default | What it does |
+|---|---|---|---|
+| `timeoutMs` | `config` | not documented | Time limit of one attempt, in milliseconds |
+| `maxRetries` | `config` | not documented | Tool-level retries after a failed response |
+| `connect_retries` | `parameters.properties`, as a baked parameter | `2` | Retries when the connection could not be established |
+| `timeout_ms` | `code_exec` parameter | `30000` | Time limit of a code snippet |
+
+`connect_retries` in detail:
+
+- It retries only failures to establish the connection: connection refused, or reset during the TCP or TLS handshake. The request never reached the server, so a repeat is safe even for POST.
+- HTTP error statuses and timeouts are not retried by it.
+- Hard cap `5`. `0` means a single attempt.
+- Back-off is 150 ms times the attempt number, with a new connection each time.
+- All attempts share one 30 second budget for the request.
+- Declare it next to `url` and `method`: `"connect_retries": {"type": "number", "default": 0}`. It is not a `config` field.
+
+The working builder sets `maxRetries` to `0` on tools that write data and to `2` on its read-only `pre_actions` call. A retried write can record the same thing twice if the API is not idempotent.
+
+## Pre and post Python hooks
+
+An `api_call` tool can carry two Python snippets. They run on the server, in a sandbox, right before and right after the call. They are top-level fields of the tool object.
+
+```json
+{
+  "type": "function",
+  "config": { "timeoutMs": 10000, "maxRetries": 0 },
+  "function": {
+    "name": "check_answer",
+    "handler": "__function__:api_call",
+    "description": "Check one answer. CALL it every time the caller answers the question.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "default": "https://api.example.com/v1/check_answer" },
+        "method": { "type": "string", "default": "POST" },
+        "body": { "type": "object", "properties": { "answer": { "type": "string", "description": "The caller's answer", "default": "{{answer}}" } }, "required": ["answer"] }
+      }
+    }
+  },
+  "pre_process_code": "vars['member_code'] = str(vars.get('member_code') or '').strip().upper()",
+  "post_process_code": "try:\n    if isinstance(result, dict):\n        result.pop('header', None)\n        d = result.get('data')\n        if isinstance(d, dict):\n            d['what_to_do_next'] = 'Ask the next question.' if d.get('verified') else 'Ask the same question again.'\nexcept Exception:\n    pass\n"
+}
+```
+
+| Hook | Names available | Use |
+|---|---|---|
+| `pre_process_code` | `vars`: mutable dict that fills the `{{var}}` placeholders of the request. `config`: the substituted request with `url`, `method`, `headers`, `body` | Clean a value, or rewrite the whole request |
+| `post_process_code` | `result`: the tool result, mutable | Reshape, shorten or extend the result |
+
+Documented behaviour:
+
+- The post-hook runs before `response_mapping` and extraction see the result.
+- An empty or whitespace-only string means no hook.
+- Hooks are honoured only on `api_call` tools (and on the integration and knowledge search handlers). The platform removes them from any other handler when the workflow is saved.
+- In a pre-hook, setting `config['body']` to a string sends that string as the raw body, with no JSON encoding. Set the `Content-Type` header yourself in that case.
+
+### What `result` looks like in a post-hook
+
+The internal reference shows `result` as the response body. A working builder shows otherwise. Verified in a working builder:
+
+- For an `api_call`, `result` is the envelope described above: a dict with `status`, `data`, `message`, `status_code` and `header`. The API's JSON body is `result["data"]`.
+- A key that the hook adds inside `result["data"]` reaches the dialogue model as part of the tool result. The working builder adds a `what_to_do_next` sentence there, and its prompt tells the model to obey it.
+- `result.pop("header", None)` removes the response headers. The working builder does this on every tool, so that headers do not take up space in the model's context.
+- Mapping paths still start with `data.` when a post-hook is present.
+
+The working builder writes every hook inside `try` and `except Exception: pass` and checks types with `isinstance` before use. What the platform does when a hook raises is not documented.
+
+Seen in a test on 10 October: a post-hook can read call variables and write new variables, and a later pre-hook reads them. Not confirmed: whether a change to `result` also changes the flattened `<tool>_response.*` variables.
+
+## Code nodes and `code_exec`
+
+A `code` node runs a Python snippet when it is entered. The snippet is a `code_exec` function in `pre_actions`.
+
+```json
+{
+  "name": "compute_delivery",
+  "node_type": "code",
+  "passthrough": true,
+  "passthrough_default_transition": "tell_delivery",
+  "on_enter": { "type": "silent" },
+  "pre_actions": [
+    {
+      "type": "function",
+      "function": {
+        "name": "code_exec",
+        "handler": "__function__:code_exec",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string", "default": "import datetime\ntry:\n    start = datetime.date.fromisoformat(str(vars.get('shipped_on'))[:10])\n    eta = start + datetime.timedelta(days=3)\n    vars['delivery_day'] = eta.isoformat()\n    vars['delivery_state'] = 'known'\nexcept Exception:\n    vars['delivery_day'] = ''\n    vars['delivery_state'] = 'unknown'\n" },
+            "timeout_ms": { "type": "number", "default": 10000 }
+          }
+        }
+      }
+    }
+  ],
+  "transitions": [
+    { "target_node": "tell_delivery", "description": "always", "condition": { "operator": "always" } }
+  ]
+}
+```
+
+| Parameter | Meaning |
+|---|---|
+| `code` | The Python source, as a baked `default` string |
+| `timeout_ms` | Time limit in milliseconds. Default `30000` |
+
+### Reading and writing variables
+
+- The snippet gets a dict named `vars`. It holds the current workflow variables.
+- Read with `vars.get("name")`. A variable that was never set is absent.
+- Write with `vars["name"] = value`. Every key the snippet assigns becomes a workflow variable.
+
+Verified in a working builder:
+
+- Call variables are in `vars`. The builder reads `vars.get("now")`, a call variable passed with the simulation.
+- The result of an earlier `api_request` node is reachable from `vars` in a later code node. The builder looks for it under the mapped variable name first and under the flattened result keys second. Which of the two held the data is not recorded.
+- A string written to `vars["date_facts"]` in a code node resolves as `{{date_facts}}` in the `task_message` of later conversation nodes. Multi-line strings work.
+- The standard modules `json`, `re` and `datetime` can be imported.
+- The same snippet can run in two code nodes at different points of the call. The later run sees the variables added in between.
+
+### What a code node returns
+
+Seen in a trial call: the result of a successful `code_exec` is
+
+```json
+{ "status": "success", "data": null, "message": "Code executed successfully", "status_code": 200 }
+```
+
+The snippet's output is not in `data`. Its values reach the workflow only through `vars`. After a code node named `setup` ran, the variable table held:
+
+| Variable | Value |
+|---|---|
+| each key the snippet wrote, for example `date_facts` | the value, with source `tool_result` and source node `setup` |
+| `setup_response.status` | `success` |
+| `setup_response.data` | `null` |
+| `setup_response.message` | `Code executed successfully` |
+| `setup_response.status_code` | `200` |
+| `setup_status_code` | `200` |
+| `setup_success_count` | `1` |
+
+For a code node the automatic keys are named after the **node**, not after `code_exec`.
+
+### Rules for snippets
+
+- **Do not write `{{` or `}}` in the code.** The internal sources disagree on whether the `code` field is templated. One says it is exempt. Another says placeholders are resolved when the code runs and an unset one is left as literal text, which breaks the Python. The working builder removes every `{{` and `}}` from generated code (a nested dict literal such as `{'a': {'b': 1}}` ends in `}}`) and reads all values from `vars`.
+- **Never let a snippet raise.** Wrap the body in `try` and `except`, and write a fallback value for every variable that a later prompt or condition reads. A prompt that references an unset variable shows the literal placeholder to the model.
+- **Write strings for routing flags**, such as `known` and `unknown`. Do not route on a Python boolean. See "Do not route on a boolean" in workflow-format.md.
+- Keep snippets fast. They block the conversation.
+- Do arithmetic, date calculation and counting in code, and give the model the finished facts as text. Verified in a working builder: it computes a block of date facts in a code node and places it in the prompts.
+- Treat a code node like an API node: `passthrough: true`, a `passthrough_default_transition`, and a last `always` transition.
+
+### Sandbox limits
+
+| Limit | Value |
+|---|---|
+| Time | `timeout_ms`, default `30000` |
+| Modules | `json`, `re` and `datetime` are verified in a working builder. The full list is not documented |
+| Network and file access | Not documented |
+| Memory and output size | Not documented |
+
+### `code_exec` as a tool
+
+`code_exec` can also be a tool in the `tools` array of a conversation node, called by the model. Its parameters are top-level arguments, declared without `default` so the model fills them. For such a tool the `code` field resolves `{{var}}` when the tool is called, against the current variable table. The working builder does not use this form, so nothing about it is verified here.
+
+## Lifecycle tools
+
+A tool whose `config.alwaysRunsAt` is a non-empty list is never shown to the model. The engine fires it at a fixed point of the call.
+
+| Value | When |
+|---|---|
+| `start_of_call` | During call setup, before the first turn |
+| `end_of_call` | After the call has ended |
+| `each_turn` | Accepted by the schema but not implemented. It never fires |
+
+Put a lifecycle tool that must run on every call into the workflow's top-level `tools` array.
+
+```json
+{
+  "initial_node": "greeting",
+  "nodes": {},
+  "tools": [
+    {
+      "type": "function",
+      "config": { "alwaysRunsAt": ["end_of_call"] },
+      "function": {
+        "name": "push_call_result",
+        "handler": "__function__:api_call",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string", "default": "https://api.example.com/v1/call-results" },
+            "method": { "type": "string", "default": "POST" },
+            "body": {
+              "type": "object",
+              "properties": {
+                "summary": { "type": "string", "default": "{{call.analysis.summary}}" },
+                "reason": { "type": "string", "default": "{{call.call_end_reason}}" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+Rules:
+
+- A workflow-level tool without `alwaysRunsAt` never runs and the model never sees it.
+- A lifecycle tool in a node's `tools` runs for `start_of_call` only on the `initial_node`, and for `end_of_call` only on the node in which the call ended.
+- If a `{{var}}` parameter is still unresolved, one model call fills the parameters. If everything resolves, the handler runs directly.
+- `response_mapping` is applied for `start_of_call`. It is not applied for `end_of_call`.
+- At the end of a call the order is: call analysis, then `end_of_call` tools, then success-criteria judging. An `end_of_call` tool can use `{{call.analysis.summary}}`, `{{call.analysis.structured_data_str}}`, `{{call.call_end_reason}}`, `{{call.call_end_reason_category}}`, `{{call.call_tags}}` and `{{call.duration}}`.
+- A malformed lifecycle tool is dropped at run time without an error. Validate with a dry run (api.md).
+
+## Tool results and the next turn
+
+After a tool call returns, the model sees the result and has to produce the next turn itself. Two things were seen in practice runs with the hackathon's agent model:
+
+- **The agent says nothing after the tool call.** The result arrives, no assistant message follows, and the simulated customer hangs up after waiting. It happens more often when the result is bare data such as `{"ok": true, "verified": true}`.
+- **The agent ignores a negative result.** For example it reads `"verified": false` and moves on to the next question as if the answer had passed.
+
+What fixed both in a working builder (verified, see the post-hook section above): a post-hook on the tool that adds one plain instruction line to the result before the model sees it, for example a `what_to_do_next` field that says what the answer means and what to say or call next. The model then has something to act on.
+
+Also say it in the step's prompt: after every tool result, speak to the customer or call the next tool. Never end a turn with nothing.
+
+## Checklist
+
+- Fixed values use `default`, never `const`.
+- Each `api_call` body field is a leaf under `body.properties` with its own `default`, `description` and `enum`.
+- `tools` only on `conversation` nodes. `pre_actions` only on `api_request` and `code` nodes.
+- `response_mapping` on the tool for `tools`, on the node for `pre_actions`.
+- Mapping paths start with `data.`.
+- Booleans from results are tested as `"true"` and `"True"`, or replaced by string fields.
+- Every passthrough node ends with an `always` transition.
+- Code reads and writes through `vars`, never raises, and contains no `{{` or `}}`.
+- Tool descriptions say when to call the tool.
+
+
+# BANK INPUTS
+### INPUT FILE BRIEF.md
+# Synthetic reader integration check
+This is a synthetic delivery appointment desk, not a debt-collection task.
+All dialogue is Turkish. Identify the organisation as Nova Teslimat and ask for the parcel code.
+Do not ask for any bank identity information or discuss debts.
+Read the current appointment with lookup_slot. Offer an available weekday appointment, Monday-Friday.
+Read back the parcel code, proposed date and time, ask confirmation, then call save_slot.
+Claim a saved change only when its response ok is true. On a failed save, apologise and finish without claiming success. Do not retry.
+Say goodbye and end the call. There is no bank closing or transfer endpoint.
+The hours table is in hours.docx; the later amendment below overrides it.
+Call dates use now, not the machine clock. Customer variables and identifiers are in customers.xlsx.
+## Later amendment, version 2
+The end of the available window is now 16:00 inclusive, overriding the older 17:00 in the Word table. Start remains 09:00 inclusive.
+## Example conversation
+Caller wants their parcel appointment moved to Friday at 15:00 and confirms the complete read-back.
+Use the one synthetic fixture from the spreadsheet. When asked, provide its parcel code including leading zeroes. Answer briefly and naturally.
+
+
+### INPUT FILE README.md
+Read BRIEF.md first. hours.docx supplies the original hours. customers.xlsx has synthetic call variables. flow.pdf contains a raster-only sequence diagram. openapi.json is the authoritative service contract. This is only a local pre-final reader check.
+
+### INPUT FILE customers.xlsx
+
+SHEET: Synthetic call variables (state=visible)
+A1="parcel_code" | B1="now"
+A2="000317" | B2="2026-10-14T11:00"
+
+### INPUT FILE flow.pdf
+
+
+ATTACHED IMAGE 1: flow.pdf / page-1.png
+
+### INPUT FILE hours.docx
+PART word/document.xml
+Original hours, version 1
+TABLE
+"Start" | "09:00"
+"End" | "17:00"
+END TABLE
+
+### INPUT FILE openapi.json
+{"openapi": "3.0.3", "info": {"title": "Synthetic appointment test", "version": "1"}, "servers": [{"url": "https://mock.example.invalid"}], "paths": {"/lookup_slot": {"post": {"operationId": "lookup_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}}, "required": ["parcel_code"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}, "/save_slot": {"post": {"operationId": "save_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}, "date": {"type": "string", "format": "date"}, "time": {"type": "string"}}, "required": ["parcel_code", "date", "time"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}}}
+
+### DEPLOYED MOCK OPENAPI
+{"openapi": "3.0.3", "info": {"title": "Synthetic appointment test", "version": "1"}, "servers": [{"url": "https://mock.example.invalid"}], "paths": {"/lookup_slot": {"post": {"operationId": "lookup_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}}, "required": ["parcel_code"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}, "/save_slot": {"post": {"operationId": "save_slot", "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"parcel_code": {"type": "string"}, "date": {"type": "string", "format": "date"}, "time": {"type": "string"}}, "required": ["parcel_code", "date", "time"]}}}}, "responses": {"200": {"description": "JSON result", "content": {"application/json": {"schema": {"type": "object", "properties": {"ok": {"type": "boolean"}, "found": {"type": "boolean"}, "date": {"type": "string"}, "time": {"type": "string"}}}}}}}}}}}
+
+### DEPLOYMENT
+All phone tools must use this mock base URL: https://mock.example.invalid
+
+# CANDIDATE
+{"policy": {"case": "Synthetic delivery appointment desk", "organisation": "Nova Teslimat", "language": "Turkish", "address": "Polite siz forms", "sources": [{"id": "brief", "reference": "BRIEF.md", "rules": "Organisation, parcel-code request, appointment lookup, weekday appointments, full read-back, confirmation before saving, honest result reporting, no save retry, farewell and hangup."}, {"id": "amendment_v2", "reference": "BRIEF.md / Later amendment, version 2", "rules": "Available appointment times are 09:00\u201316:00 inclusive."}, {"id": "hours_v1", "reference": "hours.docx / word/document.xml / Original hours, version 1 / table", "rules": "Original start 09:00 and end 17:00. The start survives; the end is superseded."}, {"id": "fixture", "reference": "customers.xlsx / Synthetic call variables / A1:B2", "rules": "The documented synthetic call variables are parcel_code=000317 and now=2026-10-14T11:00."}, {"id": "flow", "reference": "flow.pdf / attached raster page 1", "sequence": ["Read current slot", "Read back proposal and ask confirmation", "Only after yes: save_slot", "ok true: confirm saved; ok false: apologise", "Say goodbye, then end call"]}, {"id": "contract", "reference": "openapi.json and DEPLOYED MOCK OPENAPI", "rules": "The two contracts agree. Only lookup_slot and save_slot exist. Their success fields are inside the response body."}, {"id": "deployment", "reference": "DEPLOYMENT", "rules": "Use the supplied mock base URL for both service operations."}, {"id": "reader", "reference": "README.md", "rules": "Identifies the supplied policy, spreadsheet, Word table, raster diagram and authoritative service contract."}], "priority_order": ["Deployment determines the service destination; OpenAPI determines operation names, request fields, field types and response shapes.", "The explicit later amendment overrides conflicting older policy: 16:00 replaces 17:00.", "The remaining BRIEF.md requirements and the raster sequence diagram govern the conversation and save ordering.", "The Word table applies only where not superseded.", "The spreadsheet supplies synthetic call inputs, not proof of a successful lookup or write.", "The example illustrates a Friday 15:00 request and confirmation; platform examples supply syntax only."], "overrides": [{"earlier": "hours.docx: End=17:00", "later": "BRIEF.md version 2: End=16:00 inclusive", "effective": "09:00 through 16:00 inclusive"}], "opening": "Merhaba, Nova Teslimat ad\u0131na yard\u0131mc\u0131 oluyorum. G\u00f6nderi kodunuzu alabilir miyim?", "sequence": ["Identify Nova Teslimat and ask for the parcel code. Preserve leading zeroes and assemble a code supplied in parts before lookup.", "Call lookup_slot with the complete code supplied by the caller. A fixture value alone does not satisfy this step.", "Proceed only after an actual response with ok=true and found=true, readable current appointment fields and a usable call now.", "Read the current appointment aloud before presenting the change for confirmation.", "Collect or offer a weekday date and a time inside the amended window. Retain requested details already supplied by the caller.", "Validate the complete proposal before presenting the final read-back.", "Read back the parcel code, proposed date and time, and ask for explicit confirmation.", "A correction invalidates the preceding confirmation. Preserve unchanged proposal elements, validate again and read back the complete proposal again. A parcel-code correction requires a new lookup.", "After a clear confirmation of the current complete read-back, submit save_slot exactly once.", "Report the actual save outcome, say goodbye, then perform silent hangup."], "calendar": {"anchor": "Use the call variable now exclusively. Do not use the machine clock or platform date placeholders.", "local_time": "Use the local wall date and time represented by now; the case supplies no timezone conversion rule.", "weekdays": "Monday through Friday, computed with weekday() values 0 through 4.", "hours": "Compare integer minutes since midnight: 540 <= hour*60+minute <= 960.", "holidays": "No holiday calendar or holiday exclusion is supplied. Do not import one; a weekday is not excluded on an assumed holiday.", "past_slots": "Offer appointments at or after the call's now. Explain a past proposal and obtain a new proposal rather than silently moving it.", "default_offer": "Round now upward to the next whole minute only when generating an offer. If before 09:00, offer 09:00 that day. If after 16:00 or on a weekend, advance to the next Monday\u2013Friday date at 09:00. This never changes a confirmed customer proposal.", "date_interpretation": "Accept explicit ISO dates, day.month.year or day/month/year dates, today, tomorrow and a bare weekday, optionally preceded by bu or followed by g\u00fcn\u00fc. A bare weekday means its first occurrence on or after the call date. If its time would be past, request clarification rather than advancing a week. Other ambiguous expressions require a concrete date.", "time_interpretation": "Normalize an unambiguous spoken time to HH:MM. Numeric HH, HH:MM and HH.MM representations are accepted; an explicit whole hour gets :00. Incomplete or ambiguous speech is collected before validation.", "display": "Read dates in Turkish using day.month.year and times as hours and minutes. Send dates as YYYY-MM-DD and times as HH:MM.", "capacity": "No inventory or capacity endpoint exists. Offers use the documented weekday and hour window; do not claim an independent capacity reservation.", "other_limits": "No booking horizon, minimum notice interval or product-specific deadline is supplied."}, "amounts": {"applicable": false, "rules": "There are no debts, monetary amounts, amount bands, floors, partial payments or monetary rounding rules."}, "security_and_products": {"identity_checks": "None. Do not ask for bank identity information or security answers.", "products": [], "product_note_rules": [], "notes": "No note operation or note policy exists.", "transfers": "No transfer endpoint exists.", "collection_branches": "Debt disputes, hardship, persuasion, restructuring, promises and collection closing codes do not apply."}, "response_rules": {"lookup": "Require actual boolean ok=true and found=true. HTTP success alone is insufficient. Existing appointments outside the new availability window may still be read; the amended window constrains the proposed replacement.", "save": "Actual boolean ok=true establishes success. The save response's found field is not an additional success requirement. ok=false is failure, even in an HTTP-success envelope. Missing or malformed ok leaves the outcome unconfirmed.", "writes": "One save submission per call, maxRetries=0. Never repeat a failed or uncertain save. Clear stale result flags immediately before submission.", "pending_vs_recorded": "A proposal and an explicit confirmation are not a recorded change. Recorded state is set only by a successful save response."}, "closing_combinations": [{"condition": "save_slot returns ok=true, with any found value or with found absent", "action": "Confirm that the change was saved, say goodbye, then hang up."}, {"condition": "save_slot returns ok=false, with any found value or with found absent", "action": "Apologise, do not claim success, do not retry, say goodbye, then hang up."}, {"condition": "Save transport failure, malformed response or missing boolean ok", "action": "Apologise and say the saved change cannot be verified; do not retry or claim that it was saved; say goodbye and hang up."}, {"condition": "lookup_slot returns ok=true and found=false", "action": "Explain that the appointment could not be found; do not save; say goodbye and hang up."}, {"condition": "Lookup ok is false, absent or malformed, regardless of found; or found is absent or malformed", "action": "Apologise for being unable to retrieve the appointment; do not save; say goodbye and hang up."}, {"condition": "Unreadable current appointment, unusable now, missing prerequisites or code failure", "action": "Apologise for being unable to complete the change; do not enter a write stage; say goodbye and hang up."}, {"condition": "Caller explicitly ends the process before a save", "action": "State that no change was made, say goodbye and hang up."}, {"condition": "Incomplete, invalid, ambiguous, declined or corrected proposal without a request to end", "action": "Continue clarification or revision without a save. A new complete read-back and confirmation are required."}], "closing_protocol": "There are no bank closing codes, closing API calls, transfers or lifecycle writes. Outcome speech and farewell precede the sole silent end_call.", "implementation_fallbacks": "The source gives no lookup retry budget or lookup-failure dialogue. This workflow conservatively makes no automatic lookup retry and closes honestly on lookup failure. These are implementation fallbacks, not additional source policy.", "test_scope": "Local checks use fresh synthetic values. Security-answer and monetary-band checks are inapplicable. The smoke test uses the sole documented fixture. End-to-end scenarios are omitted because this is a practice reader-check brief."}, "workflow": {"initial_node": "intake", "system_prompt": "Nova Teslimat'\u0131n teslimat randevu asistan\u0131s\u0131n. Yaln\u0131z T\u00fcrk\u00e7e konu\u015f; m\u00fc\u015fteriye siz diye hitap et. K\u0131sa, do\u011fal ve s\u0131rayla sorular sor. Banka, bor\u00e7, \u00f6deme veya kimlik do\u011frulama bilgisi isteme. G\u00f6nderi kodunun ba\u015f\u0131ndaki s\u0131f\u0131rlar\u0131 koru; kodu rakam rakam oku. Yaln\u0131z m\u00fc\u015fterinin verdi\u011fi ya da a\u00e7\u0131k\u00e7a kabul etti\u011fi bilgileri kullan. \u00d6nce mevcut randevuyu \u00f6\u011fren ve oku; sonra yeni randevuyu do\u011frulat. Yeni randevular yaln\u0131z pazartesi-cuma, 09.00-16.00 dahil olabilir. M\u00fc\u015fterinin son d\u00fczeltmesini esas al; eksik par\u00e7alar\u0131 tamamlamadan i\u015flem yapma. Bir tarih ve saatin kabul edilmesi, de\u011fi\u015fikli\u011fin kaydedildi\u011fi anlam\u0131na gelmez. Yaln\u0131z save_slot yan\u0131t\u0131ndaki ger\u00e7ek ok=true sonucundan sonra kaydedildi\u011fini s\u00f6yle. Ba\u015far\u0131s\u0131z veya belirsiz kayd\u0131 tekrarlama. Ara\u00e7 sonu\u00e7lar\u0131ndaki what_to_do_next talimat\u0131n\u0131 uygula; sonu\u00e7tan sonra konu\u015f veya izin verilen sonraki i\u015flemi hemen yap. M\u00fc\u015fteriye ara\u00e7 adlar\u0131n\u0131, ak\u0131\u015f ad\u0131mlar\u0131n\u0131, de\u011fi\u015fkenleri veya teknik ayr\u0131nt\u0131lar\u0131 s\u00f6yleme. Veda edilmeden telefonu kapatma.", "global_nodes": {}, "nodes": {"intake": {"name": "intake", "node_type": "conversation", "on_enter": {"type": "tts", "text": "Merhaba, Nova Teslimat ad\u0131na yard\u0131mc\u0131 oluyorum. G\u00f6nderi kodunuzu alabilir miyim?"}, "on_enter_first_entry_only": true, "task_message": "Ge\u00e7mi\u015fte a\u00e7\u0131l\u0131\u015f hen\u00fcz s\u00f6ylenmediyse \u00f6nce aynen s\u00f6yle: Merhaba, Nova Teslimat ad\u0131na yard\u0131mc\u0131 oluyorum. G\u00f6nderi kodunuzu alabilir miyim? M\u00fc\u015fteri kodunu zaten verdiyse bunu koru. G\u00f6nderi kodu tamamland\u0131\u011f\u0131nda lookup_slot \u00e7a\u011f\u0131r. Kod par\u00e7a par\u00e7a veriliyorsa s\u0131rayla birle\u015ftir, ba\u015ftaki s\u0131f\u0131rlar\u0131 koru ve yaln\u0131z eksik par\u00e7ay\u0131 sor; m\u00fc\u015fteri devam edece\u011fini belirtirken sorgulama. \u00c7a\u011fr\u0131 de\u011fi\u015fkenindeki \u00f6rnek kodu m\u00fc\u015fterinin yan\u0131t\u0131 yerine kullanma. M\u00fc\u015fteri \u00f6nceki kodunu d\u00fczelttiyse en son tamamlanm\u0131\u015f kod i\u00e7in yeniden lookup_slot \u00e7a\u011f\u0131r. Tarih ve saat daha \u00f6nce s\u00f6ylendiyse tekrar isteme. Kimlik veya g\u00fcvenlik sorusu sorma. Mevcut randevu ba\u015far\u0131l\u0131 sonu\u00e7la gelmeden randevu bilgisi uydurma. Sonu\u00e7tan sonra what_to_do_next talimat\u0131n\u0131 izle.", "tools": ["lookup_slot"], "extraction_schema": [{"name": "requested_date_text", "type": "string", "description": "M\u00fc\u015fterinin istedi\u011fi veya a\u00e7\u0131k\u00e7a kabul etti\u011fi tarihin ham ifadesi. Son d\u00fczeltme \u00f6nceki tarihi de\u011fi\u015ftirir. Cuma gibi g\u00fcn ad\u0131n\u0131 koru; belirsiz ifadeyi somut bir tarihe \u00e7evirme. Tarih bu mesajda de\u011fi\u015fmediyse \u00f6nceki iste\u011fi koru.", "min_confidence": 0.7}, {"name": "requested_time_text", "type": "string", "description": "\u0130stenen veya a\u00e7\u0131k\u00e7a kabul edilen saat. A\u00e7\u0131k konu\u015fulan saatleri HH:MM bi\u00e7imine \u00e7evir: on be\u015f -> 15:00. Eksik veya belirsiz saati tahmin etme. Son d\u00fczeltmeyi kullan; saat de\u011fi\u015fmediyse \u00f6nceki iste\u011fi koru.", "min_confidence": 0.7}, {"name": "proposal_input_state", "type": "string", "enum_values": ["waiting", "ready"], "description": "M\u00fc\u015fterinin tarih ve saat ifadesi birlikte tamamland\u0131ysa ready; h\u00e2l\u00e2 par\u00e7a ekliyorsa veya bir unsur eksikse waiting. Bu, uygunluk ya da son kay\u0131t onay\u0131 de\u011fildir.", "min_confidence": 0.7}, {"name": "cancel_requested", "type": "string", "enum_values": ["no", "yes"], "description": "Yaln\u0131z m\u00fc\u015fteri i\u015flemi b\u0131rak\u0131p g\u00f6r\u00fc\u015fmeyi bitirmeyi a\u00e7\u0131k\u00e7a istiyorsa yes. Bir \u00f6neriyi reddetmek veya d\u00fczeltmek no demektir.", "min_confidence": 0.7}], "truncation_strategy": "keep_all", "transitions": [{"target_node": "authorize", "description": "M\u00fc\u015fteri i\u015flemi sonland\u0131rmak istedi.", "condition": {"logic": "or", "conditions": [{"variable": "cancel_requested", "operator": "equals", "operand": "yes"}]}}, {"target_node": "proposal", "description": "Ger\u00e7ek sorgu ba\u015far\u0131l\u0131 ve mevcut randevu okunabilir.", "condition": {"logic": "or", "conditions": [{"variable": "lookup_state", "operator": "equals", "operand": "ready"}]}}, {"target_node": "finish", "description": "Sorgu ba\u015far\u0131s\u0131z, kay\u0131t bulunamad\u0131 veya sonu\u00e7 kullan\u0131lam\u0131yor.", "condition": {"logic": "or", "conditions": [{"variable": "lookup_state", "operator": "equals", "operand": "error"}, {"variable": "lookup_state", "operator": "equals", "operand": "not_found"}, {"variable": "lookup_slot_failure_count", "operator": "greater_than", "operand": 0}]}}]}, "proposal": {"name": "proposal", "node_type": "conversation", "on_enter": {"type": "llm"}, "task_message": "Ba\u015far\u0131l\u0131 sorgudaki mevcut randevu: {{current_appointment_text}}. G\u00f6nderi kodu: {{lookup_code}}. Hesaplanan \u00f6rnek uygun se\u00e7enek: {{offer_text}}. Son tarih ifadesi: {{requested_date_text}}. Son saat ifadesi: {{requested_time_text}}. Girdi durumu: {{proposal_input_state}}. A\u00e7\u0131klanmas\u0131 gereken d\u00fczeltme: {{validation_feedback}}. Mevcut randevuyu ge\u00e7mi\u015fte hen\u00fcz okumad\u0131ysan \u00f6nce m\u00fc\u015fteriye oku. M\u00fc\u015fterinin tarih ve saat iste\u011fi tamamsa, mevcut randevuyu s\u00f6yledikten sonra hemen tan\u0131ml\u0131 de\u011ferlendirme ge\u00e7i\u015fini kullan. Harici servis arac\u0131 \u00e7a\u011f\u0131rma; yaln\u0131z tan\u0131ml\u0131 de\u011ferlendirme ge\u00e7i\u015fi kullan\u0131labilir. \u0130stek eksikse yaln\u0131z eksik unsuru sor. Hen\u00fcz bir tercih yoksa hesaplanan \u00f6rnek se\u00e7ene\u011fi sun. Belirsiz bir tarih i\u00e7in g\u00fcn, ay ve y\u0131l\u0131 netle\u015ftir; eksik saat rakamlar\u0131n\u0131n tamamlanmas\u0131n\u0131 bekle. Do\u011frulama a\u00e7\u0131klamas\u0131 varsa k\u0131saca s\u00f6yle ve ilgili unsuru d\u00fczeltmesini iste. M\u00fc\u015fterinin istedi\u011fi tarihi veya saati sessizce de\u011fi\u015ftirme. Bu a\u015famada de\u011fi\u015fikli\u011fin kaydedildi\u011fini s\u00f6yleme ve nihai kay\u0131t onay\u0131 isteme.", "tools": [], "extraction_schema": [{"name": "requested_date_text", "type": "string", "description": "\u0130stenen tarihin ham ifadesi veya m\u00fc\u015fterinin a\u00e7\u0131k\u00e7a kabul etti\u011fi somut \u00f6neri. \u00d6nceki tarih yaln\u0131z m\u00fc\u015fteri de\u011fi\u015ftirdiyse de\u011fi\u015fir. Belirsiz ifadeleri aynen koru; g\u00fcn ad\u0131n\u0131 bir makine tarihine g\u00f6re \u00e7\u00f6zme.", "min_confidence": 0.7}, {"name": "requested_time_text", "type": "string", "description": "Son istenen saat; a\u00e7\u0131k konu\u015fulan saati HH:MM bi\u00e7iminde yaz. Ayr\u0131 mesajlardaki tamamlay\u0131c\u0131 par\u00e7alar\u0131 birle\u015ftir; tamamlanmam\u0131\u015f saati tahmin etme. De\u011fi\u015ftirilmeyen saati koru.", "min_confidence": 0.7}, {"name": "proposal_input_state", "type": "string", "enum_values": ["waiting", "ready"], "description": "Tarih ve saat ifadesi birlikte tamamland\u0131ysa ready, eksik veya devam eden par\u00e7alar varsa waiting. Uygunluk kontrol\u00fcn\u00fc veya kay\u0131t onay\u0131n\u0131 temsil etmez.", "min_confidence": 0.7}, {"name": "cancel_requested", "type": "string", "enum_values": ["no", "yes"], "description": "Yaln\u0131z g\u00f6r\u00fc\u015fmeyi ve de\u011fi\u015fiklik i\u015flemini a\u00e7\u0131k\u00e7a bitirme iste\u011fi yes; \u00f6neri reddi ve d\u00fczeltmeler no.", "min_confidence": 0.7}], "truncation_strategy": "keep_all", "transitions": [{"target_node": "authorize", "description": "M\u00fc\u015fteri i\u015flemi bitirmek istiyor.", "condition": {"logic": "or", "conditions": [{"variable": "cancel_requested", "operator": "equals", "operand": "yes"}]}}, {"target_node": "validate_proposal", "description": "Mevcut randevuyu sesli okuduktan sonra tamamlanm\u0131\u015f tarih ve saat iste\u011fini de\u011ferlendirmek i\u00e7in bu ge\u00e7i\u015fi hemen \u00e7a\u011f\u0131r. Girdi durumu ready olmal\u0131. M\u00fc\u015fteriden yeni bir mesaj veya fazladan onay bekleme.", "is_tool_call": true, "condition": {"operator": "matches_intent", "description": "Mevcut randevu okundu ve m\u00fc\u015fterinin tarih ile saat iste\u011fi tamamland\u0131."}}]}, "validate_proposal": {"name": "validate_proposal", "node_type": "code", "on_enter": {"type": "silent"}, "passthrough": true, "passthrough_default_transition": "finish", "code": "import datetime\nimport re\ntry:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if vars.get('lookup_state') == 'ready' and str(vars.get('lookup_code', '')).strip():\n        vars['proposal_state'] = 'incomplete'\n        vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz tarihi ve saati tamamlay\u0131n.'\n        raw_date = str(vars.get('requested_date_text', '')).strip()\n        raw_time = str(vars.get('requested_time_text', '')).strip()\n        if vars.get('proposal_input_state') == 'ready' and raw_date and raw_time:\n            anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n            text = raw_date.lower()\n            for before, after in [('\u0131', 'i'), ('\u015f', 's'), ('\u011f', 'g'), ('\u00fc', 'u'), ('\u00f6', 'o'), ('\u00e7', 'c')]:\n                text = text.replace(before, after)\n            text = re.sub(r'\\s+', ' ', text).strip()\n            if text.startswith('bu '):\n                text = text[3:]\n            if text.endswith(' gunu'):\n                text = text[:-5].strip()\n            day = ''\n            names = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi', 'pazar']\n            if text == 'bugun':\n                day = anchor.date()\n            elif text == 'yarin':\n                day = anchor.date() + datetime.timedelta(days=1)\n            elif text in names:\n                day = anchor.date() + datetime.timedelta(days=(names.index(text) - anchor.weekday()) % 7)\n            elif re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', text):\n                try:\n                    day = datetime.date.fromisoformat(text)\n                except Exception:\n                    day = ''\n            else:\n                match = re.fullmatch(r'([0-9]{1,2})[./]([0-9]{1,2})[./]([0-9]{4})', text)\n                if match:\n                    try:\n                        day = datetime.date(int(match.group(3)), int(match.group(2)), int(match.group(1)))\n                    except Exception:\n                        day = ''\n            time_text = re.sub(r'^saat\\s+', '', raw_time.lower()).strip()\n            time_match = re.fullmatch(r'([0-9]{1,2})(?:[:.]([0-9]{2}))?', time_text)\n            vars['proposal_state'] = 'invalid'\n            if not day:\n                vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz tarihi g\u00fcn, ay ve y\u0131l olarak netle\u015ftirin.'\n            elif not time_match:\n                vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz saati saat ve dakika olarak netle\u015ftirin.'\n            else:\n                hour = int(time_match.group(1))\n                minute = int(time_match.group(2) or '0')\n                total = hour * 60 + minute\n                if hour > 23 or minute > 59:\n                    vars['validation_feedback'] = 'L\u00fctfen ge\u00e7erli bir saat ve dakika belirtin.'\n                elif day.weekday() > 4:\n                    vars['validation_feedback'] = 'Cumartesi ve pazar g\u00fcnleri randevu verilemiyor. L\u00fctfen pazartesi-cuma aras\u0131nda bir tarih se\u00e7in.'\n                elif total < 540 or total > 960:\n                    vars['validation_feedback'] = 'Randevu saatlerimiz 09.00 ile 16.00 aras\u0131nda; iki s\u0131n\u0131r da dahildir. L\u00fctfen bu aral\u0131ktan bir saat se\u00e7in.'\n                elif datetime.datetime.combine(day, datetime.time(hour, minute)) < anchor:\n                    vars['validation_feedback'] = 'Bu tarih ve saat ge\u00e7mi\u015fte kal\u0131yor. L\u00fctfen ileri bir tarih veya saat belirtin.'\n                else:\n                    vars['proposal_state'] = 'valid'\n                    vars['validation_feedback'] = ''\n                    vars['validated_code'] = str(vars.get('lookup_code', ''))\n                    vars['validated_date'] = day.isoformat()\n                    vars['validated_time'] = '%02d:%02d' % (hour, minute)\n                    vars['validated_date_spoken'] = day.strftime('%d.%m.%Y')\n                    vars['validated_time_spoken'] = '%02d.%02d' % (hour, minute)\n                    vars['validated_source_date_text'] = raw_date\n                    vars['validated_source_time_text'] = raw_time\nexcept Exception:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n", "transitions": [{"target_node": "confirm", "description": "Tam \u00f6neri t\u00fcm kontrolleri ge\u00e7ti.", "condition": {"logic": "or", "conditions": [{"variable": "proposal_state", "operator": "equals", "operand": "valid"}]}}, {"target_node": "proposal", "description": "M\u00fc\u015fteriden eksik bilgiyi veya uygun bir d\u00fczeltmeyi iste.", "condition": {"logic": "or", "conditions": [{"variable": "proposal_state", "operator": "equals", "operand": "incomplete"}, {"variable": "proposal_state", "operator": "equals", "operand": "invalid"}]}}, {"target_node": "finish", "description": "\u00d6nko\u015ful veya hesaplama hatas\u0131nda i\u015flem yapmadan bitir.", "condition": {"operator": "always"}}]}, "confirm": {"name": "confirm", "node_type": "conversation", "on_enter": {"type": "llm"}, "task_message": "Bu turda ara\u00e7 \u00e7a\u011f\u0131rma. Do\u011frulanm\u0131\u015f \u00f6nerinin tamam\u0131n\u0131 m\u00fc\u015fteriye oku: g\u00f6nderi kodu {{validated_code}}, yeni tarih {{validated_date_spoken}}, yeni saat {{validated_time_spoken}}. G\u00f6nderi kodunu ba\u015ftaki s\u0131f\u0131rlarla rakam rakam oku. Sonunda 'Bu de\u011fi\u015fikli\u011fi onayl\u0131yor musunuz?' diye sor ve yan\u0131t\u0131 bekle. Bu tam okuma hen\u00fcz yap\u0131lmad\u0131ysa \u00f6nceki bir eveti onay sayma. M\u00fc\u015fteri bir unsuru d\u00fczeltirse d\u00fczeltmeyi esas al; di\u011fer unsurlar\u0131 koru ve eski \u00f6neriyi onaylanm\u0131\u015f sayma. Kod d\u00fczelirse yeni kodun sorgulanmas\u0131 gerekir. Yan\u0131t belirsizse yaln\u0131z a\u00e7\u0131k onay veya d\u00fczeltme iste. Hay\u0131r yan\u0131t\u0131n\u0131 otomatik g\u00f6r\u00fc\u015fme sonu sayma. Kaydedildi\u011fini s\u00f6yleme.", "tools": [], "extraction_schema": [{"name": "confirmation_action", "type": "string", "enum_values": ["waiting", "accept", "edit", "decline", "cancel", "change_parcel"], "description": "Yaln\u0131z en son m\u00fc\u015fteri yan\u0131t\u0131n\u0131 de\u011ferlendir. En son tam kod-tarih-saat okumas\u0131n\u0131 d\u00fczeltmesiz a\u00e7\u0131k\u00e7a onayl\u0131yorsa accept. Tarih/saat d\u00fczeltmesi veya devam eden d\u00fczeltme edit; kod d\u00fczeltmesi change_parcel; yaln\u0131z hay\u0131r decline; i\u015flemi ve g\u00f6r\u00fc\u015fmeyi bitirme cancel; di\u011fer yan\u0131tlar waiting. Eski bir onay\u0131 yeni yan\u0131ta ta\u015f\u0131ma.", "min_confidence": 0.7}, {"name": "requested_date_text", "type": "string", "description": "M\u00fc\u015fteri tarihi d\u00fczelttiyse son tarih ifadesi; aksi halde mevcut iste\u011fi koru. Belirsiz tarihi tahmin etme.", "min_confidence": 0.7}, {"name": "requested_time_text", "type": "string", "description": "M\u00fc\u015fteri saati d\u00fczelttiyse son saat, a\u00e7\u0131k oldu\u011funda HH:MM bi\u00e7iminde; aksi halde mevcut iste\u011fi koru. Eksik par\u00e7alar\u0131 tamamlanmadan tahmin etme.", "min_confidence": 0.7}, {"name": "proposal_input_state", "type": "string", "enum_values": ["waiting", "ready"], "description": "D\u00fczeltmeler dahil tarih ve saat ifadesi tamamsa ready; m\u00fc\u015fteri h\u00e2l\u00e2 tamaml\u0131yorsa veya unsur eksikse waiting.", "min_confidence": 0.7}], "truncation_strategy": "keep_all", "transitions": [{"target_node": "validate_proposal", "description": "Tarih veya saat d\u00fczeltmesini yeniden de\u011ferlendir; \u00f6nceki onay\u0131 kullanma.", "condition": {"logic": "or", "conditions": [{"variable": "confirmation_action", "operator": "equals", "operand": "edit"}]}}, {"target_node": "authorize", "description": "Son yan\u0131t\u0131n onay, ret, kod d\u00fczeltmesi veya bitirme sonucunu g\u00fcvenli bi\u00e7imde i\u015fle.", "condition": {"logic": "or", "conditions": [{"variable": "confirmation_action", "operator": "equals", "operand": "accept"}, {"variable": "confirmation_action", "operator": "equals", "operand": "decline"}, {"variable": "confirmation_action", "operator": "equals", "operand": "cancel"}, {"variable": "confirmation_action", "operator": "equals", "operand": "change_parcel"}]}}]}, "authorize": {"name": "authorize", "node_type": "code", "on_enter": {"type": "silent"}, "passthrough": true, "passthrough_default_transition": "finish", "code": "import datetime\ntry:\n    vars['authorization_state'] = 'blocked'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    action = str(vars.get('confirmation_action', 'waiting'))\n    if vars.get('save_attempted') == 'yes':\n        vars['authorization_state'] = 'done'\n        if vars.get('save_state') == 'saved':\n            vars['closing_text'] = 'Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n.'\n        elif vars.get('save_state') == 'failed':\n            vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n.'\n        else:\n            vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    elif vars.get('cancel_requested') == 'yes' or action == 'cancel':\n        vars['authorization_state'] = 'done'\n        vars['closing_text'] = 'Randevunuzda de\u011fi\u015fiklik yapmad\u0131m. Ho\u015f\u00e7a kal\u0131n.'\n    elif action == 'change_parcel':\n        vars['lookup_state'] = 'empty'\n        vars['lookup_code'] = ''\n        vars['proposal_state'] = 'empty'\n        vars['confirmation_action'] = 'waiting'\n        vars['authorization_state'] = 'new_lookup'\n    elif action == 'decline' and vars.get('lookup_state') == 'ready':\n        vars['requested_date_text'] = ''\n        vars['requested_time_text'] = ''\n        vars['proposal_input_state'] = 'waiting'\n        vars['proposal_state'] = 'empty'\n        vars['confirmation_action'] = 'waiting'\n        vars['validation_feedback'] = 'L\u00fctfen tercih etti\u011finiz yeni tarihi ve saati belirtin.'\n        vars['authorization_state'] = 'collect'\n    elif action == 'accept' and vars.get('lookup_state') == 'ready' and vars.get('proposal_state') == 'valid':\n        unchanged = str(vars.get('requested_date_text', '')).strip() == vars.get('validated_source_date_text') and str(vars.get('requested_time_text', '')).strip() == vars.get('validated_source_time_text')\n        if not unchanged:\n            vars['confirmation_action'] = 'waiting'\n            vars['authorization_state'] = 'revalidate'\n        else:\n            code = str(vars.get('validated_code', ''))\n            day = datetime.date.fromisoformat(str(vars.get('validated_date', '')))\n            moment = datetime.time.fromisoformat(str(vars.get('validated_time', '')))\n            anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n            total = moment.hour * 60 + moment.minute\n            if code and code == vars.get('lookup_code') and day.weekday() < 5 and 540 <= total <= 960 and moment.second == 0 and moment.microsecond == 0 and datetime.datetime.combine(day, moment) >= anchor:\n                vars['confirmed_code'] = code\n                vars['confirmed_date'] = day.isoformat()\n                vars['confirmed_time'] = moment.strftime('%H:%M')\n                vars['authorization_state'] = 'authorized'\nexcept Exception:\n    vars['authorization_state'] = 'blocked'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n", "transitions": [{"target_node": "write_slot", "description": "Sorgu ve \u00f6neri do\u011fruland\u0131, g\u00fcncel tam okuma a\u00e7\u0131k\u00e7a onayland\u0131 ve daha \u00f6nce kay\u0131t denenmedi.", "condition": {"logic": "or", "conditions": [{"variable": "authorization_state", "operator": "equals", "operand": "authorized"}]}}, {"target_node": "validate_proposal", "description": "Onay s\u0131ras\u0131nda de\u011fi\u015fmi\u015f bilgi yeniden kontrol edilmeli.", "condition": {"logic": "or", "conditions": [{"variable": "authorization_state", "operator": "equals", "operand": "revalidate"}]}}, {"target_node": "proposal", "description": "M\u00fc\u015fteri farkl\u0131 bir \u00f6neri istiyor.", "condition": {"logic": "or", "conditions": [{"variable": "authorization_state", "operator": "equals", "operand": "collect"}]}}, {"target_node": "intake", "description": "D\u00fczeltilmi\u015f g\u00f6nderi kodu i\u00e7in yeni sorgu gerekli.", "condition": {"logic": "or", "conditions": [{"variable": "authorization_state", "operator": "equals", "operand": "new_lookup"}]}}, {"target_node": "finish", "description": "Kay\u0131t yetkisi olu\u015fmad\u0131 veya i\u015flem zaten sonu\u00e7land\u0131.", "condition": {"operator": "always"}}]}, "write_slot": {"name": "write_slot", "node_type": "api_request", "on_enter": {"type": "silent"}, "passthrough": true, "passthrough_default_transition": "finish", "pre_actions": ["save_slot"], "transitions": [{"target_node": "finish", "description": "Ger\u00e7ek kay\u0131t sonucunu ve veday\u0131 s\u00f6yle; kay\u0131t i\u015flemini tekrar etme.", "condition": {"operator": "always"}}]}, "finish": {"name": "finish", "node_type": "conversation", "on_enter": {"type": "tts", "text": "{{closing_text}}"}, "task_message": "Bu turda hi\u00e7bir ara\u00e7 \u00e7a\u011f\u0131rma. Sonu\u00e7 ve veda metni: {{closing_text}}. Giri\u015fte bu metin s\u00f6ylendiyse tekrar etme. S\u00f6ylenmediyse aynen s\u00f6yle. Yeni soru veya i\u015flem ba\u015flatma.", "tools": [], "passthrough": true, "passthrough_default_transition": "end", "transitions": [{"target_node": "end", "description": "Sonu\u00e7 ve veda sesli s\u00f6ylendikten sonra sessizce kapat.", "condition": {"operator": "always"}}]}, "end": {"name": "end", "node_type": "end_call", "on_enter": {"type": "silent"}, "disable_inactivity_monitor": true, "transitions": []}}}, "tool_config": {"lookup_slot": {"description": "CALL lookup_slot when the caller has supplied a complete parcel code. Preserve leading zeroes and use the latest corrected code. Do not call for a partial code or substitute a synthetic call variable for the caller's answer. After the result, immediately follow what_to_do_next.", "config": {"maxRetries": 0}, "field_descriptions": {"parcel_code": "The complete parcel code actually supplied by the caller, as a string with every leading zero preserved. Join separately supplied digit groups only after the caller finishes. No fixed code length is specified."}, "pre_process_code": "import re\ntry:\n    vars['lookup_state'] = 'pending'\n    vars['lookup_code'] = ''\n    vars['proposal_state'] = 'empty'\n    vars['confirmation_action'] = 'waiting'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n    body = config.get('body', dict())\n    if isinstance(body, dict):\n        raw = str(body.get('parcel_code', '')).strip()\n        code = raw\n        if re.fullmatch(r'[0-9\\s-]+', raw):\n            code = re.sub(r'[\\s-]+', '', raw)\n        else:\n            words = raw.lower().replace(',', ' ').split()\n            digits = dict(zip(['s\u0131f\u0131r', 'bir', 'iki', '\u00fc\u00e7', 'd\u00f6rt', 'be\u015f', 'alt\u0131', 'yedi', 'sekiz', 'dokuz'], '0123456789'))\n            if words and all(word in digits for word in words):\n                code = ''.join(digits[word] for word in words)\n        body['parcel_code'] = code\n        config['body'] = body\n        vars['lookup_code'] = code\nexcept Exception:\n    vars['lookup_state'] = 'error'\n    vars['lookup_code'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n", "post_process_code": "import datetime\nimport json\nimport re\ntry:\n    vars['lookup_state'] = 'error'\n    vars['current_appointment_text'] = ''\n    vars['offer_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n    vars.setdefault('requested_date_text', '')\n    vars.setdefault('requested_time_text', '')\n    vars.setdefault('proposal_input_state', 'waiting')\n    vars.setdefault('cancel_requested', 'no')\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if isinstance(data, str):\n        try:\n            data = json.loads(data)\n        except Exception:\n            data = dict()\n    if not isinstance(data, dict):\n        data = dict()\n    result['data'] = data\n    if data.get('ok') is True and data.get('found') is False:\n        vars['lookup_state'] = 'not_found'\n        vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, bu g\u00f6nderi koduyla bir randevu bulamad\u0131m. Ho\u015f\u00e7a kal\u0131n.'\n    elif data.get('ok') is True and data.get('found') is True and str(vars.get('lookup_code', '')).strip():\n        current_date = datetime.date.fromisoformat(str(data.get('date', '')))\n        current_time_text = str(data.get('time', ''))\n        if not re.fullmatch(r'[0-9]{2}:[0-9]{2}', current_time_text):\n            raise ValueError('invalid current time')\n        current_time = datetime.time.fromisoformat(current_time_text)\n        anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n        offered = anchor.replace(second=0, microsecond=0)\n        if offered < anchor:\n            offered += datetime.timedelta(minutes=1)\n        if offered.time() < datetime.time(9, 0):\n            offered = offered.replace(hour=9, minute=0)\n        if offered.time() > datetime.time(16, 0):\n            offered = (offered + datetime.timedelta(days=1)).replace(hour=9, minute=0)\n        while offered.weekday() > 4:\n            offered = (offered + datetime.timedelta(days=1)).replace(hour=9, minute=0)\n        vars['current_appointment_text'] = current_date.strftime('%d.%m.%Y') + ' saat ' + current_time.strftime('%H.%M')\n        vars['offer_text'] = offered.strftime('%d.%m.%Y saat %H.%M')\n        vars['lookup_state'] = 'ready'\n    data['lookup_state'] = vars['lookup_state']\n    data['current_appointment_text'] = vars['current_appointment_text']\n    data['offer_text'] = vars['offer_text']\n    data['closing_text'] = vars['closing_text']\n    if vars['lookup_state'] == 'ready':\n        data['what_to_do_next'] = 'Mevcut randevuyu \u015fimdi m\u00fc\u015fteriye oku; ard\u0131ndan tarih ve saat iste\u011fini al veya tamamlanm\u0131\u015f iste\u011fi de\u011ferlendir. Hen\u00fcz kay\u0131t yapma.'\n    else:\n        data['what_to_do_next'] = 'Kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; de\u011fi\u015fiklik kaydetme ve ard\u0131ndan g\u00f6r\u00fc\u015fmeyi bitir.'\nexcept Exception:\n    vars['lookup_state'] = 'error'\n    vars['current_appointment_text'] = ''\n    vars['offer_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict()\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    data['lookup_state'] = 'error'\n    data['current_appointment_text'] = ''\n    data['offer_text'] = ''\n    data['closing_text'] = vars['closing_text']\n    data['what_to_do_next'] = '\u00d6z\u00fcr ve veda i\u00e7eren kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; kay\u0131t i\u015flemi yapmadan g\u00f6r\u00fc\u015fmeyi bitir.'\n    result['data'] = data\n", "response_mapping": [{"path": "data.lookup_state", "variable": "lookup_state"}, {"path": "data.current_appointment_text", "variable": "current_appointment_text"}, {"path": "data.offer_text", "variable": "offer_text"}, {"path": "data.closing_text", "variable": "closing_text"}]}, "save_slot": {"description": "Engine-run operation reachable only after successful lookup, deterministic proposal validation and explicit confirmation of the current complete parcel-code/date/time read-back. Submit exactly once. The pre-hook supplies the exact confirmed values; never retry a failed or uncertain write.", "config": {"maxRetries": 0}, "field_descriptions": {"parcel_code": "Exact confirmed parcel code from the successful lookup, retaining leading zeroes.", "date": "Exact confirmed and validated appointment date, YYYY-MM-DD. Do not move it to a different day.", "time": "Exact confirmed and validated appointment time, HH:MM. Monday\u2013Friday, 09:00\u201316:00 inclusive. Do not replace it with another time."}, "pre_process_code": "try:\n    vars['save_state'] = 'pending'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    config['body'] = dict(parcel_code=str(vars.get('confirmed_code', '')), date=str(vars.get('confirmed_date', '')), time=str(vars.get('confirmed_time', '')))\nexcept Exception:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n", "post_process_code": "try:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    result['data'] = data\n    if data.get('ok') is True:\n        vars['save_state'] = 'saved'\n        vars['closing_text'] = 'Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n.'\n        vars['recorded_code'] = str(vars.get('confirmed_code', ''))\n        vars['recorded_date'] = str(vars.get('confirmed_date', ''))\n        vars['recorded_time'] = str(vars.get('confirmed_time', ''))\n    elif data.get('ok') is False:\n        vars['save_state'] = 'failed'\n        vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n.'\n    data['save_state'] = vars['save_state']\n    data['closing_text'] = vars['closing_text']\n    if vars['save_state'] == 'saved':\n        data['what_to_do_next'] = 'De\u011fi\u015fikli\u011fin kaydedildi\u011fini ve veday\u0131 \u015fimdi s\u00f6yle; ard\u0131ndan g\u00f6r\u00fc\u015fmeyi bitir. Ba\u015fka kay\u0131t \u00e7a\u011fr\u0131s\u0131 yapma.'\n    else:\n        data['what_to_do_next'] = '\u00d6z\u00fcr ve veda i\u00e7eren kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; kaydedildi\u011fini s\u00f6yleme, yeniden deneme ve g\u00f6r\u00fc\u015fmeyi bitir.'\nexcept Exception:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict()\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    data['save_state'] = 'unknown'\n    data['closing_text'] = vars['closing_text']\n    data['what_to_do_next'] = '\u00d6z\u00fcr ve veday\u0131 \u015fimdi s\u00f6yle; kaydedildi\u011fini s\u00f6yleme, yeniden deneme ve g\u00f6r\u00fc\u015fmeyi bitir.'\n    result['data'] = data\n", "response_mapping": [{"path": "data.save_state", "variable": "save_state"}, {"path": "data.closing_text", "variable": "closing_text"}]}}, "checks": [{"name": "parcel_digit_groups_preserve_leading_zeroes", "node": "intake", "tool": "lookup_slot", "hook": "pre", "vars": {}, "config": {"body": {"parcel_code": "00 04 82"}}, "expect_vars": {"lookup_code": "000482", "lookup_state": "pending"}, "expect_config": {"body": {"parcel_code": "000482"}}}, {"name": "spoken_parcel_digits_preserve_leading_zeroes", "node": "intake", "tool": "lookup_slot", "hook": "pre", "vars": {}, "config": {"body": {"parcel_code": "s\u0131f\u0131r s\u0131f\u0131r s\u0131f\u0131r d\u00f6rt sekiz iki"}}, "expect_vars": {"lookup_code": "000482"}, "expect_config": {"body": {"parcel_code": "000482"}}}, {"name": "old_current_appointment_can_be_read_after_hours_amendment", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-14T11:00"}, "result": {"data": {"ok": true, "found": true, "date": "2026-10-13", "time": "17:00"}}, "expect_vars": {"lookup_state": "ready", "current_appointment_text": "13.10.2026 saat 17.00", "offer_text": "14.10.2026 saat 11.00"}}, {"name": "friday_after_window_offers_monday", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-16T16:01"}, "result": {"data": {"ok": true, "found": true, "date": "2026-10-15", "time": "10:00"}}, "expect_vars": {"lookup_state": "ready", "offer_text": "19.10.2026 saat 09.00"}}, {"name": "json_encoded_lookup_body_is_read", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-17T08:00"}, "result": {"data": "{\"ok\":true,\"found\":true,\"date\":\"2026-10-16\",\"time\":\"10:00\"}"}, "expect_vars": {"lookup_state": "ready", "offer_text": "19.10.2026 saat 09.00"}}, {"name": "http_success_is_not_lookup_success", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-14T11:00", "lookup_state": "ready"}, "result": {"status": "success", "data": {"ok": false, "found": true, "date": "2026-10-15", "time": "12:00"}}, "expect_vars": {"lookup_state": "error", "current_appointment_text": "", "offer_text": ""}}, {"name": "missing_appointment_does_not_open_proposal_stage", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-14T11:00"}, "result": {"data": {"ok": true, "found": false}}, "expect_vars": {"lookup_state": "not_found", "closing_text": "\u00dczg\u00fcn\u00fcm, bu g\u00f6nderi koduyla bir randevu bulamad\u0131m. Ho\u015f\u00e7a kal\u0131n."}}, {"name": "malformed_lookup_body_fails_closed", "node": "intake", "tool": "lookup_slot", "hook": "post", "vars": {"lookup_code": "000482", "now": "2026-10-14T11:00"}, "result": {"data": []}, "expect_vars": {"lookup_state": "error"}}, {"name": "friday_resolves_from_call_now", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "Cuma g\u00fcn\u00fc", "requested_time_text": "15:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "valid", "validated_date": "2026-10-16", "validated_time": "15:00", "validated_code": "000482", "confirmation_action": "waiting"}}, {"name": "weekend_proposal_is_rejected_without_moving_it", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-16T11:00", "requested_date_text": "2026-10-17", "requested_time_text": "15:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid", "validated_date": "", "requested_date_text": "2026-10-17", "validation_feedback": "Cumartesi ve pazar g\u00fcnleri randevu verilemiyor. L\u00fctfen pazartesi-cuma aras\u0131nda bir tarih se\u00e7in."}}, {"name": "weekday_date_has_no_imported_holiday_exclusion", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-28T11:00", "requested_date_text": "29.10.2026", "requested_time_text": "09:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "valid", "validated_date": "2026-10-29", "validated_time": "09:00"}}, {"name": "opening_boundary_is_inclusive", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T08:00", "requested_date_text": "bug\u00fcn", "requested_time_text": "09:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "valid", "validated_time": "09:00"}}, {"name": "closing_boundary_is_inclusive", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "2026-10-16", "requested_time_text": "16.00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "valid", "validated_time": "16:00"}}, {"name": "one_minute_after_amended_window_is_invalid", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "2026-10-16", "requested_time_text": "16:01", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid", "validated_time": "", "validation_feedback": "Randevu saatlerimiz 09.00 ile 16.00 aras\u0131nda; iki s\u0131n\u0131r da dahildir. L\u00fctfen bu aral\u0131ktan bir saat se\u00e7in."}}, {"name": "superseded_seventeen_hundred_is_invalid", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "2026-10-16", "requested_time_text": "17:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid", "validated_time": ""}}, {"name": "one_minute_before_opening_is_invalid", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T07:00", "requested_date_text": "bug\u00fcn", "requested_time_text": "08:59", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid"}}, {"name": "incomplete_split_time_is_not_validated", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "cuma", "requested_time_text": "1", "proposal_input_state": "waiting"}, "expect_vars": {"proposal_state": "incomplete", "requested_date_text": "cuma", "requested_time_text": "1", "validated_time": ""}}, {"name": "completed_split_input_reuses_previously_supplied_date", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "cuma", "requested_time_text": "15:30", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "valid", "validated_date": "2026-10-16", "validated_time": "15:30"}}, {"name": "vague_date_requires_clarification", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "gelecek hafta", "requested_time_text": "15:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid", "validated_date": "", "validation_feedback": "L\u00fctfen istedi\u011finiz tarihi g\u00fcn, ay ve y\u0131l olarak netle\u015ftirin."}}, {"name": "past_time_is_not_silently_moved", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "now": "2026-10-14T11:00", "requested_date_text": "bug\u00fcn", "requested_time_text": "10:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "invalid", "validation_feedback": "Bu tarih ve saat ge\u00e7mi\u015fte kal\u0131yor. L\u00fctfen ileri bir tarih veya saat belirtin."}}, {"name": "missing_now_fails_closed", "node": "validate_proposal", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "requested_date_text": "cuma", "requested_time_text": "15:00", "proposal_input_state": "ready"}, "expect_vars": {"proposal_state": "blocked", "validated_date": ""}}, {"name": "failed_lookup_cannot_be_replaced_by_customer_confirmation", "node": "authorize", "hook": "code", "vars": {"lookup_state": "error", "proposal_state": "valid", "confirmation_action": "accept", "now": "2026-10-14T11:00"}, "expect_vars": {"authorization_state": "blocked"}}, {"name": "explicit_confirmation_authorizes_exact_validated_values", "node": "authorize", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "proposal_state": "valid", "confirmation_action": "accept", "now": "2026-10-14T11:00", "requested_date_text": "cuma", "requested_time_text": "15:00", "validated_source_date_text": "cuma", "validated_source_time_text": "15:00", "validated_code": "000482", "validated_date": "2026-10-16", "validated_time": "15:00"}, "expect_vars": {"authorization_state": "authorized", "confirmed_code": "000482", "confirmed_date": "2026-10-16", "confirmed_time": "15:00"}}, {"name": "correction_wins_over_stale_acceptance", "node": "authorize", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "proposal_state": "valid", "confirmation_action": "accept", "requested_date_text": "cuma", "requested_time_text": "16:00", "validated_source_date_text": "cuma", "validated_source_time_text": "15:00"}, "expect_vars": {"authorization_state": "revalidate", "confirmation_action": "waiting"}}, {"name": "parcel_correction_invalidates_lookup_and_confirmation", "node": "authorize", "hook": "code", "vars": {"lookup_state": "ready", "lookup_code": "000482", "proposal_state": "valid", "confirmation_action": "change_parcel"}, "expect_vars": {"authorization_state": "new_lookup", "lookup_state": "empty", "lookup_code": "", "proposal_state": "empty", "confirmation_action": "waiting"}}, {"name": "write_uses_confirmed_snapshot_and_clears_stale_success", "node": "write_slot", "tool": "save_slot", "hook": "pre", "vars": {"authorization_state": "authorized", "confirmed_code": "000482", "confirmed_date": "2026-10-16", "confirmed_time": "15:00", "save_state": "saved"}, "config": {"body": {}}, "expect_vars": {"save_state": "pending", "save_attempted": "yes", "closing_text": "\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n."}, "expect_config": {"body": {"parcel_code": "000482", "date": "2026-10-16", "time": "15:00"}}}, {"name": "successful_write_depends_on_ok_not_found_and_removes_headers", "node": "write_slot", "tool": "save_slot", "hook": "post", "vars": {"confirmed_code": "000482", "confirmed_date": "2026-10-16", "confirmed_time": "15:00"}, "result": {"data": {"ok": true, "found": false}, "header": {"X-Test": "synthetic"}}, "expect_vars": {"save_state": "saved", "save_attempted": "yes", "recorded_code": "000482", "recorded_date": "2026-10-16", "recorded_time": "15:00"}, "expect_result": {"data": {"ok": true, "found": false, "save_state": "saved", "closing_text": "Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n.", "what_to_do_next": "De\u011fi\u015fikli\u011fin kaydedildi\u011fini ve veday\u0131 \u015fimdi s\u00f6yle; ard\u0131ndan g\u00f6r\u00fc\u015fmeyi bitir. Ba\u015fka kay\u0131t \u00e7a\u011fr\u0131s\u0131 yapma."}}}, {"name": "failed_write_in_successful_http_envelope_is_not_recorded", "node": "write_slot", "tool": "save_slot", "hook": "post", "vars": {"save_state": "saved"}, "result": {"status": "success", "data": {"ok": false, "found": true}, "headers": {"X-Test": "synthetic"}}, "expect_vars": {"save_state": "failed", "save_attempted": "yes", "closing_text": "\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n."}, "expect_result": {"status": "success", "data": {"ok": false, "found": true, "save_state": "failed", "closing_text": "\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n.", "what_to_do_next": "\u00d6z\u00fcr ve veda i\u00e7eren kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; kaydedildi\u011fini s\u00f6yleme, yeniden deneme ve g\u00f6r\u00fc\u015fmeyi bitir."}}}, {"name": "missing_save_success_field_remains_unknown", "node": "write_slot", "tool": "save_slot", "hook": "post", "vars": {}, "result": {"status": "success", "data": {"found": true}}, "expect_vars": {"save_state": "unknown", "save_attempted": "yes", "closing_text": "\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n."}}, {"name": "failed_save_cannot_be_retried", "node": "authorize", "hook": "code", "vars": {"save_attempted": "yes", "save_state": "failed", "confirmation_action": "accept", "lookup_state": "ready", "proposal_state": "valid"}, "expect_vars": {"authorization_state": "done", "closing_text": "\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n."}}, {"name": "successful_save_is_not_duplicated", "node": "authorize", "hook": "code", "vars": {"save_attempted": "yes", "save_state": "saved", "confirmation_action": "accept", "lookup_state": "ready", "proposal_state": "valid"}, "expect_vars": {"authorization_state": "done", "closing_text": "Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n."}}], "smoke": {"name": "Nova Teslimat documented synthetic fixture", "message": "Merhaba, teslimat randevumu cuma g\u00fcn\u00fc saat 15.00'e almak istiyorum.", "variables": {"parcel_code": "000317", "now": "2026-10-14T11:00"}, "expected_fragments": ["Nova Teslimat"]}}

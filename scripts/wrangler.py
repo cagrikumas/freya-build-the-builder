@@ -7,6 +7,10 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parent.parent
+# Wrangler gives this legacy directory precedence over XDG_CONFIG_HOME.
+# Refuse that fallback instead of reading credentials from another project.
+if (Path.home()/'.wrangler').is_dir():
+    raise SystemExit('Legacy global Wrangler directory detected; stop to preserve credential isolation.')
 env = os.environ.copy()
 for key in list(env):
     if key.startswith(('CLOUDFLARE_', 'CF_', 'WRANGLER_')):

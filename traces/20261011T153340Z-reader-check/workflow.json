@@ -1,0 +1,673 @@
+{
+  "initial_node": "intake",
+  "system_prompt": "Nova Teslimat'\u0131n teslimat randevu asistan\u0131s\u0131n. Yaln\u0131z T\u00fcrk\u00e7e konu\u015f; m\u00fc\u015fteriye siz diye hitap et. K\u0131sa, do\u011fal ve s\u0131rayla sorular sor. Banka, bor\u00e7, \u00f6deme veya kimlik do\u011frulama bilgisi isteme. G\u00f6nderi kodunun ba\u015f\u0131ndaki s\u0131f\u0131rlar\u0131 koru; kodu rakam rakam oku. Yaln\u0131z m\u00fc\u015fterinin verdi\u011fi ya da a\u00e7\u0131k\u00e7a kabul etti\u011fi bilgileri kullan. \u00d6nce mevcut randevuyu \u00f6\u011fren ve oku; sonra yeni randevuyu do\u011frulat. Yeni randevular yaln\u0131z pazartesi-cuma, 09.00-16.00 dahil olabilir. M\u00fc\u015fterinin son d\u00fczeltmesini esas al; eksik par\u00e7alar\u0131 tamamlamadan i\u015flem yapma. Bir tarih ve saatin kabul edilmesi, de\u011fi\u015fikli\u011fin kaydedildi\u011fi anlam\u0131na gelmez. Yaln\u0131z save_slot yan\u0131t\u0131ndaki ger\u00e7ek ok=true sonucundan sonra kaydedildi\u011fini s\u00f6yle. Ba\u015far\u0131s\u0131z veya belirsiz kayd\u0131 tekrarlama. Ara\u00e7 sonu\u00e7lar\u0131ndaki what_to_do_next talimat\u0131n\u0131 uygula; sonu\u00e7tan sonra konu\u015f veya izin verilen sonraki i\u015flemi hemen yap. M\u00fc\u015fteriye ara\u00e7 adlar\u0131n\u0131, ak\u0131\u015f ad\u0131mlar\u0131n\u0131, de\u011fi\u015fkenleri veya teknik ayr\u0131nt\u0131lar\u0131 s\u00f6yleme. Veda edilmeden telefonu kapatma.",
+  "global_nodes": {},
+  "nodes": {
+    "intake": {
+      "name": "intake",
+      "node_type": "conversation",
+      "on_enter": {
+        "type": "llm"
+      },
+      "on_enter_first_entry_only": false,
+      "task_message": "Ge\u00e7mi\u015fte a\u00e7\u0131l\u0131\u015f hen\u00fcz s\u00f6ylenmediyse \u00f6nce aynen s\u00f6yle: Merhaba, Nova Teslimat ad\u0131na yard\u0131mc\u0131 oluyorum. G\u00f6nderi kodunuzu alabilir miyim? M\u00fc\u015fteri kodunu zaten verdiyse bunu koru. G\u00f6nderi kodu tamamland\u0131\u011f\u0131nda lookup_slot \u00e7a\u011f\u0131r. Kod par\u00e7a par\u00e7a veriliyorsa s\u0131rayla birle\u015ftir, ba\u015ftaki s\u0131f\u0131rlar\u0131 koru ve yaln\u0131z eksik par\u00e7ay\u0131 sor; m\u00fc\u015fteri devam edece\u011fini belirtirken sorgulama. \u00c7a\u011fr\u0131 de\u011fi\u015fkenindeki \u00f6rnek kodu m\u00fc\u015fterinin yan\u0131t\u0131 yerine kullanma. M\u00fc\u015fteri \u00f6nceki kodunu d\u00fczelttiyse en son tamamlanm\u0131\u015f kod i\u00e7in yeniden lookup_slot \u00e7a\u011f\u0131r. Tarih ve saat daha \u00f6nce s\u00f6ylendiyse tekrar isteme. Kimlik veya g\u00fcvenlik sorusu sorma. Mevcut randevu ba\u015far\u0131l\u0131 sonu\u00e7la gelmeden randevu bilgisi uydurma. Sonu\u00e7tan sonra what_to_do_next talimat\u0131n\u0131 izle.",
+      "tools": [
+        {
+          "type": "function",
+          "config": {
+            "timeoutMs": 12000,
+            "maxRetries": 0
+          },
+          "function": {
+            "name": "lookup_slot",
+            "handler": "__function__:api_call",
+            "description": "CALL lookup_slot when the caller has supplied a complete parcel code. Preserve leading zeroes and use the latest corrected code. Do not call for a partial code or substitute a synthetic call variable for the caller's answer. After the result, immediately follow what_to_do_next.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "default": "https://mock.example.invalid/lookup_slot"
+                },
+                "method": {
+                  "type": "string",
+                  "default": "POST"
+                },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "Content-Type": {
+                      "type": "string",
+                      "default": "application/json"
+                    }
+                  }
+                },
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "parcel_code": {
+                      "type": "string",
+                      "default": "{{arg_lookup_slot_parcel_code}}",
+                      "description": "The complete parcel code actually supplied by the caller, as a string with every leading zero preserved. Join separately supplied digit groups only after the caller finishes. No fixed code length is specified."
+                    }
+                  },
+                  "required": [
+                    "parcel_code"
+                  ]
+                }
+              }
+            }
+          },
+          "pre_process_code": "import re\ntry:\n    vars['lookup_state'] = 'pending'\n    vars['lookup_code'] = ''\n    vars['proposal_state'] = 'empty'\n    vars['confirmation_action'] = 'waiting'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n    body = config.get('body', dict())\n    if isinstance(body, dict):\n        raw = str(body.get('parcel_code', '')).strip()\n        code = raw\n        if re.fullmatch(r'[0-9\\s-]+', raw):\n            code = re.sub(r'[\\s-]+', '', raw)\n        else:\n            words = raw.lower().replace(',', ' ').split()\n            digits = dict(zip(['s\u0131f\u0131r', 'bir', 'iki', '\u00fc\u00e7', 'd\u00f6rt', 'be\u015f', 'alt\u0131', 'yedi', 'sekiz', 'dokuz'], '0123456789'))\n            if words and all(word in digits for word in words):\n                code = ''.join(digits[word] for word in words)\n        body['parcel_code'] = code\n        config['body'] = body\n        vars['lookup_code'] = code\nexcept Exception:\n    vars['lookup_state'] = 'error'\n    vars['lookup_code'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n",
+          "post_process_code": "import datetime\nimport json\nimport re\ntry:\n    vars['lookup_state'] = 'error'\n    vars['current_appointment_text'] = ''\n    vars['offer_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, mevcut randevunuzu \u00f6\u011frenemiyorum. Ho\u015f\u00e7a kal\u0131n.'\n    vars.setdefault('requested_date_text', '')\n    vars.setdefault('requested_time_text', '')\n    vars.setdefault('proposal_input_state', 'waiting')\n    vars.setdefault('cancel_requested', 'no')\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if isinstance(data, str):\n        try:\n            data = json.loads(data)\n        except Exception:\n            data = dict()\n    if not isinstance(data, dict):\n        data = dict()\n    result['data'] = data\n    if data.get('ok') is True and data.get('found') is False:\n        vars['lookup_state'] = 'not_found'\n        vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, bu g\u00f6nderi koduyla bir randevu bulamad\u0131m. Ho\u015f\u00e7a kal\u0131n.'\n    elif data.get('ok') is True and data.get('found') is True and str(vars.get('lookup_code', '')).strip():\n        current_date = datetime.date.fromisoformat(str(data.get('date', '')))\n        current_time_text = str(data.get('time', ''))\n        if not re.fullmatch(r'[0-9]{2}:[0-9]{2}', current_time_text):\n            raise ValueError('invalid current time')\n        current_time = datetime.time.fromisoformat(current_time_text)\n        anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n        offered = anchor.replace(second=0, microsecond=0)\n        if offered < anchor:\n            offered += datetime.timedelta(minutes=1)\n        if offered.time() < datetime.time(9, 0):\n            offered = offered.replace(hour=9, minute=0)\n        if offered.time() > datetime.time(16, 0):\n            offered = (offered + datetime.timedelta(days=1)).replace(hour=9, minute=0)\n        while offered.weekday() > 4:\n            offered = (offered + datetime.timedelta(days=1)).replace(hour=9, minute=0)\n        vars['current_appointment_text'] = current_date.strftime('%d.%m.%Y') + ' saat ' + current_time.strftime('%H.%M')\n        vars['offer_text'] = offered.strftime('%d.%m.%Y saat %H.%M')\n        vars['lookup_state'] = 'ready'\n    data['lookup_state'] = vars['lookup_state']\n    data['current_appointment_text'] = vars['current_appointment_text']\n    data['offer_text'] = vars['offer_text']\n    data['closing_text'] = vars['closing_text']\n    if vars['lookup_state'] == 'ready':\n        data['what_to_do_next'] = 'Mevcut randevuyu \u015fimdi m\u00fc\u015fteriye oku; ard\u0131ndan tarih ve saat iste\u011fini al veya tamamlanm\u0131\u015f iste\u011fi de\u011ferlendir. Hen\u00fcz kay\u0131t yapma.'\n    else:\n        data['what_to_do_next'] = 'Kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; de\u011fi\u015fiklik kaydetme ve ard\u0131ndan g\u00f6r\u00fc\u015fmeyi bitir.'\nexcept Exception:\n    vars['lookup_state'] = 'error'\n    vars['current_appointment_text'] = ''\n    vars['offer_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict()\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    data['lookup_state'] = 'error'\n    data['current_appointment_text'] = ''\n    data['offer_text'] = ''\n    data['closing_text'] = vars['closing_text']\n    data['what_to_do_next'] = '\u00d6z\u00fcr ve veda i\u00e7eren kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; kay\u0131t i\u015flemi yapmadan g\u00f6r\u00fc\u015fmeyi bitir.'\n    result['data'] = data\n\ntry:\n    for _mapping in [{'path': 'data.lookup_state', 'variable': 'lookup_state'}, {'path': 'data.current_appointment_text', 'variable': 'current_appointment_text'}, {'path': 'data.offer_text', 'variable': 'offer_text'}, {'path': 'data.closing_text', 'variable': 'closing_text'}]:\n        try:\n            _mapped = result\n            for _part in _mapping['path'].split('.'):\n                _mapped = _mapped[int(_part)] if isinstance(_mapped, list) else _mapped[_part]\n            vars[_mapping['variable']] = _mapped\n        except (KeyError, IndexError, TypeError, ValueError):\n            pass\nexcept Exception:\n    pass\n",
+          "response_mapping": [
+            {
+              "path": "data.lookup_state",
+              "variable": "lookup_state"
+            },
+            {
+              "path": "data.current_appointment_text",
+              "variable": "current_appointment_text"
+            },
+            {
+              "path": "data.offer_text",
+              "variable": "offer_text"
+            },
+            {
+              "path": "data.closing_text",
+              "variable": "closing_text"
+            }
+          ]
+        }
+      ],
+      "extraction_schema": [
+        {
+          "name": "requested_date_text",
+          "type": "string",
+          "description": "M\u00fc\u015fterinin istedi\u011fi veya a\u00e7\u0131k\u00e7a kabul etti\u011fi tarihin ham ifadesi. Son d\u00fczeltme \u00f6nceki tarihi de\u011fi\u015ftirir. Cuma gibi g\u00fcn ad\u0131n\u0131 koru; belirsiz ifadeyi somut bir tarihe \u00e7evirme. Tarih bu mesajda de\u011fi\u015fmediyse \u00f6nceki iste\u011fi koru.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "requested_time_text",
+          "type": "string",
+          "description": "\u0130stenen veya a\u00e7\u0131k\u00e7a kabul edilen saat. A\u00e7\u0131k konu\u015fulan saatleri HH:MM bi\u00e7imine \u00e7evir: on be\u015f -> 15:00. Eksik veya belirsiz saati tahmin etme. Son d\u00fczeltmeyi kullan; saat de\u011fi\u015fmediyse \u00f6nceki iste\u011fi koru.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "proposal_input_state",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "ready"
+          ],
+          "description": "M\u00fc\u015fterinin tarih ve saat ifadesi birlikte tamamland\u0131ysa ready; h\u00e2l\u00e2 par\u00e7a ekliyorsa veya bir unsur eksikse waiting. Bu, uygunluk ya da son kay\u0131t onay\u0131 de\u011fildir.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "cancel_requested",
+          "type": "string",
+          "enum_values": [
+            "no",
+            "yes"
+          ],
+          "description": "Yaln\u0131z m\u00fc\u015fteri i\u015flemi b\u0131rak\u0131p g\u00f6r\u00fc\u015fmeyi bitirmeyi a\u00e7\u0131k\u00e7a istiyorsa yes. Bir \u00f6neriyi reddetmek veya d\u00fczeltmek no demektir.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "confirmation_action",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "change_parcel"
+          ],
+          "description": "Yaln\u0131z son m\u00fc\u015fteri mesaj\u0131n\u0131 de\u011ferlendir. Daha \u00f6nce sorgulanm\u0131\u015f g\u00f6nderi kodunu d\u00fczeltiyorsa change_parcel; d\u00fczeltme hen\u00fcz tamamlanmam\u0131\u015fsa veya tarih/saat d\u00fczeltmesiyle birlikteyse de change_parcel. \u0130lk kez verilen ve hen\u00fcz sorgulanmam\u0131\u015f kod i\u00e7in waiting. Di\u011fer mesajlarda waiting; \u00f6nceki d\u00fczeltme durumunu ta\u015f\u0131ma.",
+          "min_confidence": 0.7
+        }
+      ],
+      "truncation_strategy": "keep_all",
+      "transitions": [
+        {
+          "target_node": "authorize",
+          "description": "Bitirme iste\u011fini veya sorgulanm\u0131\u015f g\u00f6nderi koduna yap\u0131lan d\u00fczeltmeyi, \u00f6nceki sorgu sonucuyla ilerlemeden i\u015fle.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "cancel_requested",
+                "operator": "equals",
+                "operand": "yes"
+              },
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "change_parcel"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "proposal",
+          "description": "Ger\u00e7ek sorgu ba\u015far\u0131l\u0131 ve mevcut randevu okunabilir.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "lookup_state",
+                "operator": "equals",
+                "operand": "ready"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "finish",
+          "description": "Sorgu ba\u015far\u0131s\u0131z, kay\u0131t bulunamad\u0131 veya sonu\u00e7 kullan\u0131lam\u0131yor.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "lookup_state",
+                "operator": "equals",
+                "operand": "error"
+              },
+              {
+                "variable": "lookup_state",
+                "operator": "equals",
+                "operand": "not_found"
+              },
+              {
+                "variable": "lookup_slot_failure_count",
+                "operator": "greater_than",
+                "operand": 0
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "proposal": {
+      "name": "proposal",
+      "node_type": "conversation",
+      "on_enter": {
+        "type": "llm"
+      },
+      "task_message": "G\u00f6nderi kodu: {{lookup_code}}. Bu kod i\u00e7in en son ba\u015far\u0131l\u0131 sorgudaki mevcut randevu: {{current_appointment_text}}. Hesaplanan uygun \u00f6rnek se\u00e7enek: {{offer_text}}. Son tarih ifadesi: {{requested_date_text}}. Son saat ifadesi: {{requested_time_text}}. Girdi durumu: {{proposal_input_state}}. Do\u011frulama a\u00e7\u0131klamas\u0131: {{validation_feedback}}. Bu kod i\u00e7in en son sorgulanan mevcut randevu hen\u00fcz sesli okunmad\u0131ysa \u00f6nce oku; ba\u015fka bir g\u00f6nderinin randevusunun daha \u00f6nce okunmas\u0131 yeterli de\u011fildir. G\u00f6nderi kodu d\u00fczeltilmi\u015fse eski kodun \u00f6nerisiyle devam etme. Harici servis arac\u0131 \u00e7a\u011f\u0131rma; burada yaln\u0131z sunulan transition_to_validate_proposal ge\u00e7i\u015f arac\u0131 kullan\u0131labilir. Girdi durumu ready ise mevcut randevuyu okuduktan sonra transition_to_validate_proposal \u00e7a\u011f\u0131r; yeni m\u00fc\u015fteri mesaj\u0131 veya fazladan onay bekleme. Girdi durumu waiting ise bu arac\u0131 \u00e7a\u011f\u0131rma: do\u011frulama a\u00e7\u0131klamas\u0131 varsa ge\u00e7ersiz veya eksik unsuru k\u0131saca a\u00e7\u0131kla, yaln\u0131z gerekli d\u00fczeltmeyi iste ve m\u00fc\u015fterinin yan\u0131t\u0131n\u0131 bekle. Ge\u00e7ersiz \u00f6neriyi de\u011fi\u015ftirmeden tekrar de\u011ferlendirmeye g\u00f6nderme. Hen\u00fcz tercih yoksa hesaplanan uygun \u00f6rnek se\u00e7ene\u011fi sun. Daha \u00f6nce verilen ve de\u011fi\u015ftirilmeyen tarih veya saati koru. Belirsiz tarih i\u00e7in g\u00fcn, ay ve y\u0131l\u0131 netle\u015ftir; eksik saat par\u00e7alar\u0131n\u0131n tamamlanmas\u0131n\u0131 bekle. Tarih veya saati sessizce de\u011fi\u015ftirme. Bu a\u015famada kaydedildi\u011fini s\u00f6yleme ve nihai kay\u0131t onay\u0131 isteme.",
+      "tools": [],
+      "extraction_schema": [
+        {
+          "name": "requested_date_text",
+          "type": "string",
+          "description": "\u0130stenen tarihin ham ifadesi veya m\u00fc\u015fterinin a\u00e7\u0131k\u00e7a kabul etti\u011fi somut \u00f6neri. \u00d6nceki tarih yaln\u0131z m\u00fc\u015fteri de\u011fi\u015ftirdiyse de\u011fi\u015fir. Belirsiz ifadeleri aynen koru; g\u00fcn ad\u0131n\u0131 bir makine tarihine g\u00f6re \u00e7\u00f6zme.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "requested_time_text",
+          "type": "string",
+          "description": "Son istenen saat; a\u00e7\u0131k konu\u015fulan saati HH:MM bi\u00e7iminde yaz. Ayr\u0131 mesajlardaki tamamlay\u0131c\u0131 par\u00e7alar\u0131 birle\u015ftir; tamamlanmam\u0131\u015f saati tahmin etme. De\u011fi\u015ftirilmeyen saati koru.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "proposal_input_state",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "ready"
+          ],
+          "description": "M\u00fc\u015fterinin tarih ve saat ifadesi birlikte tamamland\u0131ysa ready; eksik veya devam eden par\u00e7alar varsa waiting. \u00d6nceki \u00f6nerinin ge\u00e7ersiz oldu\u011fu a\u00e7\u0131klan\u0131p d\u00fczeltme istendiyse, eski tamamlanm\u0131\u015f \u00f6neriyi yeniden ready sayma: m\u00fc\u015fterinin yeni d\u00fczeltmesi veya yeni se\u00e7imi tamamlanana kadar waiting kullan. Bu de\u011fer uygunluk veya nihai kay\u0131t onay\u0131 de\u011fildir.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "cancel_requested",
+          "type": "string",
+          "enum_values": [
+            "no",
+            "yes"
+          ],
+          "description": "Yaln\u0131z g\u00f6r\u00fc\u015fmeyi ve de\u011fi\u015fiklik i\u015flemini a\u00e7\u0131k\u00e7a bitirme iste\u011fi yes; \u00f6neri reddi ve d\u00fczeltmeler no.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "confirmation_action",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "change_parcel"
+          ],
+          "description": "Yaln\u0131z son m\u00fc\u015fteri mesaj\u0131n\u0131 de\u011ferlendir. Sorgulanm\u0131\u015f g\u00f6nderi kodunu d\u00fczeltiyorsa change_parcel; d\u00fczeltme hen\u00fcz tamamlanmam\u0131\u015fsa veya tarih/saat d\u00fczeltmesiyle birlikteyse de change_parcel. Di\u011fer mesajlarda waiting; eski bir d\u00fczeltme durumunu ta\u015f\u0131ma.",
+          "min_confidence": 0.7
+        }
+      ],
+      "truncation_strategy": "keep_all",
+      "transitions": [
+        {
+          "target_node": "authorize",
+          "description": "Bitirme iste\u011fini veya g\u00f6nderi kodu d\u00fczeltmesini, eski koda ait \u00f6neriyi de\u011ferlendirmeden i\u015fle.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "cancel_requested",
+                "operator": "equals",
+                "operand": "yes"
+              },
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "change_parcel"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "validate_proposal",
+          "description": "Mevcut randevuyu sesli okuduktan sonra tamamlanm\u0131\u015f tarih ve saat iste\u011fini de\u011ferlendirmek i\u00e7in bu ge\u00e7i\u015fi hemen \u00e7a\u011f\u0131r. Girdi durumu ready olmal\u0131. M\u00fc\u015fteriden yeni bir mesaj veya fazladan onay bekleme.",
+          "is_tool_call": true,
+          "condition": {
+            "operator": "matches_intent",
+            "description": "Mevcut randevu okundu ve m\u00fc\u015fterinin tarih ile saat iste\u011fi tamamland\u0131."
+          }
+        }
+      ]
+    },
+    "validate_proposal": {
+      "name": "validate_proposal",
+      "node_type": "code",
+      "on_enter": {
+        "type": "silent"
+      },
+      "passthrough": true,
+      "passthrough_default_transition": "finish",
+      "transitions": [
+        {
+          "target_node": "confirm",
+          "description": "Tam \u00f6neri t\u00fcm kontrolleri ge\u00e7ti.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "proposal_state",
+                "operator": "equals",
+                "operand": "valid"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "proposal",
+          "description": "M\u00fc\u015fteriden eksik bilgiyi veya uygun bir d\u00fczeltmeyi iste.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "proposal_state",
+                "operator": "equals",
+                "operand": "incomplete"
+              },
+              {
+                "variable": "proposal_state",
+                "operator": "equals",
+                "operand": "invalid"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "finish",
+          "description": "\u00d6nko\u015ful veya hesaplama hatas\u0131nda i\u015flem yapmadan bitir.",
+          "condition": {
+            "operator": "always"
+          }
+        }
+      ],
+      "pre_actions": [
+        {
+          "type": "function",
+          "function": {
+            "name": "code_exec",
+            "handler": "__function__:code_exec",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "default": "import datetime\nimport re\ntry:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if vars.get('lookup_state') == 'ready' and str(vars.get('lookup_code', '')).strip():\n        vars['proposal_state'] = 'incomplete'\n        vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz tarihi ve saati tamamlay\u0131n.'\n        raw_date = str(vars.get('requested_date_text', '')).strip()\n        raw_time = str(vars.get('requested_time_text', '')).strip()\n        if vars.get('proposal_input_state') == 'ready' and raw_date and raw_time:\n            anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n            text = raw_date.lower()\n            for before, after in [('\u0131', 'i'), ('\u015f', 's'), ('\u011f', 'g'), ('\u00fc', 'u'), ('\u00f6', 'o'), ('\u00e7', 'c')]:\n                text = text.replace(before, after)\n            text = re.sub(r'\\s+', ' ', text).strip()\n            if text.startswith('bu '):\n                text = text[3:]\n            if text.endswith(' gunu'):\n                text = text[:-5].strip()\n            day = ''\n            names = ['pazartesi', 'sali', 'carsamba', 'persembe', 'cuma', 'cumartesi', 'pazar']\n            if text == 'bugun':\n                day = anchor.date()\n            elif text == 'yarin':\n                day = anchor.date() + datetime.timedelta(days=1)\n            elif text in names:\n                day = anchor.date() + datetime.timedelta(days=(names.index(text) - anchor.weekday()) % 7)\n            elif re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', text):\n                try:\n                    day = datetime.date.fromisoformat(text)\n                except Exception:\n                    day = ''\n            else:\n                match = re.fullmatch(r'([0-9]{1,2})[./]([0-9]{1,2})[./]([0-9]{4})', text)\n                if match:\n                    try:\n                        day = datetime.date(int(match.group(3)), int(match.group(2)), int(match.group(1)))\n                    except Exception:\n                        day = ''\n            time_text = re.sub(r'^saat\\s+', '', raw_time.lower()).strip()\n            time_match = re.fullmatch(r'([0-9]{1,2})(?:[:.]([0-9]{2}))?', time_text)\n            vars['proposal_state'] = 'invalid'\n            if not day:\n                vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz tarihi g\u00fcn, ay ve y\u0131l olarak netle\u015ftirin.'\n            elif not time_match:\n                vars['validation_feedback'] = 'L\u00fctfen istedi\u011finiz saati saat ve dakika olarak netle\u015ftirin.'\n            else:\n                hour = int(time_match.group(1))\n                minute = int(time_match.group(2) or '0')\n                total = hour * 60 + minute\n                if hour > 23 or minute > 59:\n                    vars['validation_feedback'] = 'L\u00fctfen ge\u00e7erli bir saat ve dakika belirtin.'\n                elif day.weekday() > 4:\n                    vars['validation_feedback'] = 'Cumartesi ve pazar g\u00fcnleri randevu verilemiyor. L\u00fctfen pazartesi-cuma aras\u0131nda bir tarih se\u00e7in.'\n                elif total < 540 or total > 960:\n                    vars['validation_feedback'] = 'Randevu saatlerimiz 09.00 ile 16.00 aras\u0131nda; iki s\u0131n\u0131r da dahildir. L\u00fctfen bu aral\u0131ktan bir saat se\u00e7in.'\n                elif datetime.datetime.combine(day, datetime.time(hour, minute)) < anchor:\n                    vars['validation_feedback'] = 'Bu tarih ve saat ge\u00e7mi\u015fte kal\u0131yor. L\u00fctfen ileri bir tarih veya saat belirtin.'\n                else:\n                    vars['proposal_state'] = 'valid'\n                    vars['validation_feedback'] = ''\n                    vars['validated_code'] = str(vars.get('lookup_code', ''))\n                    vars['validated_date'] = day.isoformat()\n                    vars['validated_time'] = '%02d:%02d' % (hour, minute)\n                    vars['validated_date_spoken'] = day.strftime('%d.%m.%Y')\n                    vars['validated_time_spoken'] = '%02d.%02d' % (hour, minute)\n                    vars['validated_source_date_text'] = raw_date\n                    vars['validated_source_time_text'] = raw_time\n    if vars.get('proposal_state') in ('incomplete', 'invalid'):\n        vars['proposal_input_state'] = 'waiting'\nexcept Exception:\n    vars['proposal_state'] = 'blocked'\n    vars['confirmation_action'] = 'waiting'\n    vars['validated_code'] = ''\n    vars['validated_date'] = ''\n    vars['validated_time'] = ''\n    vars['validated_date_spoken'] = ''\n    vars['validated_time_spoken'] = ''\n    vars['validated_source_date_text'] = ''\n    vars['validated_source_time_text'] = ''\n    vars['validation_feedback'] = ''\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n"
+                },
+                "timeout_ms": {
+                  "type": "number",
+                  "default": 10000
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "confirm": {
+      "name": "confirm",
+      "node_type": "conversation",
+      "on_enter": {
+        "type": "llm"
+      },
+      "task_message": "Bu turda ara\u00e7 \u00e7a\u011f\u0131rma. Do\u011frulanm\u0131\u015f \u00f6nerinin tamam\u0131n\u0131 m\u00fc\u015fteriye oku: g\u00f6nderi kodu {{validated_code}}, yeni tarih {{validated_date_spoken}}, yeni saat {{validated_time_spoken}}. G\u00f6nderi kodunu ba\u015ftaki s\u0131f\u0131rlarla rakam rakam oku. Sonunda 'Bu de\u011fi\u015fikli\u011fi onayl\u0131yor musunuz?' diye sor ve yan\u0131t\u0131 bekle. Bu tam okuma hen\u00fcz yap\u0131lmad\u0131ysa \u00f6nceki bir eveti onay sayma. M\u00fc\u015fteri bir unsuru d\u00fczeltirse d\u00fczeltmeyi esas al; di\u011fer unsurlar\u0131 koru ve eski \u00f6neriyi onaylanm\u0131\u015f sayma. Kod d\u00fczelirse yeni kodun sorgulanmas\u0131 gerekir. Yan\u0131t belirsizse yaln\u0131z a\u00e7\u0131k onay veya d\u00fczeltme iste. Hay\u0131r yan\u0131t\u0131n\u0131 otomatik g\u00f6r\u00fc\u015fme sonu sayma. Kaydedildi\u011fini s\u00f6yleme.",
+      "tools": [],
+      "extraction_schema": [
+        {
+          "name": "confirmation_action",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "accept",
+            "edit",
+            "decline",
+            "cancel",
+            "change_parcel"
+          ],
+          "description": "Yaln\u0131z en son m\u00fc\u015fteri mesaj\u0131n\u0131 de\u011ferlendir; eski bir onay\u0131 ta\u015f\u0131ma. \u0130\u015flemi ve g\u00f6r\u00fc\u015fmeyi a\u00e7\u0131k\u00e7a bitirme cancel. G\u00f6nderi kodu d\u00fczeltmesi varsa, tarih/saat de birlikte de\u011fi\u015ftirilse veya d\u00fczeltme hen\u00fcz tamamlanmasa bile change_parcel \u00f6nceliklidir. Kod de\u011fi\u015fmeden tarih/saat d\u00fczeltmesi veya devam eden d\u00fczeltme edit. Yaln\u0131z en son tam kod-tarih-saat okumas\u0131ndan sonra gelen, hi\u00e7bir d\u00fczeltme i\u00e7ermeyen a\u00e7\u0131k onay accept. Yaln\u0131z hay\u0131r decline; di\u011fer yan\u0131tlar waiting. Tam okuma yap\u0131lmadan s\u00f6ylenen eveti onay sayma.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "requested_date_text",
+          "type": "string",
+          "description": "M\u00fc\u015fteri tarihi d\u00fczelttiyse son tarih ifadesi; aksi halde mevcut iste\u011fi koru. Belirsiz tarihi tahmin etme.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "requested_time_text",
+          "type": "string",
+          "description": "M\u00fc\u015fteri saati d\u00fczelttiyse son saat, a\u00e7\u0131k oldu\u011funda HH:MM bi\u00e7iminde; aksi halde mevcut iste\u011fi koru. Eksik par\u00e7alar\u0131 tamamlanmadan tahmin etme.",
+          "min_confidence": 0.7
+        },
+        {
+          "name": "proposal_input_state",
+          "type": "string",
+          "enum_values": [
+            "waiting",
+            "ready"
+          ],
+          "description": "D\u00fczeltmeler dahil tarih ve saat ifadesi tamamsa ready; m\u00fc\u015fteri h\u00e2l\u00e2 tamaml\u0131yorsa veya unsur eksikse waiting.",
+          "min_confidence": 0.7
+        }
+      ],
+      "truncation_strategy": "keep_all",
+      "transitions": [
+        {
+          "target_node": "validate_proposal",
+          "description": "Tarih veya saat d\u00fczeltmesini yeniden de\u011ferlendir; \u00f6nceki onay\u0131 kullanma.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "edit"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "authorize",
+          "description": "Son yan\u0131t\u0131n onay, ret, kod d\u00fczeltmesi veya bitirme sonucunu g\u00fcvenli bi\u00e7imde i\u015fle.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "accept"
+              },
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "decline"
+              },
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "cancel"
+              },
+              {
+                "variable": "confirmation_action",
+                "operator": "equals",
+                "operand": "change_parcel"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "authorize": {
+      "name": "authorize",
+      "node_type": "code",
+      "on_enter": {
+        "type": "silent"
+      },
+      "passthrough": true,
+      "passthrough_default_transition": "finish",
+      "transitions": [
+        {
+          "target_node": "write_slot",
+          "description": "Sorgu ve \u00f6neri do\u011fruland\u0131, g\u00fcncel tam okuma a\u00e7\u0131k\u00e7a onayland\u0131 ve daha \u00f6nce kay\u0131t denenmedi.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "authorization_state",
+                "operator": "equals",
+                "operand": "authorized"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "validate_proposal",
+          "description": "Onay s\u0131ras\u0131nda de\u011fi\u015fmi\u015f bilgi yeniden kontrol edilmeli.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "authorization_state",
+                "operator": "equals",
+                "operand": "revalidate"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "proposal",
+          "description": "M\u00fc\u015fteri farkl\u0131 bir \u00f6neri istiyor.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "authorization_state",
+                "operator": "equals",
+                "operand": "collect"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "intake",
+          "description": "D\u00fczeltilmi\u015f g\u00f6nderi kodu i\u00e7in yeni sorgu gerekli.",
+          "condition": {
+            "logic": "or",
+            "conditions": [
+              {
+                "variable": "authorization_state",
+                "operator": "equals",
+                "operand": "new_lookup"
+              }
+            ]
+          }
+        },
+        {
+          "target_node": "finish",
+          "description": "Kay\u0131t yetkisi olu\u015fmad\u0131 veya i\u015flem zaten sonu\u00e7land\u0131.",
+          "condition": {
+            "operator": "always"
+          }
+        }
+      ],
+      "pre_actions": [
+        {
+          "type": "function",
+          "function": {
+            "name": "code_exec",
+            "handler": "__function__:code_exec",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "default": "import datetime\ntry:\n    vars['authorization_state'] = 'blocked'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    action = str(vars.get('confirmation_action', 'waiting'))\n    if vars.get('save_attempted') == 'yes':\n        vars['authorization_state'] = 'done'\n        if vars.get('save_state') == 'saved':\n            vars['closing_text'] = 'Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n.'\n        elif vars.get('save_state') == 'failed':\n            vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n.'\n        else:\n            vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    elif vars.get('cancel_requested') == 'yes' or action == 'cancel':\n        vars['authorization_state'] = 'done'\n        vars['closing_text'] = 'Randevunuzda de\u011fi\u015fiklik yapmad\u0131m. Ho\u015f\u00e7a kal\u0131n.'\n    elif action == 'change_parcel':\n        vars['lookup_state'] = 'empty'\n        vars['lookup_code'] = ''\n        vars['proposal_state'] = 'empty'\n        vars['confirmation_action'] = 'waiting'\n        vars['authorization_state'] = 'new_lookup'\n    elif action == 'decline' and vars.get('lookup_state') == 'ready':\n        vars['requested_date_text'] = ''\n        vars['requested_time_text'] = ''\n        vars['proposal_input_state'] = 'waiting'\n        vars['proposal_state'] = 'empty'\n        vars['confirmation_action'] = 'waiting'\n        vars['validation_feedback'] = 'L\u00fctfen tercih etti\u011finiz yeni tarihi ve saati belirtin.'\n        vars['authorization_state'] = 'collect'\n    elif action == 'accept' and vars.get('lookup_state') == 'ready' and vars.get('proposal_state') == 'valid':\n        unchanged = str(vars.get('requested_date_text', '')).strip() == vars.get('validated_source_date_text') and str(vars.get('requested_time_text', '')).strip() == vars.get('validated_source_time_text')\n        if not unchanged:\n            vars['confirmation_action'] = 'waiting'\n            vars['authorization_state'] = 'revalidate'\n        else:\n            code = str(vars.get('validated_code', ''))\n            day = datetime.date.fromisoformat(str(vars.get('validated_date', '')))\n            moment = datetime.time.fromisoformat(str(vars.get('validated_time', '')))\n            anchor = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00')).replace(tzinfo=None)\n            total = moment.hour * 60 + moment.minute\n            if code and code == vars.get('lookup_code') and day.weekday() < 5 and 540 <= total <= 960 and moment.second == 0 and moment.microsecond == 0 and datetime.datetime.combine(day, moment) >= anchor:\n                vars['confirmed_code'] = code\n                vars['confirmed_date'] = day.isoformat()\n                vars['confirmed_time'] = moment.strftime('%H:%M')\n                vars['authorization_state'] = 'authorized'\nexcept Exception:\n    vars['authorization_state'] = 'blocked'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fini tamamlayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n"
+                },
+                "timeout_ms": {
+                  "type": "number",
+                  "default": 10000
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "write_slot": {
+      "name": "write_slot",
+      "node_type": "api_request",
+      "on_enter": {
+        "type": "silent"
+      },
+      "passthrough": true,
+      "passthrough_default_transition": "finish",
+      "pre_actions": [
+        {
+          "type": "function",
+          "config": {
+            "timeoutMs": 12000,
+            "maxRetries": 0
+          },
+          "function": {
+            "name": "save_slot",
+            "handler": "__function__:api_call",
+            "description": "Engine-run operation reachable only after successful lookup, deterministic proposal validation and explicit confirmation of the current complete parcel-code/date/time read-back. Submit exactly once. The pre-hook supplies the exact confirmed values; never retry a failed or uncertain write.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "default": "https://mock.example.invalid/save_slot"
+                },
+                "method": {
+                  "type": "string",
+                  "default": "POST"
+                },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "Content-Type": {
+                      "type": "string",
+                      "default": "application/json"
+                    }
+                  }
+                },
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "parcel_code": {
+                      "type": "string",
+                      "default": "{{arg_save_slot_parcel_code}}",
+                      "description": "Exact confirmed parcel code from the successful lookup, retaining leading zeroes."
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date",
+                      "default": "{{arg_save_slot_date}}",
+                      "description": "Exact confirmed and validated appointment date, YYYY-MM-DD. Do not move it to a different day."
+                    },
+                    "time": {
+                      "type": "string",
+                      "default": "{{arg_save_slot_time}}",
+                      "description": "Exact confirmed and validated appointment time, HH:MM. Monday\u2013Friday, 09:00\u201316:00 inclusive. Do not replace it with another time."
+                    }
+                  },
+                  "required": [
+                    "parcel_code",
+                    "date",
+                    "time"
+                  ]
+                }
+              }
+            }
+          },
+          "pre_process_code": "try:\n    vars['save_state'] = 'pending'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    config['body'] = dict(parcel_code=str(vars.get('confirmed_code', '')), date=str(vars.get('confirmed_date', '')), time=str(vars.get('confirmed_time', '')))\nexcept Exception:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n",
+          "post_process_code": "try:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict(data=dict())\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    result['data'] = data\n    if data.get('ok') is True:\n        vars['save_state'] = 'saved'\n        vars['closing_text'] = 'Randevu de\u011fi\u015fikli\u011finiz kaydedildi. Ho\u015f\u00e7a kal\u0131n.'\n        vars['recorded_code'] = str(vars.get('confirmed_code', ''))\n        vars['recorded_date'] = str(vars.get('confirmed_date', ''))\n        vars['recorded_time'] = str(vars.get('confirmed_time', ''))\n    elif data.get('ok') is False:\n        vars['save_state'] = 'failed'\n        vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, randevu de\u011fi\u015fikli\u011fi kaydedilemedi. Ho\u015f\u00e7a kal\u0131n.'\n    data['save_state'] = vars['save_state']\n    data['closing_text'] = vars['closing_text']\n    if vars['save_state'] == 'saved':\n        data['what_to_do_next'] = 'De\u011fi\u015fikli\u011fin kaydedildi\u011fini ve veday\u0131 \u015fimdi s\u00f6yle; ard\u0131ndan g\u00f6r\u00fc\u015fmeyi bitir. Ba\u015fka kay\u0131t \u00e7a\u011fr\u0131s\u0131 yapma.'\n    else:\n        data['what_to_do_next'] = '\u00d6z\u00fcr ve veda i\u00e7eren kapan\u0131\u015f metnini \u015fimdi s\u00f6yle; kaydedildi\u011fini s\u00f6yleme, yeniden deneme ve g\u00f6r\u00fc\u015fmeyi bitir.'\nexcept Exception:\n    vars['save_state'] = 'unknown'\n    vars['save_attempted'] = 'yes'\n    vars['closing_text'] = '\u00dczg\u00fcn\u00fcm, de\u011fi\u015fikli\u011fin kaydedildi\u011fini do\u011frulayam\u0131yorum. Ho\u015f\u00e7a kal\u0131n.'\n    if not isinstance(result, dict):\n        result = dict()\n    result.pop('header', '')\n    result.pop('headers', '')\n    data = result.get('data', dict())\n    if not isinstance(data, dict):\n        data = dict()\n    data['save_state'] = 'unknown'\n    data['closing_text'] = vars['closing_text']\n    data['what_to_do_next'] = '\u00d6z\u00fcr ve veday\u0131 \u015fimdi s\u00f6yle; kaydedildi\u011fini s\u00f6yleme, yeniden deneme ve g\u00f6r\u00fc\u015fmeyi bitir.'\n    result['data'] = data\n\ntry:\n    for _mapping in [{'path': 'data.save_state', 'variable': 'save_state'}, {'path': 'data.closing_text', 'variable': 'closing_text'}]:\n        try:\n            _mapped = result\n            for _part in _mapping['path'].split('.'):\n                _mapped = _mapped[int(_part)] if isinstance(_mapped, list) else _mapped[_part]\n            vars[_mapping['variable']] = _mapped\n        except (KeyError, IndexError, TypeError, ValueError):\n            pass\nexcept Exception:\n    pass\n"
+        }
+      ],
+      "transitions": [
+        {
+          "target_node": "finish",
+          "description": "Ger\u00e7ek kay\u0131t sonucunu ve veday\u0131 s\u00f6yle; kay\u0131t i\u015flemini tekrar etme.",
+          "condition": {
+            "operator": "always"
+          }
+        }
+      ],
+      "response_mapping": [
+        {
+          "path": "data.save_state",
+          "variable": "save_state"
+        },
+        {
+          "path": "data.closing_text",
+          "variable": "closing_text"
+        }
+      ]
+    },
+    "finish": {
+      "name": "finish",
+      "node_type": "conversation",
+      "on_enter": {
+        "type": "tts",
+        "text": "{{closing_text}}"
+      },
+      "task_message": "Bu turda hi\u00e7bir ara\u00e7 \u00e7a\u011f\u0131rma. Sonu\u00e7 ve veda metni: {{closing_text}}. Giri\u015fte bu metin s\u00f6ylendiyse tekrar etme. S\u00f6ylenmediyse aynen s\u00f6yle. Yeni soru veya i\u015flem ba\u015flatma.",
+      "tools": [],
+      "passthrough": true,
+      "passthrough_default_transition": "end",
+      "transitions": [
+        {
+          "target_node": "end",
+          "description": "Sonu\u00e7 ve veda sesli s\u00f6ylendikten sonra sessizce kapat.",
+          "condition": {
+            "operator": "always"
+          }
+        }
+      ]
+    },
+    "end": {
+      "name": "end",
+      "node_type": "end_call",
+      "on_enter": {
+        "type": "silent"
+      },
+      "disable_inactivity_monitor": true,
+      "transitions": [],
+      "terminal": {
+        "type": "function",
+        "function": {
+          "name": "call_completed",
+          "handler": "__function__:end_call",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "message_mode": {
+                "type": "string",
+                "default": "none"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

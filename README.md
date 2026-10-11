@@ -101,6 +101,10 @@ assistant speech or no completed judgment remain inconclusive, not policy
 failures or passes. These internal checks are not the official hidden score.
 The trace explicitly records when the remaining time is insufficient to test;
 use a longer `--max-seconds` budget when appropriate before the event deadline.
+Remote gateway/connection failures during these checks are recorded as
+inconclusive, and an already validated workflow is still exported. An opening
+outage skips the larger simulation. No policy repair is based on that outage;
+workflow validation and authentication errors still fail normally.
 
 ## Local validation
 
