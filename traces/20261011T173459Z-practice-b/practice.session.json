@@ -1,0 +1,33 @@
+{
+  "arguments": [
+    "443c6e24-bdce-4133-90b5-802bc30df0b1",
+    "--out",
+    "/home/ahmetkumas/Desktop/freya2/traces/20261011T173459Z-practice-b/practice.json",
+    "--brief",
+    "B"
+  ],
+  "sessions": {
+    "PUB-11": {
+      "customer_id": "c_36220b25-50f",
+      "first_name": "Sofia",
+      "last_name": "Almeida",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-12": {
+      "customer_id": "c_b770bf2a-c8a",
+      "first_name": "Marcus",
+      "last_name": "Bell",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-13": {
+      "customer_id": "c_b57d5d6f-d5b",
+      "first_name": "Elena",
+      "last_name": "Rossi",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d"
+}

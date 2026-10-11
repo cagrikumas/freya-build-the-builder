@@ -1,0 +1,74 @@
+{"event": "freya_request_start", "method": "POST", "path": "/api/v2/simulations", "attempt": 0}
+{"event": "freya_request_end", "method": "POST", "path": "/api/v2/simulations", "seconds": 0.47, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.55, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.57, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.32, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.39, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.45, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.47, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.32, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.42, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.37, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.36, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.43, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.53, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.33, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.34, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.42, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.44, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.34, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d", "seconds": 0.36, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d/iterations", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d/iterations", "seconds": 0.36, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d/iterations/5ac60ca5-1690-4fc4-8559-a7cfd2f189fe", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d/iterations/5ac60ca5-1690-4fc4-8559-a7cfd2f189fe", "seconds": 0.53, "success": true}
+FAIL PUB-11 medium Multi-product  | (no tool calls)
+       - outcome (None, None), expected ('promise', None)
+       - promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]
+       - the call was not closed with close_call
+       - conversation: The assistant failed to meet any of the success criteria. No products were mentioned (Criterion 1), no read-backs or confirmations occurred (Criterion 2), and the 'create_promise' tool was never called (Criterion 3). Additionally, after the initi
+FAIL PUB-12 hard   Multi-product  | (no tool calls)
+       - outcome (None, None), expected ('promise', None)
+       - promises [], expected [('p1', 510.0, '2026-10-15')]
+       - notes [], expected [('p2', 'refused'), ('p3', 'refused')]
+       - the call was not closed with close_call
+       - conversation: - The assistant failed all primary success criteria: it did not ask the phone question, did not discuss any credit products (credit card, personal loan, or car loan), and did not record any promises or refusals. - The assistant entered an error l
+FAIL PUB-13 hard   Multi-product  | (no tool calls)
+       - outcome (None, None), expected ('promise', None)
+       - promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]
+       - the call was not closed with close_call
+       - conversation: The assistant failed to meet any of the success criteria. No dates were recorded for either a credit card or a loan, and no read-back was provided. Furthermore, the assistant entered a state of failure early on, repeating that it could not comple
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/8ed109eb-0940-40f3-a65a-7e59e2489794", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/8ed109eb-0940-40f3-a65a-7e59e2489794", "seconds": 0.86, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/07eeb2b5-6ae5-482c-af90-77f7285f1bc5", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/07eeb2b5-6ae5-482c-af90-77f7285f1bc5", "seconds": 0.94, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/8bb2489d-a54d-4aa6-a726-baecffd7da57", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/8bb2489d-a54d-4aa6-a726-baecffd7da57", "seconds": 0.81, "success": true}
+
+slowest agent turn per call: median 0 s, worst 0 s. Failed calls where the customer hung up: 3.
+
+0 / 3 passed (bank records and conversation checks). Last simulation e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d, status completed, 219 s.

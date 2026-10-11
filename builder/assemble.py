@@ -40,6 +40,9 @@ def assemble(artifact, api):
         if set(re.findall(r'\{([^{}]+)\}', url)) != declared_paths:
             raise ValueError(f'{name}: unresolved OpenAPI path parameter')
         cfg = registry.get(name, {})
+        timeout_ms = cfg.get('timeoutMs', 12000)
+        if type(timeout_ms) is not int or timeout_ms <= 0:
+            raise ValueError(f'{name}: timeoutMs must be a positive integer in milliseconds')
         schema = copy.deepcopy(op.get('requestBody', {}).get('content', {}).get('application/json', {}).get('schema', {'type': 'object', 'properties': {}}))
         bindings = cfg.get('bindings', {})
         if not isinstance(bindings, dict):
@@ -58,13 +61,15 @@ def assemble(artifact, api):
                 leaf['description'] = cfg['field_descriptions'][field]
             if leaf.get('enum'):
                 leaf['description'] = leaf.get('description', '') + ' Allowed values: ' + ', '.join(map(str, leaf['enum'])) + '.'
-        tool = {'type': 'function', 'config': {'timeoutMs': 12000, 'maxRetries': 0},
+        tool = {'type': 'function', 'config': {'timeoutMs': timeout_ms, 'maxRetries': 0},
                 'function': {'name': name, 'handler': '__function__:api_call',
                              'description': cfg.get('description') or op.get('summary', name),
                              'parameters': {'type': 'object', 'properties': {
                                  'url': {'type': 'string', 'default': url},
                                  'method': {'type': 'string', 'default': method},
-                                 'headers': {'type': 'object', 'properties': {'Content-Type': {'type': 'string', 'default': 'application/json'}}},
+                                 'headers': {'type': 'object', 'properties': {
+                                     'Content-Type': {'type': 'string', 'default': 'application/json'},
+                                     'User-Agent': {'type': 'string', 'default': 'Freya-Hackathon-Agent/1.0'}}},
                                  'body': schema}}}}
         for field in ('pre_process_code', 'post_process_code', 'response_mapping'):
             if field in cfg: tool[field] = copy.deepcopy(cfg[field])

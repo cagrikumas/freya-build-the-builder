@@ -332,6 +332,8 @@ def validate(workflow, api):
             if '{{' in code or '}}' in code: raise ValueError('Code contains template braces')
             tree = ast.parse(code)
             for n in ast.walk(tree):
+                if isinstance(n, ast.Global):
+                    raise ValueError('Global declarations depend on unsupported module scope; use vars or mutable dict state')
                 if isinstance(n, (ast.Import, ast.ImportFrom)):
                     modules = [a.name for a in n.names] if isinstance(n, ast.Import) else [n.module]
                     if any(m not in ('datetime', 'json', 're') for m in modules):

@@ -38,6 +38,61 @@ class AssemblyTests(unittest.TestCase):
         self.assertEqual(self.api, source)
         self.assertEqual(self.artifact, artifact)
 
+    def test_per_tool_timeout_preserves_default_and_inputs_across_positions(self):
+        self.api['paths']['/second'] = {'post': {'operationId': 'second'}}
+        self.artifact['workflow']['tools'] = ['record']
+        self.artifact['workflow']['nodes']['auto'] = {
+            'name': 'auto', 'node_type': 'api_request', 'pre_actions': ['record']}
+        self.artifact['workflow']['nodes']['start']['tools'].append('second')
+        self.artifact['tool_config']['record']['timeoutMs'] = 27000
+        self.artifact['tool_config']['record']['alwaysRunsAt'] = ['end_of_call']
+        original = copy.deepcopy(self.artifact)
+        workflow = assemble(self.artifact, self.api)
+        tools = [workflow['tools'][0], workflow['nodes']['auto']['pre_actions'][0],
+                 workflow['nodes']['start']['tools'][0]]
+        self.assertTrue(all(tool['config']['timeoutMs'] == 27000 for tool in tools))
+        self.assertTrue(all(tool['config']['maxRetries'] == 0 for tool in tools))
+        self.assertEqual(workflow['nodes']['start']['tools'][1]['config']['timeoutMs'], 12000)
+        self.assertEqual(validate(workflow, self.api), [])
+        self.assertEqual(self.artifact, original)
+
+    def test_invalid_timeout_values_fail_instead_of_silent_fallback(self):
+        for value in (True, False, 0, -1, 2.5, '27000', None, {}, []):
+            with self.subTest(value=value):
+                self.artifact['tool_config']['record']['timeoutMs'] = value
+                with self.assertRaisesRegex(ValueError, 'timeoutMs must be a positive integer'):
+                    assemble(self.artifact, self.api)
+
+    def test_nested_request_pre_hook_overwrites_guesses_from_runtime_variables(self):
+        schema = {'type': 'object', 'properties': {
+            'payload': {'type': 'object', 'properties': {
+                'reference': {'type': 'string'}, 'count': {'type': 'integer'}},
+                'required': ['reference', 'count']},
+            'context': {'type': 'object', 'properties': {
+                'locale': {'type': 'string'}}, 'required': ['locale']}},
+            'required': ['payload', 'context']}
+        self.api['paths']['/record']['post']['requestBody']['content']['application/json']['schema'] = schema
+        self.artifact['tool_config']['record']['pre_process_code'] = (
+            "config['body'] = {'payload': {'reference': vars['trusted_reference'], "
+            "'count': int(vars['verified_count'])}, 'context': {'locale': vars['call_locale']} }")
+        self.artifact['workflow']['nodes']['auto'] = {
+            'name': 'auto', 'node_type': 'api_request', 'pre_actions': ['record']}
+        original = copy.deepcopy(self.api)
+        workflow = assemble(self.artifact, self.api)
+        self.assertEqual(validate(workflow, self.api), [])
+        body = workflow['nodes']['start']['tools'][0]['function']['parameters']['properties']['body']
+        self.assertEqual(body['properties']['payload']['properties'], schema['properties']['payload']['properties'])
+        self.assertEqual(self.api, original)
+        checks = []
+        for node in ('start', 'auto'):
+            for name, proposed in [('unset', {}), ('incorrect proposal', {
+                'payload': 'wrong type', 'context': {'locale': 'guessed'}})]:
+                checks.append({'name': node + ' ' + name, 'node': node, 'tool': 'record', 'hook': 'pre',
+                'vars': {'trusted_reference': '000042', 'verified_count': '7', 'call_locale': 'tr'},
+                'config': {'body': proposed}, 'expect_config': {'body': {
+                    'payload': {'reference': '000042', 'count': 7}, 'context': {'locale': 'tr'}}}})
+        self.assertEqual(check_examples(workflow, checks), [])
+
     def test_pre_action_mappings_are_attached_to_node(self):
         self.artifact['workflow']['nodes']['start'] = {'name': 'start', 'node_type': 'api_request', 'pre_actions': ['record']}
         mapping = [{'path': 'data.ok', 'variable': 'saved'}]

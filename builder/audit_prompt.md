@@ -134,3 +134,12 @@ failure. Preserve distinctions and outcomes required by the input policy, rather
 than importing a preferred bank rule. State whether evidence covers only code
 and prescribed extraction values or actual dialogue; do not claim that a local
 replay proves the phone model's routing, extraction or speech.
+
+Reject every Python `global` declaration: platform execution need not use module
+scope. Helpers must read or mutate explicit dictionary state (`vars` or a local
+dictionary passed to them), never assume a snippet-local variable is a module
+global. Module-style local execution can conceal this runtime failure.
+Technical catch-all handlers must save a short internal diagnostic (exception
+type plus safe operation/reason) before fallback routing, excluding secrets,
+headers, payloads and caller data. A successful code_exec envelope does not prove
+that the body reached its intended outcome when exceptions are caught.

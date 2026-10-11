@@ -2,6 +2,7 @@ import copy
 import json
 from pathlib import Path
 import sys
+import textwrap
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +135,63 @@ class WorkflowValidationTests(unittest.TestCase):
         self.workflow['nodes']['compute'] = {'name': 'compute', 'node_type': 'code', 'pre_actions': [{
             'type': 'function', 'function': {'name': 'code_exec', 'handler': '__function__:code_exec',
                 'parameters': {'type': 'object', 'properties': {'code': {'type': 'string', 'default': code}}}}}]}
+
+    def test_rejects_global_state_that_module_exec_hides(self):
+        code = ("prefix = 'prefix '\n"
+                "vars['route'] = 'fallback'\n"
+                "try:\n"
+                "    def emit(text):\n"
+                "        global prefix\n"
+                "        vars['phase'] = 'ready'\n"
+                "        vars['question'] = text\n"
+                "        vars['speech'] = prefix + text\n"
+                "        prefix = ''\n"
+                "        vars['route'] = 'continue'\n"
+                "    emit('question')\n"
+                "except Exception:\n"
+                "    pass\n")
+        self.add_code(code)
+        check = {'name': 'module execution masks global bug', 'node': 'compute', 'hook': 'code',
+                 'expect_vars': {'route': 'continue', 'speech': 'prefix question'}}
+        self.assertEqual(check_examples(self.workflow, [check]), [])
+        env = {'vars': {}}
+        exec('def surrogate():\n' + textwrap.indent(code, '    ') + '\nsurrogate()', env, env)
+        self.assertEqual(env['vars'], {'route': 'fallback', 'phase': 'ready', 'question': 'question'})
+        self.assertTrue(any('Global declarations depend on unsupported module scope' in error
+                            for error in validate(self.workflow, self.api)))
+
+    def test_explicit_mutable_helper_state_works_in_both_execution_scopes(self):
+        code = ("state = dict(prefix='prefix ')\n"
+                "def emit(text, state):\n"
+                "    vars['speech'] = state['prefix'] + text\n"
+                "    state['prefix'] = ''\n"
+                "    vars['route'] = 'continue'\n"
+                "emit('question', state)\n")
+        self.add_code(code)
+        self.assertEqual(validate(self.workflow, self.api), [])
+        for wrapped in (False, True):
+            with self.subTest(wrapped=wrapped):
+                env = {'vars': {}}
+                source = 'def surrogate():\n' + textwrap.indent(code, '    ') + '\nsurrogate()' if wrapped else code
+                exec(source, env, env)
+                self.assertEqual(env['vars'], {'speech': 'prefix question', 'route': 'continue'})
+
+    def test_global_declarations_rejected_in_all_supported_hook_positions(self):
+        for group in ('tools', 'pre_actions', 'lifecycle'):
+            for hook in ('pre_process_code', 'post_process_code'):
+                with self.subTest(group=group, hook=hook):
+                    self.workflow['nodes']['start']['tools'] = []
+                    self.workflow['nodes'].pop('auto', None)
+                    self.workflow.pop('tools', None)
+                    tool = self.tool(); tool[hook] = 'global shared_state\nshared_state = 1'
+                    if group == 'lifecycle':
+                        tool['config'] = {'alwaysRunsAt': ['end_of_call']}
+                        self.workflow['tools'] = [tool]
+                    elif group == 'pre_actions':
+                        self.workflow['nodes']['auto'] = {'name': 'auto', 'node_type': 'api_request', 'pre_actions': [tool]}
+                    else: self.workflow['nodes']['start']['tools'] = [tool]
+                    self.assertTrue(any('Global declarations depend on unsupported module scope' in error
+                                        for error in validate(self.workflow, self.api)))
 
     def test_shared_extraction_name_cannot_have_stage_specific_enum_sets(self):
         self.workflow['nodes']['start']['extraction_schema'] = [{

@@ -1,0 +1,810 @@
+{
+  "approved": false,
+  "issues": [
+    "The evaluator loses correlated proposals during clarification. It retains only the currently processed statement, drops other products' terms, and can narrow an all-products proposal to the current product. A proposal with no usable terms can also become an invented promise after entering scope or date clarification.",
+    "Confirmation corrections with an omitted product reference do not resolve against readback_ids. Even when only one product was read back, the evaluator asks unnecessarily or later uses the stale negotiation focus.",
+    "Extraction fields can contradict one another: c_event=proposal with c1_kind=paid and payment terms silently becomes a paid disposition. Refusal, payment, dispute and proposal statements need consistency checks before any state mutation.",
+    "reject() prefers stale amount/date values over the offer actually rejected. Later attempts can therefore repeat a rejected offer or reject the wrong terms.",
+    "The vague-date rule is not followed when the clarification receives yes, unknown or a non-answer without a date. The evaluator may spend persuasion attempts instead of proposing the deadline. Date parsing also mishandles ordinary cardinal day expressions and lacks a semantic period classification independent of a short phrase list.",
+    "Callback validation waits for both date and time before recognizing an independently invalid component, contrary to Brief A rule 7. It asks for already supplied components and ignores AI and scam questions during callbacks.",
+    "A swapped-date hint followed by the requested month word can leave the original, swapped day unchanged and submit another wrong answer.",
+    "The required paid-payment explanation disappears when finish() routes through add_note: its local speech prefix is not preserved across the tool result.",
+    "Declining hardship support overwrites previously resolved paid/disputed products and valid pending promises with hardship.",
+    "Caller-first AI and scam questions are discarded before the first name question. Collection questions are always answered with 'I do not have that information', even when the requested amount, product or days-late information is present in the account response.",
+    "Existing checks do not cover these failures across clarification, result re-entry and the next reply. This review is static; neither code checks nor actual dialogue were executed."
+  ],
+  "patches": [
+    {
+      "op": "replace",
+      "path": "/policy/third_parties/invalid_callback_budget",
+      "value": "A supplied day or time that is independently outside the permitted window consumes an invalid proposal, even if the other component is missing. Ask once for another time; a second invalid proposal closes not_reached/no_callback."
+    },
+    {
+      "op": "replace",
+      "path": "/policy/third_parties/incomplete_callback",
+      "value": "Retain valid supplied components and ask only for the missing date or time. Answer AI or scam questions before continuing. Do not submit an incomplete callback."
+    },
+    {
+      "op": "replace",
+      "path": "/policy/calendar/vague_dates",
+      "value": "Ask once for the exact day of an unresolved vague proposal, retaining its products, amounts, other statements and period context across paraphrases. If the clarification still supplies no exact day, propose each affected product's deadline. An unrecognized or conflicting exact-date representation remains unresolved and is clarified rather than silently replaced. A resolved proposal ends that clarification episode."
+    },
+    {
+      "op": "replace",
+      "path": "/policy/validation_status",
+      "value": "Static source and code audit only. The local checks prescribe extraction values and reachable intermediate states; they have not been executed and do not demonstrate actual extraction, routing, speech or dialogue success. No tools were called. No usable synthetic test identity was supplied, so smoke is omitted; individual-brief mode omits scenarios."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/callback_question/task_message",
+      "value": "Wait after the exact initialized utterance. No tool call is allowed. Permitted questions ask when the named customer can be reached or ask only for a missing callback date or time. The computed speech may first answer an AI question by identifying Freya Bank's digital assistant, or a scam question by referring to Freya Bank's customer service number without inventing that number. Do not disclose the purpose, discuss account information or accept a relative's security answers. An independently invalid proposed day or time counts against the one-alternative allowance even when the other component is missing."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/collection_question/task_message",
+      "value": "The initialized speech is the entire authorized utterance. Wait for the fresh answer; no tool call is allowed. Permitted questions ask whether the customer accepts the stated agent-proposed amount/date, request an exact payment day, clarify a product reference or conflicting statement, offer support after hardship, ask once whether you may help before a human transfer, or ask 'Do you confirm?' after the collective read-back. Computed speech may answer questions using the loaded product, amount, days late, floor or deadline. Never ask how much the customer can pay. Never independently repeat or invent an offer. Retain every product and unchanged term through clarification and confirmation corrections. Do not continue identity questioning. Recorded promises cannot be changed or cancelled; changes belong in the mobile app."
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/collection_question/extraction_schema/0/description",
+      "value": "Classify only the newest reply. A proposed or corrected date/amount is proposal or correction, even when incomplete; never classify it as no/nonanswer. Historical closure/payoff is dispute; paid means payment of the current past-due amount. Hardship is illness, family death or job loss and takes precedence over a simultaneous plan request; retain voluntary terms in their correlated slots. nonanswer means an actual irrelevant response with no payment terms. unknown means unresolved meaning or extraction, not refusal. yes/no answer the question actually asked. none means no fresh reply. Slot kinds must agree with the act: paid/dispute/refused slots have no proposed payment amount/date. A proposal may contain separate promise and refused/paid/dispute statements for different products, but its payment terms must remain in promise slots."
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/collection_question/extraction_schema/-",
+      "value": {
+        "name": "c1_date_form",
+        "type": "string",
+        "enum_values": [
+          "none",
+          "exact",
+          "period",
+          "incomplete",
+          "unknown"
+        ],
+        "description": "Semantic form of c1_date, without resolving its calendar value. period means a genuinely vague period or event such as sometime next week, once wages arrive, around payday or later this month; use this by meaning, not a phrase whitelist. exact names a complete day; incomplete supplies a day, weekday or other fragment requiring earlier context; unknown is uninterpretable or conflicting. none when c1_date is absent. Do not call an unsupported exact spelling a period.",
+        "min_confidence": 0.65
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/collection_question/extraction_schema/-",
+      "value": {
+        "name": "c2_date_form",
+        "type": "string",
+        "enum_values": [
+          "none",
+          "exact",
+          "period",
+          "incomplete",
+          "unknown"
+        ],
+        "description": "Semantic form of c2_date only, using the same definitions as c1_date_form. Preserve this statement's own date and scope. none when absent.",
+        "min_confidence": 0.65
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/collection_question/extraction_schema/-",
+      "value": {
+        "name": "c3_date_form",
+        "type": "string",
+        "enum_values": [
+          "none",
+          "exact",
+          "period",
+          "incomplete",
+          "unknown"
+        ],
+        "description": "Semantic form of c3_date only, using the same definitions as c1_date_form. Preserve this statement's own date and scope. none when absent.",
+        "min_confidence": 0.65
+      }
+    },
+    {
+      "op": "add",
+      "path": "/workflow/nodes/collection_question/extraction_schema/-",
+      "value": {
+        "name": "c_question",
+        "type": "string",
+        "enum_values": [
+          "none",
+          "amount",
+          "days_late",
+          "product",
+          "deadline",
+          "floor",
+          "other"
+        ],
+        "description": "Only for a question in the newest reply: classify the requested account fact. Put an explicitly spoken product reference in c1_ref with c1_kind=none and empty amount/date. Do not infer runtime IDs or account values. other means information outside these categories; none when no question.",
+        "min_confidence": 0.65
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/workflow/nodes/evaluate/code",
+      "value": "import json, re, datetime\nvars['route'] = 'technical_hold'\nvars['speech'] = 'I could not complete that action. I do not have any further information.'\ntry:\n    def unpack(v, default):\n        if isinstance(v, str):\n            try:\n                v = json.loads(v)\n            except Exception:\n                return default\n        return v if isinstance(v, type(default)) else default\n    s = unpack(vars.get('call_state'), {})\n    for key, value in dict(phase='name', name_asks=0, wrong=0, declines=0, no_talk=0, human_asked=False, callback_invalid=0, products=[], loaded=False, notice='').items():\n        s.setdefault(key, value)\n    vars['call_state'] = s\n    prefix = str(vars.get('pending_speech', ''))\n    vars['pending_speech'] = ''\n    now = datetime.datetime.fromisoformat(str(vars.get('now', '')).replace('Z', '+00:00'))\n    today = now.date()\n    holidays = set(['2026-10-26','2026-11-11','2026-11-26','2026-12-25','2027-01-01'])\n    months = ['january','february','march','april','may','june','july','august','september','october','november','december']\n    weekdays = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']\n    def business(d):\n        return d.weekday() < 5 and d.isoformat() not in holidays\n    def next_business(d):\n        while not business(d):\n            d += datetime.timedelta(days=1)\n        return d\n    def after_business(d, n):\n        while n:\n            d += datetime.timedelta(days=1)\n            if business(d):\n                n -= 1\n        return d\n    def week_offer():\n        d = today + datetime.timedelta(days=4-today.weekday())\n        while not business(d):\n            d -= datetime.timedelta(days=1)\n        if d <= today:\n            d = today + datetime.timedelta(days=11-today.weekday())\n            while not business(d):\n                d -= datetime.timedelta(days=1)\n        return d\n    def amount(v):\n        t = str(v).strip().replace(',', '')\n        if not re.fullmatch(r'[0-9]+(?:\\.[0-9]+)?', t):\n            raise ValueError('amount')\n        n = float(t)\n        if n != n or abs(n) == float('inf'):\n            raise ValueError('amount')\n        return n\n    def money(v):\n        n = float(v)\n        if n != n or abs(n) == float('inf'):\n            raise ValueError('amount')\n        if n == int(n):\n            return format(int(n), ',')\n        t = str(n)\n        if '.' in t and 'e' not in t.lower():\n            a, b = t.split('.')\n            return format(int(a), ',') + '.' + b\n        return t\n    def date_speech(v):\n        d = datetime.date.fromisoformat(str(v))\n        return str(d.day) + ' ' + months[d.month-1].title() + ' ' + str(d.year)\n    def parse_date(raw, context=''):\n        original = str(raw).strip()\n        if not original:\n            return 'missing', '', context\n        if re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}', original):\n            try:\n                return 'exact', datetime.date.fromisoformat(original).isoformat(), context\n            except Exception:\n                return 'invalid', '', context\n        t = original.lower().replace('-', ' ').replace(',', ' ')\n        t = re.sub(r'\\s+', ' ', t).strip()\n        for i, name in enumerate(months):\n            aliases = [name[:3]] + (['sept'] if i == 8 else [])\n            for alias in aliases:\n                t = re.sub(r'\\b' + alias + r'\\b\\.?', name, t)\n        for name in weekdays:\n            t = re.sub(r'\\b' + name[:3] + r'\\b\\.?', name, t)\n        ords = ['first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth','eleventh','twelfth','thirteenth','fourteenth','fifteenth','sixteenth','seventeenth','eighteenth','nineteenth','twentieth','twenty first','twenty second','twenty third','twenty fourth','twenty fifth','twenty sixth','twenty seventh','twenty eighth','twenty ninth','thirtieth','thirty first']\n        cards = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty','twenty one','twenty two','twenty three','twenty four','twenty five','twenty six','twenty seven','twenty eight','twenty nine','thirty','thirty one']\n        conversions = [(word, i+1) for i, word in enumerate(ords)] + [(word, i) for i, word in enumerate(cards)]\n        for word, number in sorted(conversions, key=lambda item: len(item[0]), reverse=True):\n            t = re.sub(r'\\b' + word + r'\\b', str(number), t)\n        t = re.sub(r'(\\d+)(?:st|nd|rd|th)\\b', r'\\1', t)\n        if t in ['today','this day']:\n            return 'exact', today.isoformat(), context\n        if t in ['tomorrow','the next day']:\n            return 'exact', (today + datetime.timedelta(days=1)).isoformat(), context\n        if t in ['day after tomorrow','the day after tomorrow']:\n            return 'exact', (today + datetime.timedelta(days=2)).isoformat(), context\n        m = re.fullmatch(r'(?:in )?(\\d+) days?(?: from today| from now)?', t)\n        if m:\n            return 'exact', (today + datetime.timedelta(days=int(m.group(1)))).isoformat(), context\n        m = re.fullmatch(r'(\\d+) weeks? from (?:today|now)', t)\n        if m:\n            return 'exact', (today + datetime.timedelta(days=7*int(m.group(1)))).isoformat(), context\n        monday = today - datetime.timedelta(days=today.weekday())\n        weekday_hits = [i for i, word in enumerate(weekdays) if re.search(r'\\b' + word + r'\\b', t)]\n        if len(weekday_hits) > 1:\n            return 'ambiguous', '', context\n        wd = weekday_hits[0] if weekday_hits else -1\n        if wd >= 0 and re.fullmatch(r'(?:on )?(?:this|next) ' + weekdays[wd], t):\n            return 'exact', (monday + datetime.timedelta(days=wd+(7 if 'next' in t else 0))).isoformat(), context\n        if re.search(r'\\b(?:next week|following week|week after this)\\b', t):\n            context = 'week:' + (monday + datetime.timedelta(days=7)).isoformat()\n        elif 'this week' in t:\n            context = 'week:' + monday.isoformat()\n        elif re.search(r'\\b(?:next|following) month\\b', t):\n            nm = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)\n            context = 'month:' + nm.strftime('%Y-%m')\n        elif re.search(r'\\b(?:this month|the month|current month)\\b', t):\n            context = 'month:' + today.strftime('%Y-%m')\n        m = re.fullmatch(r'(\\d{1,2})[/.](\\d{1,2})(?:[/.](\\d{4}))?', t)\n        if m:\n            a, b = int(m.group(1)), int(m.group(2))\n            y = int(m.group(3)) if m.group(3) else (int(context[6:10]) if context.startswith('month:') else today.year)\n            candidates = []\n            for day, month in [(a, b), (b, a)]:\n                try:\n                    d = datetime.date(y, month, day)\n                    if d not in candidates:\n                        candidates.append(d)\n                except Exception:\n                    pass\n            if len(candidates) > 1 and context.startswith('month:'):\n                candidates = [d for d in candidates if d.strftime('%Y-%m') == context[6:]]\n            if len(candidates) == 1:\n                return 'exact', candidates[0].isoformat(), 'month:' + candidates[0].strftime('%Y-%m')\n            return 'ambiguous' if candidates else 'invalid', '', context\n        month_hits = [i+1 for i, word in enumerate(months) if re.search(r'\\b' + word + r'\\b', t)]\n        nums = [int(v) for v in re.findall(r'\\b\\d+\\b', t)]\n        years = [v for v in nums if v >= 1000]\n        days = [v for v in nums if 1 <= v <= 31]\n        if len(month_hits) > 1 or len(years) > 1:\n            return 'ambiguous', '', context\n        if month_hits:\n            y = years[0] if years else (int(context[6:10]) if context.startswith('month:') else today.year)\n            context = 'month:' + str(y) + '-' + str(month_hits[0]).zfill(2)\n        if len(days) == 1:\n            candidates = []\n            if context.startswith('week:'):\n                base = datetime.date.fromisoformat(context[5:])\n                candidates = [base + datetime.timedelta(days=i) for i in range(7)]\n                candidates = [d for d in candidates if d.day == days[0] and (not years or d.year == years[0])]\n            elif context.startswith('month:'):\n                y, m = [int(v) for v in context[6:].split('-')]\n                try:\n                    candidates = [datetime.date(years[0] if years else y, m, days[0])]\n                except Exception:\n                    return 'invalid', '', context\n            if wd >= 0:\n                candidates = [d for d in candidates if d.weekday() == wd]\n            if len(candidates) == 1:\n                return 'exact', candidates[0].isoformat(), context\n            return 'ambiguous', '', context\n        if days or years:\n            return 'ambiguous', '', context\n        if wd >= 0 and context.startswith('week:'):\n            return 'exact', (datetime.date.fromisoformat(context[5:]) + datetime.timedelta(days=wd)).isoformat(), context\n        if month_hits or re.search(r'\\b(?:week|month|salary|wages|payday|paycheck|payroll|pension|sometime|someday|later|eventually|soon|around|when|once|after)\\b', t):\n            return 'period', '', context\n        return 'ambiguous', '', context\n    def defaults(p):\n        for key, value in dict(status='open', attempts=0, floor_offered=False, too_much=False, vague_asked=False, date_context='', rejected=[], writes=0, confirmed=False, noted=False).items():\n            p.setdefault(key, value)\n    for p in s['products']:\n        defaults(p)\n    opening_text = 'I am a digital assistant calling from Freya Bank, and this call is recorded.'\n    transcript = str(vars.get('system.conversation', ''))\n    if opening_text.lower() in transcript.lower():\n        s['opening_spoken'] = True\n        if s['phase'] == 'name':\n            s['name_asks'] = max(s['name_asks'], min(2, transcript.lower().count('am i speaking with')))\n    def authorized():\n        return all(vars.get(key) == 'yes' for key in ['security_ready','dob_verified','phone_verified'])\n    def ready():\n        return authorized() and s.get('loaded') is True and 1 <= len(s['products']) <= 3\n    def problem():\n        vars['route'] = 'technical_hold'\n        vars['speech'] = 'I could not complete that action. I do not have any further information.'\n    def emit(phase, text, target='identity_question'):\n        global prefix\n        s['phase'] = phase\n        s['question'] = text\n        vars['speech'] = prefix + text\n        prefix = ''\n        s['last_speech'] = vars['speech']\n        vars['route'] = target\n    def finish():\n        global prefix\n        ps = s['products']\n        if s.get('transfer_requested') and not s.get('transfer_success'):\n            problem()\n            return\n        if s.get('transfer_success'):\n            outcome = 'transferred'\n            reason = dict(general='human', support='support', restructuring='restructuring')[s['transfer_success']]\n        elif s.get('early_outcome'):\n            outcome, reason = s['early_outcome'], s.get('early_reason', '')\n        else:\n            if not ready() or any(p['status'] in ['open','pending'] for p in ps):\n                problem()\n                return\n            for p in ps:\n                if p['status'] != 'recorded' and not p['noted']:\n                    vars['note_product'], vars['note_reason'] = p['product_id'], p['status']\n                    vars['route'] = 'note_write'\n                    return\n            if any(p['status'] == 'recorded' for p in ps):\n                outcome, reason = 'promise', ''\n            elif all(p['status'] == 'paid' for p in ps):\n                outcome, reason = 'paid', ''\n            else:\n                outcome, reason = 'no_promise', next(p['status'] for p in ps if p['status'] != 'paid')\n        vars['close_outcome'], vars['close_reason'] = outcome, reason\n        text = prefix + s.get('notice', '')\n        prefix = ''\n        if any(p['status'] == 'recorded' for p in ps):\n            text += 'Your payment promise has been recorded. You will receive a text message confirming this promise. '\n        vars['speech'] = text + 'Thank you. Goodbye.'\n        vars['route'] = 'farewell'\n    def early(outcome, reason):\n        s['early_outcome'], s['early_reason'] = outcome, reason\n        finish()\n    def ask_name():\n        if s['name_asks'] >= 2:\n            early('not_reached', 'unclear')\n        else:\n            s['name_asks'] += 1\n            emit('name', 'Am I speaking with ' + str(vars.get('title', '')) + ' ' + str(vars.get('last_name', '')) + '?')\n    def ask_security():\n        if vars.get('dob_verified') != 'yes':\n            emit('dob', 'Please say the month of your birth as a word.' if s.get('month_word_required') else 'What is your date of birth?')\n        else:\n            emit('phone', 'What are the last four digits of the phone number on file?')\n    def transfer(queue):\n        s['transfer_requested'] = queue\n        s.pop('ticket', None)\n        vars['transfer_queue'] = queue\n        vars['route'] = 'transfer_write'\n    def human():\n        if s['human_asked']:\n            transfer('general')\n            return\n        s['human_asked'] = True\n        s['resume_phase'], s['resume_speech'] = s['phase'], s.get('question', s.get('last_speech', ''))\n        emit('human', 'May I try to help you first?', 'collection_question' if ready() else 'identity_question')\n    def sig(a, d):\n        return str(float(a)) + '|' + str(d)\n    def base_terms(p, phase, focus):\n        if p['status'] == 'pending':\n            return p['amount'], p['date']\n        if phase == 'offer' and s['products'][focus]['product_id'] == p['product_id']:\n            return p.get('offer_amount', p['past_due']), p.get('offer_date', today.isoformat())\n        return p['past_due'], today.isoformat()\n    def reject(index, phase):\n        p = s['products'][index]\n        if p['status'] == 'recorded':\n            return\n        if phase == 'offer':\n            a, d = p.get('offer_amount', p['past_due']), p.get('offer_date', today.isoformat())\n        else:\n            a, d = base_terms(p, phase, s.get('focus', index))\n        value = sig(a, d)\n        if value not in p['rejected']:\n            p['rejected'].append(value)\n        p['status'], p['confirmed'], p['vague_asked'] = 'open', False, False\n        p.pop('amount', None)\n        p.pop('date', None)\n    def readback():\n        ps = [p for p in s['products'] if p['status'] == 'pending']\n        if not ps:\n            finish()\n            return\n        for p in ps:\n            p['confirmed'] = False\n        s['readback_ids'] = [p['product_id'] for p in ps]\n        text = ' '.join('For your ' + p['label'] + ', ' + money(p['amount']) + ' on ' + date_speech(p['date']) + '.' for p in ps)\n        emit('confirm', text + ' Do you confirm?', 'collection_question')\n    def offer(index):\n        p = s['products'][index]\n        s['focus'] = index\n        if s.get('hardship'):\n            if s.get('hardship_declined'):\n                p['status'] = 'hardship'\n                advance()\n            else:\n                emit('support', 'Would you like me to connect you with the customer support team?', 'collection_question')\n            return\n        p['status'], p['confirmed'] = 'open', False\n        while p['attempts'] < p['budget']:\n            p['attempts'] += 1\n            a = p['floor'] if p['attempts'] == 2 or p['too_much'] else p['past_due']\n            d = p['deadline'] if p['attempts'] == 2 else week_offer().isoformat()\n            if sig(a, d) in p['rejected']:\n                continue\n            p['offer_amount'], p['offer_date'] = a, d\n            text = ''\n            if a < p['past_due']:\n                p['floor_offered'] = True\n                text = 'The rest stays overdue. '\n            emit('offer', text + 'Can you pay ' + money(a) + ' for your ' + p['label'] + ' on ' + date_speech(d) + '?', 'collection_question')\n            return\n        p['status'] = 'refused'\n        advance()\n    def advance():\n        for i, p in enumerate(s['products']):\n            if p['status'] == 'open':\n                offer(i)\n                return\n        readback()\n    def resolve(ref, kind, phase, focus, readback_ids):\n        ps = s['products']\n        t = re.sub(r'[^a-z0-9 ]', ' ', str(ref).lower())\n        t = re.sub(r'\\s+', ' ', t).strip()\n        if t in ['all','both','everything','all of them','all products','all three','the lot']:\n            return list(range(len(ps)))\n        if not t:\n            if len(ps) == 1:\n                return [0]\n            if phase == 'confirm':\n                ids = [i for i, p in enumerate(ps) if p['product_id'] in readback_ids]\n                return ids if len(ids) == 1 else []\n            if phase == 'all' and kind == 'promise':\n                return list(range(len(ps)))\n            if phase == 'offer':\n                return [focus]\n            return []\n        simple = re.sub(r'\\b(?:my|the|our|that|this)\\b', '', t)\n        simple = re.sub(r'\\s+', ' ', simple).strip()\n        hits = []\n        for i, p in enumerate(ps):\n            hit = t == str(p['product_id']).lower() or t == p.get('label', '').lower()\n            if p.get('type') == 'credit_card' and re.search(r'\\b(?:card|credit)\\b', t):\n                suffixes = re.findall(r'\\b\\d{4}\\b', t)\n                hit = not suffixes or p.get('card_last4') in suffixes\n            if p.get('type') == 'personal_loan' and re.search(r'\\bpersonal\\b', t):\n                hit = True\n            if p.get('type') == 'car_loan' and re.search(r'\\b(?:car|auto|vehicle)\\b', t):\n                hit = True\n            if simple == 'loan' and p.get('type') in ['personal_loan','car_loan']:\n                hit = True\n            if t and t == p.get('card_last4', ''):\n                hit = True\n            if hit:\n                hits.append(i)\n        return hits if len(hits) == 1 else []\n    def prepare_write():\n        if not ready() or s.get('transfer_requested'):\n            problem()\n            return\n        for p in s['products']:\n            if p['status'] == 'pending' and p['confirmed']:\n                d = datetime.date.fromisoformat(p['date'])\n                if not (p['floor'] <= p['amount'] <= p['past_due'] and today <= d <= datetime.date.fromisoformat(p['deadline']) and business(d)) or p['writes'] >= 2:\n                    problem()\n                    return\n                p['writes'] += 1\n                vars['write_product'], vars['write_amount'], vars['write_date'] = p['product_id'], p['amount'], p['date']\n                vars['route'] = 'promise_write'\n                return\n        finish()\n    def scope_question(t):\n        t['waiting'] = 'scope'\n        emit('scope', 'Which product do you mean: ' + ', '.join(p['label'] for p in s['products']) + '?', 'collection_question')\n    def process_ticket():\n        global prefix\n        t = s['ticket']\n        ps = s['products']\n        while t['position'] < len(t['slots']):\n            q = t['slots'][t['position']]\n            ids = [i for i, p in enumerate(ps) if p['product_id'] in q.get('ids', [])]\n            if not ids:\n                ids = resolve(q.get('ref', ''), q['kind'], t['origin'], t['focus'], t['readback_ids'])\n                if not ids:\n                    scope_question(t)\n                    return\n                q['ids'] = [ps[i]['product_id'] for i in ids]\n            others = []\n            for later in t['slots'][t['position']+1:]:\n                js = resolve(later.get('ref', ''), later['kind'], t['origin'], t['focus'], t['readback_ids'])\n                others.extend(js)\n            if any(i in others for i in ids):\n                t['waiting'] = 'conflict'\n                emit('scope', 'Please clarify the corrected terms for the product mentioned more than once.', 'collection_question')\n                return\n            active = [i for i in ids if ps[i]['status'] != 'recorded']\n            if len(active) != len(ids):\n                prefix += 'You can change a recorded promise in the mobile app. '\n            if not active:\n                t['position'] += 1\n                continue\n            if q['kind'] in ['paid','dispute']:\n                for i in active:\n                    ps[i]['status'], ps[i]['confirmed'] = q['kind'], False\n                if q['kind'] == 'paid':\n                    prefix += 'Payments can take one business day to appear. '\n                t['position'] += 1\n                continue\n            if q['kind'] == 'refused':\n                for i in active:\n                    reject(i, t['origin'])\n                t['position'] += 1\n                continue\n            if q['kind'] == 'too_much' and t['origin'] == 'all':\n                for i in active:\n                    ps[i]['too_much'] = True\n                t['position'] += 1\n                continue\n            if q['kind'] == 'promise' and not q.get('amount') and not q.get('date') and not q.get('accepted') and not q.get('deadline') and not q.get('full_amount'):\n                t['waiting'] = 'terms'\n                emit(t['origin'], 'Please clarify the payment date or whether you accept the stated offer.', 'collection_question')\n                return\n            values = []\n            bad_amount = False\n            for i in active:\n                p = ps[i]\n                a0, d0 = base_terms(p, t['origin'], t['focus'])\n                try:\n                    a = p['floor'] if q['kind'] == 'too_much' else (p['past_due'] if q.get('full_amount') else (amount(q['amount']) if q.get('amount') else a0))\n                except Exception:\n                    bad_amount = True\n                    break\n                raw = q.get('date') or d0\n                mode, d, context = parse_date(raw, p['date_context'])\n                form = q.get('date_form', 'none')\n                if form == 'period' and mode == 'ambiguous':\n                    mode = 'period'\n                elif (form == 'period' and mode == 'exact') or (form == 'exact' and mode == 'period') or form == 'unknown':\n                    mode = 'ambiguous'\n                p['date_context'] = context\n                if q.get('deadline'):\n                    mode, d = 'deadline', p['deadline']\n                values.append((i, a, mode, d))\n            if bad_amount:\n                t['waiting'] = 'amount'\n                text = ' and '.join(money(ps[i]['past_due']) + ' for your ' + ps[i]['label'] for i in active)\n                emit('amount', 'I could not understand that amount. Can you pay ' + text + '?', 'collection_question')\n                return\n            unresolved = [v for v in values if v[2] not in ['exact','deadline']]\n            if unresolved:\n                genuine_period = all(v[2] == 'period' for v in unresolved)\n                if genuine_period and any(ps[i]['vague_asked'] for i in active):\n                    q['deadline'] = True\n                    continue\n                t['waiting'] = 'date'\n                t['date_reason'] = 'period' if genuine_period else 'representation'\n                if genuine_period:\n                    for i in active:\n                        ps[i]['vague_asked'] = True\n                labels = ' and '.join(ps[i]['label'] for i in active)\n                text = 'What exact day do you mean for your ' + labels + '?' if genuine_period else 'Please give the exact payment day and month for your ' + labels + '.'\n                emit('date', text, 'collection_question')\n                return\n            if any(datetime.date.fromisoformat(d) < today for i, a, mode, d in values):\n                t['waiting'], t['date_reason'] = 'date', 'past'\n                emit('date', 'That date is in the past. Please give today or a later business day, no later than ' + date_speech(min(ps[i]['deadline'] for i in active)) + '.', 'collection_question')\n                return\n            for i, a, mode, d in values:\n                p = ps[i]\n                if q['kind'] == 'too_much':\n                    p['too_much'] = True\n                    if p['floor_offered']:\n                        reject(i, t['origin'])\n                        continue\n                    p['floor_offered'] = True\n                if a < p['floor']:\n                    if p['floor_offered']:\n                        reject(i, t['origin'])\n                        continue\n                    prefix += 'I cannot record that amount. I can offer ' + money(p['floor']) + ' for your ' + p['label'] + '; the rest stays overdue. '\n                    a = p['floor']\n                    p['floor_offered'], p['too_much'] = True, True\n                elif a > p['past_due']:\n                    prefix += 'The past-due amount for your ' + p['label'] + ' is ' + money(p['past_due']) + '. I can offer that amount. '\n                    a = p['past_due']\n                day = datetime.date.fromisoformat(d)\n                deadline = datetime.date.fromisoformat(p['deadline'])\n                if mode == 'deadline':\n                    prefix += 'I can offer ' + date_speech(p['deadline']) + ', the latest date I can record for your ' + p['label'] + '. '\n                elif day > deadline:\n                    day = deadline\n                    prefix += 'The latest date I can record for your ' + p['label'] + ' is ' + date_speech(p['deadline']) + '. I can offer that date. '\n                elif not business(day):\n                    day = next_business(day)\n                    prefix += 'That is not a business day. I can offer ' + date_speech(day.isoformat()) + ' for your ' + p['label'] + '. '\n                p['amount'], p['date'], p['status'], p['confirmed'], p['vague_asked'] = a, day.isoformat(), 'pending', False, False\n                if a < p['past_due'] and not p.get('remainder_said'):\n                    prefix += 'The rest stays overdue for your ' + p['label'] + '. '\n                    p['remainder_said'] = True\n            t['position'] += 1\n        s.pop('ticket', None)\n        advance()\n    id_event = str(vars.get('id_event', 'none'))\n    cb_event = str(vars.get('cb_event', 'none'))\n    c_event = str(vars.get('c_event', 'none'))\n    question = str(vars.get('c_question', 'none'))\n    identity = dict(day=str(vars.get('id_day', '')).strip(), month=str(vars.get('id_month', '')).strip(), year=str(vars.get('id_year', '')).strip(), month_word=str(vars.get('id_month_word', 'none')), digits=str(vars.get('id_digits', '')).strip(), mode=str(vars.get('id_digits_mode', 'none')))\n    callback_date, callback_time = str(vars.get('cb_date', '')).strip(), str(vars.get('cb_time', '')).strip()\n    slots = []\n    for i in range(1, 4):\n        stem = 'c' + str(i) + '_'\n        q = dict(kind=str(vars.get(stem+'kind', 'none')), ref=str(vars.get(stem+'ref', '')).strip(), amount=str(vars.get(stem+'amount', '')).strip(), date=str(vars.get(stem+'date', '')).strip(), date_form=str(vars.get(stem+'date_form', 'none')))\n        if q['kind'] != 'none' or q['ref'] or q['amount'] or q['date'] or q['date_form'] != 'none':\n            slots.append(q)\n        vars[stem+'kind'], vars[stem+'date_form'] = 'none', 'none'\n        for key in ['ref','amount','date']:\n            vars[stem+key] = ''\n    for key in ['id_event','cb_event','c_event','id_month_word','id_digits_mode','c_question']:\n        vars[key] = 'none'\n    for key in ['id_day','id_month','id_year','id_digits','cb_date','cb_time']:\n        vars[key] = ''\n    bank_event = str(vars.get('bank_event', 'none'))\n    vars['bank_event'] = 'none'\n    def run():\n        global prefix\n        if bank_event == 'verify':\n            state = vars.get('verify_state')\n            if state == 'wrong':\n                s['wrong'] += 1\n                if s['wrong'] >= 3 or str(vars.get('wrong_answers_left')) == '0':\n                    prefix += 'Please use the mobile app or visit a branch. '\n                    early('not_verified', 'failed')\n                    return\n                if vars.get('submitted_field') == 'date_of_birth':\n                    s['birth'] = {}\n                    s.pop('swapped_birth', None)\n                else:\n                    s['phone_digits'] = ''\n                prefix += 'That answer did not pass the check. '\n            elif state == 'hint':\n                s['swapped_birth'] = dict(s.get('birth', {}))\n                s['month_word_required'], s['birth_month_word'] = True, False\n            elif state == 'rejected':\n                prefix += 'I could not read that answer. '\n            elif state == 'passed':\n                if authorized():\n                    if id_event == 'human':\n                        human()\n                    else:\n                        vars['route'] = 'lookup'\n                    return\n            else:\n                problem()\n                return\n            s['phase'] = 'phone' if vars.get('dob_verified') == 'yes' else 'dob'\n            if id_event == 'none':\n                ask_security()\n                return\n        elif bank_event == 'lookup':\n            if not authorized() or vars.get('account_ok') != 'yes':\n                problem()\n                return\n            raw = unpack(vars.get('account_products'), []) or unpack(vars.get('lookup_response.data.products'), [])\n            if not raw:\n                rows = {}\n                for key, value in vars.items():\n                    m = re.fullmatch(r'lookup_response\\.data\\.products(?:\\.|\\[)(\\d+)\\]?\\.(\\w+)', str(key))\n                    if m:\n                        rows.setdefault(int(m.group(1)), {})[m.group(2)] = value\n                raw = [rows[k] for k in sorted(rows)]\n            if not 1 <= len(raw) <= 3:\n                problem()\n                return\n            ps = []\n            for item in raw:\n                p = dict(item)\n                p['product_id'] = str(p['product_id'])\n                if not p['product_id'] or p['type'] not in ['credit_card','personal_loan','car_loan']:\n                    raise ValueError('product')\n                p['past_due'], p['days_late'] = amount(p['past_due']), int(p['days_late'])\n                if not 1 <= p['days_late'] <= 45:\n                    raise ValueError('band')\n                p['floor'] = amount(p['minimum_payment'] if p['type'] == 'credit_card' else p['instalment_amount'])\n                if not 0 <= p['floor'] <= p['past_due']:\n                    raise ValueError('floor')\n                p['budget'] = 1 if p['days_late'] <= 7 else 2\n                p['deadline'] = after_business(today, 12 if p['budget'] == 1 else 7).isoformat()\n                if p['type'] == 'credit_card':\n                    p['card_last4'] = str(p['card_last4'])\n                    if not re.fullmatch(r'\\d{4}', p['card_last4']):\n                        raise ValueError('card suffix')\n                    p['label'] = 'credit card ending ' + p['card_last4']\n                else:\n                    p['label'] = p['type'].replace('_', ' ')\n                defaults(p)\n                ps.append(p)\n            if len(set(p['product_id'] for p in ps)) != len(ps):\n                raise ValueError('duplicate products')\n            s['products'], s['loaded'], s['focus'] = ps, True, 0\n            text = 'I am calling from the collections team about a late payment. '\n            text += ' '.join('Your ' + p['label'] + ' has a past-due amount of ' + money(p['past_due']) + ' and is ' + str(p['days_late']) + ' days late.' for p in ps)\n            text += ' Can you pay all of them today?' if len(ps) > 1 else ' Can you make this payment today?'\n            emit('all', text, 'collection_question')\n            return\n        elif bank_event == 'promise':\n            if not ready():\n                problem()\n                return\n            p = next(p for p in s['products'] if p['product_id'] == vars.get('write_product'))\n            if vars.get('promise_ok') == 'yes':\n                p['status'], p['promise_id'] = 'recorded', str(vars.get('recorded_promise_id', ''))\n            elif p['writes'] >= 2:\n                p['status'], p['confirmed'] = 'service_error', False\n                s['notice'] += 'I could not record the promise for your ' + p['label'] + '. '\n            if c_event == 'none' and not slots:\n                prepare_write()\n                return\n        elif bank_event == 'note':\n            if not ready() or s.get('transfer_requested') or vars.get('note_ok') != 'yes':\n                problem()\n                return\n            p = next(p for p in s['products'] if p['product_id'] == vars.get('note_product'))\n            p['noted'] = True\n            finish()\n            return\n        elif bank_event == 'callback':\n            if vars.get('callback_ok') != 'yes':\n                problem()\n                return\n            s['notice'] += 'The callback is scheduled for ' + date_speech(vars['callback_date']) + ' at ' + vars['callback_time'] + '. '\n            early('not_reached', 'callback')\n            return\n        elif bank_event == 'transfer':\n            if vars.get('transfer_ok') != 'yes':\n                problem()\n                return\n            s['transfer_success'] = vars['transfer_queue']\n            s['notice'] += 'I am connecting you with the ' + dict(support='customer support team', restructuring='restructuring team', general='customer service team')[vars['transfer_queue']] + '. '\n            finish()\n            return\n        if s['phase'] == 'callback':\n            if cb_event == 'deceased':\n                prefix += 'I am sorry for your loss. '\n                early('not_reached', 'deceased')\n                return\n            if cb_event in ['wrong_number','no_callback']:\n                early('not_reached', cb_event)\n                return\n            if cb_event == 'human':\n                human()\n                return\n            if cb_event == 'ai':\n                prefix += 'I am Freya Bank\\'s digital assistant. '\n            elif cb_event == 'scam':\n                prefix += 'You can verify this call by phoning Freya Bank\\'s customer service number. '\n            if callback_date:\n                s['callback_raw_date'] = callback_date\n            if callback_time:\n                s['callback_raw_time'] = callback_time\n            mode, d, context = parse_date(s.get('callback_raw_date', ''), s.get('callback_context', ''))\n            s['callback_context'] = context\n            t = s.get('callback_raw_time', '')\n            next_day = after_business(today, 1).isoformat()\n            invalid = mode == 'exact' and d not in [today.isoformat(), next_day]\n            time_value = None\n            if t:\n                try:\n                    if not re.fullmatch(r'\\d{2}:\\d{2}', t):\n                        raise ValueError('time')\n                    hh, mm = [int(v) for v in t.split(':')]\n                    time_value = datetime.time(hh, mm)\n                    invalid = invalid or not datetime.time(10, 0) <= time_value <= datetime.time(19, 0)\n                except Exception:\n                    invalid = True\n            if mode == 'exact' and time_value is not None:\n                stamp = datetime.datetime.combine(datetime.date.fromisoformat(d), time_value).replace(tzinfo=now.tzinfo)\n                invalid = invalid or stamp <= now\n            if invalid:\n                s['callback_invalid'] += 1\n                s['callback_raw_date'], s['callback_raw_time'], s['callback_context'] = '', '', ''\n                if s['callback_invalid'] >= 2:\n                    early('not_reached', 'no_callback')\n                else:\n                    emit('callback', 'Please give another time, today or ' + date_speech(next_day) + ', between 10:00 and 19:00 and later than now.', 'callback_question')\n                return\n            who = str(vars.get('title', '')) + ' ' + str(vars.get('last_name', ''))\n            if mode != 'exact' or time_value is None:\n                if mode == 'exact':\n                    text = 'At what time on ' + date_speech(d) + ' can ' + who + ' be reached?'\n                elif time_value is not None:\n                    text = 'On what exact date can ' + who + ' be reached at ' + t + '?'\n                else:\n                    text = 'On what exact date and at what time can ' + who + ' be reached?'\n                emit('callback', text, 'callback_question')\n                return\n            vars['callback_date'], vars['callback_time'] = d, t\n            vars['route'] = 'callback_write'\n            return\n        if not ready():\n            if s.get('loaded') or authorized():\n                problem()\n                return\n            if not s.get('opening_spoken'):\n                prefix += opening_text + ' '\n                s['opening_spoken'] = True\n                if id_event == 'ai':\n                    prefix += 'I am Freya Bank\\'s digital assistant. '\n                elif id_event == 'scam':\n                    prefix += 'You can verify this call by phoning Freya Bank\\'s customer service number. '\n                elif id_event == 'question':\n                    prefix += 'I do not have that information. '\n                if id_event not in ['other','wrong_number','deceased','human']:\n                    if id_event == 'no_talk':\n                        s['no_talk'] += 1\n                    ask_name()\n                    return\n            if id_event == 'deceased':\n                prefix += 'I am sorry for your loss. '\n                early('not_reached', 'deceased')\n                return\n            if id_event == 'wrong_number':\n                early('not_reached', 'wrong_number')\n                return\n            if id_event == 'other':\n                emit('callback', 'When can ' + str(vars.get('title', '')) + ' ' + str(vars.get('last_name', '')) + ' be reached?', 'callback_question')\n                return\n            if s['phase'] == 'human':\n                if id_event in ['yes','self']:\n                    phase = s.get('resume_phase', 'name')\n                    if phase == 'callback':\n                        emit('callback', 'When can the customer be reached?', 'callback_question')\n                    elif phase == 'name':\n                        ask_name()\n                    else:\n                        ask_security()\n                elif id_event in ['no','human','refuse','no_talk']:\n                    transfer('general')\n                else:\n                    emit('human', 'May I try to help you first?')\n                return\n            if id_event == 'human':\n                human()\n                return\n            if id_event == 'ai':\n                prefix += 'I am Freya Bank\\'s digital assistant. '\n            elif id_event == 'scam':\n                prefix += 'You can verify this call by phoning Freya Bank\\'s customer service number. '\n            elif id_event == 'question':\n                prefix += 'I do not have that information. '\n            if s['phase'] == 'name':\n                if id_event in ['self','yes']:\n                    s['name_confirmed'] = True\n                    ask_security()\n                elif id_event == 'no_talk':\n                    s['no_talk'] += 1\n                    if s['no_talk'] >= 2:\n                        early('not_verified', 'declined')\n                    else:\n                        ask_name()\n                else:\n                    ask_name()\n                return\n            if id_event in ['refuse','about','no_talk']:\n                s['declines'] += 1\n                if id_event == 'no_talk':\n                    s['no_talk'] += 1\n                if s['declines'] >= 2 or s['no_talk'] >= 2:\n                    early('not_verified', 'declined')\n                else:\n                    prefix += 'These questions protect your account. '\n                    ask_security()\n                return\n            if id_event in ['ai','scam','question','unknown','none']:\n                ask_security()\n                return\n            if s['phase'] == 'dob':\n                birth = s.setdefault('birth', {})\n                old = s.get('swapped_birth', {})\n                if s.get('month_word_required') and identity['month_word'] == 'yes' and identity['month'] and not identity['day'] and old:\n                    if identity['month'].lstrip('0') == str(old.get('day', '')).lstrip('0'):\n                        birth['day'] = str(old.get('month', ''))\n                    else:\n                        birth.pop('day', None)\n                for key in ['day','month','year']:\n                    if identity[key]:\n                        birth[key] = identity[key]\n                if identity['month']:\n                    s['birth_month_word'] = identity['month_word'] == 'yes'\n                if s.get('month_word_required') and not s.get('birth_month_word'):\n                    ask_security()\n                    return\n                missing = [key for key in ['day','month','year'] if not birth.get(key)]\n                if missing:\n                    emit('dob', 'What is the ' + missing[0] + ' of your birth?')\n                    return\n                if not re.fullmatch(r'\\d{4}', birth['year']):\n                    emit('dob', 'Please give your four-digit birth year.')\n                    return\n                try:\n                    d = datetime.date(int(birth['year']), int(birth['month']), int(birth['day'])).isoformat()\n                except Exception:\n                    emit('dob', 'Please give your date of birth again, with the month as a word.')\n                    return\n                vars['verify_field'], vars['verify_answer'] = 'date_of_birth', d\n                vars['route'] = 'verify'\n                return\n            if s['phase'] == 'phone':\n                words = dict(zero='0', oh='0', one='1', two='2', three='3', four='4', five='5', six='6', seven='7', eight='8', nine='9')\n                pieces = re.findall(r'[a-z]+|\\d+', identity['digits'].lower())\n                if not pieces or any(v not in words and not v.isdigit() for v in pieces):\n                    emit('phone', 'Please give the last four digits of the phone number on file.')\n                    return\n                digits = ''.join(words.get(v, v) for v in pieces)\n                joined = digits if identity['mode'] in ['complete','replace'] or len(digits) == 4 else s.get('phone_digits', '') + digits\n                if len(joined) < 4:\n                    s['phone_digits'] = joined\n                    emit('phone', 'Please give the remaining ' + str(4-len(joined)) + ' digits.')\n                    return\n                if len(joined) != 4:\n                    s['phone_digits'] = ''\n                    emit('phone', 'Please give only the last four digits of the phone number on file.')\n                    return\n                s['phone_digits'] = joined\n                vars['verify_field'], vars['verify_answer'] = 'phone_last4', joined\n                vars['route'] = 'verify'\n                return\n            problem()\n            return\n        ps = s['products']\n        event = c_event\n        fresh = [dict(q) for q in slots]\n        if s['phase'] == 'human':\n            if event == 'yes':\n                emit(s.get('resume_phase', 'all'), s.get('resume_speech', 'Can you pay all of them today?'), 'collection_question')\n            elif event in ['no','human','no_talk']:\n                transfer('general')\n            else:\n                emit('human', 'May I try to help you first?', 'collection_question')\n            return\n        if event == 'human':\n            human()\n            return\n        if event == 'hardship':\n            s['hardship'] = True\n            prefix += 'I am sorry to hear that. '\n            if not any(q['amount'] or q['date'] or q['kind'] in ['paid','dispute'] for q in fresh):\n                emit('support', 'Would you like me to connect you with the customer support team?', 'collection_question')\n                return\n            event = 'proposal'\n        if s['phase'] == 'support' and event not in ['proposal','correction','paid','dispute']:\n            if event == 'yes':\n                transfer('support')\n            elif event in ['no','no_talk']:\n                s['hardship_declined'] = True\n                if s.get('ticket'):\n                    process_ticket()\n                else:\n                    for p in ps:\n                        if p['status'] == 'open':\n                            p['status'] = 'hardship'\n                    readback()\n            else:\n                emit('support', 'Would you like me to connect you with the customer support team?', 'collection_question')\n            return\n        if event == 'restructuring':\n            if s.get('hardship'):\n                emit('support', 'Would you like me to connect you with the customer support team?', 'collection_question')\n            else:\n                transfer('restructuring')\n            return\n        if event == 'no_talk':\n            s['no_talk'] += 1\n            if s['no_talk'] >= 2:\n                s.pop('ticket', None)\n                for p in ps:\n                    if p['status'] in ['open','pending']:\n                        p['status'] = 'refused'\n                finish()\n                return\n            event = 'no'\n        if event in ['ai','scam','question']:\n            if event == 'ai':\n                prefix += 'I am Freya Bank\\'s digital assistant. '\n            elif event == 'scam':\n                prefix += 'You can verify this call by phoning Freya Bank\\'s customer service number. '\n            elif question in ['amount','days_late','product','deadline','floor']:\n                ref = fresh[0]['ref'] if fresh else ''\n                ids = resolve(ref, 'promise', s['phase'], s.get('focus', 0), s.get('readback_ids', [])) if ref else list(range(len(ps)))\n                if not ids:\n                    emit(s['phase'], 'Please identify the product your question concerns.', 'collection_question')\n                    return\n                for i in ids:\n                    p = ps[i]\n                    if question == 'amount':\n                        prefix += 'The past-due amount for your ' + p['label'] + ' is ' + money(p['past_due']) + '. '\n                    elif question == 'days_late':\n                        prefix += 'Your ' + p['label'] + ' is ' + str(p['days_late']) + ' days late. '\n                    elif question == 'product':\n                        prefix += 'The product is your ' + p['label'] + '. '\n                    elif question == 'deadline':\n                        prefix += 'The latest date I can record for your ' + p['label'] + ' is ' + date_speech(p['deadline']) + '. '\n                    else:\n                        prefix += 'The minimum amount I can record for your ' + p['label'] + ' is ' + money(p['floor']) + '; the rest stays overdue. '\n            else:\n                prefix += 'I do not have that information. '\n            emit(s['phase'], s.get('question', s.get('last_speech', 'Please clarify your reply.')), 'collection_question')\n            return\n        known_events = ['none','yes','no','proposal','correction','too_much','paid','dispute','nonanswer','unknown']\n        conflict = event not in known_events\n        for q in fresh:\n            if q['kind'] not in ['none','promise','paid','dispute','refused'] or q['date_form'] not in ['none','exact','period','incomplete','unknown']:\n                conflict = True\n            if q['kind'] in ['paid','dispute','refused'] and (q['amount'] or q['date']):\n                conflict = True\n            if q['date_form'] != 'none' and not q['date']:\n                conflict = True\n            if event in ['paid','dispute'] and q['kind'] not in ['none',event]:\n                conflict = True\n            if event in ['yes','no','nonanswer','unknown','none'] and (q['amount'] or q['date']):\n                conflict = True\n            if event in ['proposal','correction'] and q['kind'] in ['paid','dispute'] and len(fresh) == 1:\n                conflict = True\n        if conflict:\n            text = 'Please clarify whether you are proposing a payment, reporting a payment, disputing the product, or refusing.' if fresh else 'Please clarify whether you accept the stated offer or which payment date you mean.'\n            emit(s['phase'], text, 'collection_question')\n            return\n        if event in ['paid','dispute'] and not fresh:\n            fresh = [dict(kind=event, ref='', amount='', date='', date_form='none')]\n        if event == 'too_much' and not fresh:\n            fresh = [dict(kind='too_much', ref='all' if s['phase'] == 'all' else '', amount='', date='', date_form='none')]\n        elif event == 'too_much':\n            for q in fresh:\n                if not q['amount'] and not q['date']:\n                    q['kind'] = 'too_much'\n        ticket = s.get('ticket')\n        if ticket:\n            current = ticket['slots'][ticket['position']]\n            waiting = ticket.get('waiting', '')\n            if waiting == 'date' and ticket.get('date_reason') == 'period' and not fresh and event in ['none','unknown','yes','no','nonanswer']:\n                current['deadline'] = True\n                process_ticket()\n                return\n            if event == 'yes' and not fresh and waiting in ['amount','terms']:\n                current['full_amount'] = waiting == 'amount'\n                current['accepted'] = True\n                if waiting == 'amount':\n                    current['amount'] = ''\n                process_ticket()\n                return\n            if event in ['no','nonanswer'] and not fresh:\n                if current.get('ids'):\n                    current['kind'], current['amount'], current['date'] = 'refused', '', ''\n                    process_ticket()\n                else:\n                    scope_question(ticket)\n                return\n            if not fresh:\n                emit(s['phase'], s.get('question', 'Please clarify your reply.'), 'collection_question')\n                return\n            if waiting == 'conflict':\n                replacements = []\n                resolved_ids = []\n                for q in fresh:\n                    ids = resolve(q['ref'], q['kind'], ticket['origin'], ticket['focus'], ticket['readback_ids'])\n                    if not ids or q['kind'] == 'none' or (q['kind'] == 'promise' and not q['amount'] and not q['date']):\n                        emit('scope', 'Please clarify the corrected terms for the product mentioned more than once.', 'collection_question')\n                        return\n                    resolved_ids.extend(ids)\n                    replacements.append(q)\n                retained = []\n                for q in ticket['slots'][ticket['position']:]:\n                    ids = resolve(q.get('ref', ''), q['kind'], ticket['origin'], ticket['focus'], ticket['readback_ids'])\n                    remain = [i for i in ids if i not in resolved_ids]\n                    if remain:\n                        q['ids'] = [ps[i]['product_id'] for i in remain]\n                        retained.append(q)\n                ticket['slots'] = ticket['slots'][:ticket['position']] + replacements + retained\n                process_ticket()\n                return\n            first = fresh[0]\n            target_ids = resolve(first['ref'], first['kind'], ticket['origin'], ticket['focus'], ticket['readback_ids']) if first['ref'] else []\n            old_ids = [i for i, p in enumerate(ps) if p['product_id'] in current.get('ids', [])]\n            if first['ref'] and old_ids and target_ids and not set(target_ids).issubset(set(old_ids)):\n                ticket['slots'].extend(fresh)\n                emit(s['phase'], s.get('question', 'Please clarify your reply.'), 'collection_question')\n                return\n            if target_ids and old_ids and set(target_ids) != set(old_ids):\n                remaining = dict(current)\n                remaining['ids'] = [ps[i]['product_id'] for i in old_ids if i not in target_ids]\n                ticket['slots'].insert(ticket['position']+1, remaining)\n                current['ids'] = [ps[i]['product_id'] for i in target_ids]\n            if first['kind'] in ['paid','dispute','refused']:\n                current['kind'], current['amount'], current['date'] = first['kind'], '', ''\n                current['date_form'] = 'none'\n                current.pop('deadline', None)\n            elif first['kind'] in ['promise','too_much']:\n                current['kind'] = first['kind']\n            for key in ['ref','amount','date']:\n                if first.get(key):\n                    current[key] = first[key]\n            if first.get('date'):\n                current['date_form'] = first['date_form']\n                current.pop('deadline', None)\n            if first.get('ref') and not old_ids:\n                current.pop('ids', None)\n            ticket['slots'].extend(fresh[1:])\n            process_ticket()\n            return\n        if event == 'yes' and not fresh:\n            if s['phase'] == 'confirm':\n                for p in ps:\n                    if p['status'] == 'pending' and p['product_id'] in s.get('readback_ids', []):\n                        p['confirmed'] = True\n                prepare_write()\n                return\n            if s['phase'] in ['all','offer']:\n                fresh = [dict(kind='promise', ref='all' if s['phase'] == 'all' else '', amount='', date='', date_form='none', accepted=True)]\n            else:\n                emit(s['phase'], 'Please give the exact payment day you mean.', 'collection_question')\n                return\n        if event in ['no','nonanswer'] and not fresh:\n            if s.get('hardship'):\n                emit('support', 'Would you like me to connect you with the customer support team?', 'collection_question')\n                return\n            if s['phase'] == 'confirm':\n                for i, p in enumerate(ps):\n                    if p['status'] == 'pending' and p['product_id'] in s.get('readback_ids', []):\n                        reject(i, 'confirm')\n                advance()\n            elif s['phase'] == 'all':\n                offer(0)\n            else:\n                index = s.get('focus', 0)\n                reject(index, s['phase'])\n                offer(index)\n            return\n        if not fresh:\n            emit(s['phase'], 'Please clarify whether you accept the stated offer or which payment date you mean.', 'collection_question')\n            return\n        for q in fresh:\n            if q['kind'] == 'none':\n                if event in ['paid','dispute']:\n                    q['kind'] = event\n                elif event in ['proposal','correction'] and (q['amount'] or q['date']):\n                    q['kind'] = 'promise'\n                else:\n                    emit(s['phase'], 'Please clarify the payment date or whether you accept the stated offer.', 'collection_question')\n                    return\n            if event == 'yes' and q['kind'] == 'promise' and s['phase'] in ['all','offer']:\n                q['accepted'] = True\n        s['ticket'] = dict(slots=fresh, position=0, origin=s['phase'], focus=s.get('focus', 0), readback_ids=list(s.get('readback_ids', [])), waiting='')\n        process_ticket()\n    run()\n    vars['pending_speech'] = prefix\n    vars['call_state'] = s\nexcept Exception:\n    vars['route'] = 'technical_hold'\n    vars['speech'] = 'I could not complete that action. I do not have any further information.'\n"
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Caller-first scam question is answered before the first delivered name question",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "title": "Ms",
+          "last_name": "Fixture",
+          "id_event": "scam"
+        },
+        "expect_vars": {
+          "route": "identity_question",
+          "speech": "I am a digital assistant calling from Freya Bank, and this call is recorded. You can verify this call by phoning Freya Bank's customer service number. Am I speaking with Ms Fixture?",
+          "id_event": "none"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Month-word reply after a swapped-date hint corrects both customer-supplied components",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "id_event": "answer",
+          "id_month": "3",
+          "id_month_word": "yes",
+          "call_state": {
+            "phase": "dob",
+            "opening_spoken": true,
+            "wrong": 0,
+            "month_word_required": true,
+            "birth_month_word": false,
+            "birth": {
+              "day": "3",
+              "month": "9",
+              "year": "1988"
+            },
+            "swapped_birth": {
+              "day": "3",
+              "month": "9",
+              "year": "1988"
+            }
+          }
+        },
+        "expect_vars": {
+          "route": "verify",
+          "verify_field": "date_of_birth",
+          "verify_answer": "1988-03-09",
+          "id_month_word": "none"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "An invalid callback day consumes the alternative allowance before a time is supplied",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "cb_event": "proposal",
+          "cb_date": "next Friday",
+          "call_state": {
+            "phase": "callback",
+            "callback_invalid": 0
+          }
+        },
+        "expect_vars": {
+          "route": "callback_question",
+          "speech": "Please give another time, today or 15 October 2026, between 10:00 and 19:00 and later than now."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Callback AI question retains the valid date and asks only for the missing time",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "title": "Ms",
+          "last_name": "Fixture",
+          "cb_event": "ai",
+          "call_state": {
+            "phase": "callback",
+            "callback_raw_date": "2026-10-15"
+          }
+        },
+        "expect_vars": {
+          "route": "callback_question",
+          "speech": "I am Freya Bank's digital assistant. At what time on 15 October 2026 can Ms Fixture be reached?"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Contradictory proposal and paid slot remain unresolved without a product note",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "proposal",
+          "c1_kind": "paid",
+          "c1_ref": "card",
+          "c1_amount": "100",
+          "call_state": {
+            "phase": "all",
+            "loaded": true,
+            "products": [
+              {
+                "product_id": "audit_card",
+                "type": "credit_card",
+                "card_last4": "0735",
+                "label": "credit card ending 0735",
+                "past_due": 800,
+                "floor": 100,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "Please clarify whether you are proposing a payment, reporting a payment, disputing the product, or refusing.",
+          "c_event": "none",
+          "c1_kind": "none",
+          "c1_date_form": "none",
+          "c_question": "none"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "A bare product clarification cannot turn an empty proposal into a promise",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "proposal",
+          "c1_kind": "none",
+          "c1_ref": "card",
+          "call_state": {
+            "phase": "scope",
+            "loaded": true,
+            "ticket": {
+              "origin": "confirm",
+              "focus": 0,
+              "readback_ids": [
+                "audit_card",
+                "audit_loan"
+              ],
+              "position": 0,
+              "waiting": "scope",
+              "slots": [
+                {
+                  "kind": "promise",
+                  "ref": "",
+                  "amount": "",
+                  "date": "",
+                  "date_form": "none"
+                }
+              ]
+            },
+            "products": [
+              {
+                "product_id": "audit_card",
+                "type": "credit_card",
+                "card_last4": "0735",
+                "label": "credit card ending 0735",
+                "past_due": 800,
+                "floor": 100,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02",
+                "status": "pending",
+                "amount": 800,
+                "date": "2026-10-22"
+              },
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23",
+                "status": "pending",
+                "amount": 900,
+                "date": "2026-10-22"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "Please clarify the payment date or whether you accept the stated offer."
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "An omitted correction reference selects the sole product actually read back",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "correction",
+          "c1_kind": "promise",
+          "c1_date": "next Friday",
+          "call_state": {
+            "phase": "confirm",
+            "focus": 0,
+            "loaded": true,
+            "readback_ids": [
+              "audit_loan"
+            ],
+            "products": [
+              {
+                "product_id": "audit_card",
+                "type": "credit_card",
+                "card_last4": "0735",
+                "label": "credit card ending 0735",
+                "past_due": 800,
+                "floor": 100,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02",
+                "status": "refused",
+                "attempts": 1
+              },
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23",
+                "status": "pending",
+                "amount": 900,
+                "date": "2026-10-22"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "For your personal loan, 900 on 23 October 2026. Do you confirm?"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Clarifying one statement preserves the other product's amount and date",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "proposal",
+          "c1_kind": "promise",
+          "c1_date": "Thursday the twenty second",
+          "c1_date_form": "incomplete",
+          "call_state": {
+            "phase": "date",
+            "loaded": true,
+            "ticket": {
+              "origin": "all",
+              "focus": 0,
+              "readback_ids": [],
+              "position": 0,
+              "waiting": "date",
+              "date_reason": "period",
+              "slots": [
+                {
+                  "kind": "promise",
+                  "ref": "card",
+                  "ids": [
+                    "audit_card"
+                  ],
+                  "amount": "200",
+                  "date": "next week",
+                  "date_form": "period"
+                },
+                {
+                  "kind": "promise",
+                  "ref": "personal loan",
+                  "amount": "400",
+                  "date": "2026-10-22",
+                  "date_form": "exact"
+                }
+              ]
+            },
+            "products": [
+              {
+                "product_id": "audit_card",
+                "type": "credit_card",
+                "card_last4": "0735",
+                "label": "credit card ending 0735",
+                "past_due": 800,
+                "floor": 100,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02",
+                "vague_asked": true,
+                "date_context": "week:2026-10-19"
+              },
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "The rest stays overdue for your credit card ending 0735. The rest stays overdue for your personal loan. For your credit card ending 0735, 200 on 22 October 2026. For your personal loan, 400 on 22 October 2026. Do you confirm?",
+          "c1_date_form": "none"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "No exact day after a common vague-date clarification preserves all products and their different deadlines",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "nonanswer",
+          "call_state": {
+            "phase": "date",
+            "loaded": true,
+            "ticket": {
+              "origin": "all",
+              "focus": 0,
+              "readback_ids": [],
+              "position": 0,
+              "waiting": "date",
+              "date_reason": "period",
+              "slots": [
+                {
+                  "kind": "promise",
+                  "ref": "both",
+                  "ids": [
+                    "audit_card",
+                    "audit_loan"
+                  ],
+                  "amount": "",
+                  "date": "next week",
+                  "date_form": "period"
+                }
+              ]
+            },
+            "products": [
+              {
+                "product_id": "audit_card",
+                "type": "credit_card",
+                "card_last4": "0735",
+                "label": "credit card ending 0735",
+                "past_due": 800,
+                "floor": 100,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02",
+                "vague_asked": true,
+                "date_context": "week:2026-10-19"
+              },
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23",
+                "vague_asked": true,
+                "date_context": "week:2026-10-19"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "I can offer 2 November 2026, the latest date I can record for your credit card ending 0735. I can offer 23 October 2026, the latest date I can record for your personal loan. For your credit card ending 0735, 800 on 2 November 2026. For your personal loan, 900 on 23 October 2026. Do you confirm?"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Ordinary spoken cardinal day is not silently parsed as its final digit",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "proposal",
+          "c1_kind": "promise",
+          "c1_ref": "the loan",
+          "c1_date": "October twenty three",
+          "c1_date_form": "exact",
+          "call_state": {
+            "phase": "all",
+            "loaded": true,
+            "products": [
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "For your personal loan, 900 on 23 October 2026. Do you confirm?"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Paid explanation survives the deferred-note route",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "paid",
+          "call_state": {
+            "phase": "all",
+            "loaded": true,
+            "products": [
+              {
+                "product_id": "audit_paid",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "note_write",
+          "note_product": "audit_paid",
+          "note_reason": "paid",
+          "pending_speech": "Payments can take one business day to appear. "
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Successful final paid note delivers the retained explanation before farewell",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "bank_event": "note",
+          "note_ok": "yes",
+          "note_product": "audit_paid",
+          "pending_speech": "Payments can take one business day to appear. ",
+          "call_state": {
+            "phase": "all",
+            "loaded": true,
+            "products": [
+              {
+                "product_id": "audit_paid",
+                "status": "paid",
+                "noted": false
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "farewell",
+          "close_outcome": "paid",
+          "close_reason": "",
+          "speech": "Payments can take one business day to appear. Thank you. Goodbye.",
+          "pending_speech": ""
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "Declining hardship support preserves a previously agreed promise and a paid disposition",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "no",
+          "call_state": {
+            "phase": "support",
+            "loaded": true,
+            "hardship": true,
+            "products": [
+              {
+                "product_id": "audit_paid",
+                "status": "paid"
+              },
+              {
+                "product_id": "audit_pending",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23",
+                "status": "pending",
+                "amount": 900,
+                "date": "2026-10-22"
+              },
+              {
+                "product_id": "audit_hardship",
+                "status": "open"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "For your personal loan, 900 on 22 October 2026. Do you confirm?"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "A non-answer after the sole early-band offer exhausts the same budget as a no",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "nonanswer",
+          "call_state": {
+            "phase": "offer",
+            "focus": 0,
+            "loaded": true,
+            "products": [
+              {
+                "product_id": "audit_early",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 7,
+                "budget": 1,
+                "deadline": "2026-11-02",
+                "attempts": 1,
+                "offer_amount": 900,
+                "offer_date": "2026-10-16",
+                "amount": 300,
+                "date": "2026-10-22"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "note_write",
+          "note_product": "audit_early",
+          "note_reason": "refused"
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/checks/-",
+      "value": {
+        "name": "A requested account fact is answered from loaded data before continuing the offer",
+        "node": "evaluate",
+        "hook": "code",
+        "vars": {
+          "now": "2026-10-14T11:00",
+          "security_ready": "yes",
+          "dob_verified": "yes",
+          "phone_verified": "yes",
+          "c_event": "question",
+          "c_question": "days_late",
+          "c1_kind": "none",
+          "c1_ref": "loan",
+          "call_state": {
+            "phase": "offer",
+            "focus": 0,
+            "loaded": true,
+            "question": "Can you pay 900 for your personal loan on 16 October 2026?",
+            "products": [
+              {
+                "product_id": "audit_loan",
+                "type": "personal_loan",
+                "label": "personal loan",
+                "past_due": 900,
+                "floor": 300,
+                "days_late": 8,
+                "budget": 2,
+                "deadline": "2026-10-23",
+                "attempts": 1,
+                "offer_amount": 900,
+                "offer_date": "2026-10-16"
+              }
+            ]
+          }
+        },
+        "expect_vars": {
+          "route": "collection_question",
+          "speech": "Your personal loan is 8 days late. Can you pay 900 for your personal loan on 16 October 2026?",
+          "c_question": "none"
+        }
+      }
+    }
+  ]
+}

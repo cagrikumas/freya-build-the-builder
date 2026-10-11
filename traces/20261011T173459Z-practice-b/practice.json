@@ -1,0 +1,142 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "e5fd9b8d-eb92-4e3e-92db-a5bc9a4cd92d",
+ "iteration_id": "5ac60ca5-1690-4fc4-8559-a7cfd2f189fe",
+ "seconds": 219,
+ "passed": 0,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+    "the call was not closed with close_call",
+    "conversation: The assistant failed to meet any of the success criteria. No products were mentioned (Criterion 1), no read-backs or confirmations occurred (Criterion 2), and the 'create_promise' tool was never called (Criterion 3). Additionally, after the initial greeting, the agent entered an infinite loop of repeating a generic error message ('I could not complete the action...') until the customer ended the c"
+   ],
+   "call_id": "8ed109eb-0940-40f3-a65a-7e59e2489794",
+   "tools": [],
+   "customer_id": "c_36220b25-50f",
+   "slowest_turn_s": 0.4,
+   "ended": "customer-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 510.0, '2026-10-15')]",
+    "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+    "the call was not closed with close_call",
+    "conversation: - The assistant failed all primary success criteria: it did not ask the phone question, did not discuss any credit products (credit card, personal loan, or car loan), and did not record any promises or refusals. - The assistant entered an error loop early in the conversation (\"I could not complete that action\"), failing to engage with the customer at all. - The call failed the proper ending requir"
+   ],
+   "call_id": "07eeb2b5-6ae5-482c-af90-77f7285f1bc5",
+   "tools": [],
+   "customer_id": "c_b770bf2a-c8a",
+   "slowest_turn_s": 0.4,
+   "ended": "customer-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome (None, None), expected ('promise', None)",
+    "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+    "the call was not closed with close_call",
+    "conversation: The assistant failed to meet any of the success criteria. No dates were recorded for either a credit card or a loan, and no read-back was provided. Furthermore, the assistant entered a state of failure early on, repeating that it could not complete the action (Message 2), and then entered a repetitive loop of 'Goodbye' messages starting at Message 14 that lasted for over 140 turns until the custom"
+   ],
+   "call_id": "8bb2489d-a54d-4aa6-a726-baecffd7da57",
+   "tools": [],
+   "customer_id": "c_b57d5d6f-d5b",
+   "slowest_turn_s": 0.5,
+   "ended": "customer-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+     "the call was not closed with close_call",
+     "conversation: The assistant failed to meet any of the success criteria. No products were mentioned (Criterion 1), no read-backs or confirmations occurred (Criterion 2), and the 'create_promise' tool was never called (Criterion 3). Additionally, after the initial greeting, the agent entered an infinite loop of repeating a generic error message ('I could not complete the action...') until the customer ended the c"
+    ],
+    "call_id": "8ed109eb-0940-40f3-a65a-7e59e2489794",
+    "tools": [],
+    "customer_id": "c_36220b25-50f",
+    "slowest_turn_s": 0.4,
+    "ended": "customer-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 510.0, '2026-10-15')]",
+     "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+     "the call was not closed with close_call",
+     "conversation: - The assistant failed all primary success criteria: it did not ask the phone question, did not discuss any credit products (credit card, personal loan, or car loan), and did not record any promises or refusals. - The assistant entered an error loop early in the conversation (\"I could not complete that action\"), failing to engage with the customer at all. - The call failed the proper ending requir"
+    ],
+    "call_id": "07eeb2b5-6ae5-482c-af90-77f7285f1bc5",
+    "tools": [],
+    "customer_id": "c_b770bf2a-c8a",
+    "slowest_turn_s": 0.4,
+    "ended": "customer-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome (None, None), expected ('promise', None)",
+     "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+     "the call was not closed with close_call",
+     "conversation: The assistant failed to meet any of the success criteria. No dates were recorded for either a credit card or a loan, and no read-back was provided. Furthermore, the assistant entered a state of failure early on, repeating that it could not complete the action (Message 2), and then entered a repetitive loop of 'Goodbye' messages starting at Message 14 that lasted for over 140 turns until the custom"
+    ],
+    "call_id": "8bb2489d-a54d-4aa6-a726-baecffd7da57",
+    "tools": [],
+    "customer_id": "c_b57d5d6f-d5b",
+    "slowest_turn_s": 0.5,
+    "ended": "customer-ended-call"
+   }
+  ]
+ ]
+}

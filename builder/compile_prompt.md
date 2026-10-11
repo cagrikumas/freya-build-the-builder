@@ -24,7 +24,8 @@ Your output is JSON with these fields:
   `field_descriptions` (map from API body field name, or `path:<name>`,
   `query:<name>` or `header:<name>`, to descriptive instruction),
   optional `bindings` (exact request location/name to documented call variable,
-  specified below), `pre_process_code`, `post_process_code`, and `response_mapping`.
+  specified below), optional `timeoutMs` (positive integer milliseconds),
+  `pre_process_code`, `post_process_code`, and `response_mapping`.
 - `checks`: an array of local code checks. Each has `name`, `node`, optional `tool`,
   `hook` (`code`, `pre`, or `post`), `vars`, optional `config`, optional `result`,
   and `expect_vars` and/or `expect_result`/`expect_config`. Use supplied API shapes
@@ -89,6 +90,23 @@ than inventing an identifier name or default. Bindings preserve the contract's
 types, enums and requiredness. Pre-hooks may still normalize or supply required
 values from documented inputs; test the actual bound and unbound request shape.
 
+For nested request objects, populate the complete required structure explicitly
+in `pre_process_code` from documented runtime variables and verified state, for
+example `config['body'] = {'payload': {'reference': vars['supplied_reference']} }`.
+Keep exact nesting, field names and value types from the input schema. A pre-hook
+may replace placeholder or model-proposed objects; never let model guesses supply
+trusted identifiers or call metadata. Body bindings address top-level properties
+only, so do not invent dotted binding keys for nested children. Test nested request
+construction starting both with an empty body and with incorrect proposed values.
+
+Set `tool_config.<operation>.timeoutMs` when source timing requires a longer
+attempt. Allow processing and network margin above any documented successful
+service delay. The existing default is not a policy requirement. Kit documentation
+does not state a maximum for this field; its HTTP transport has a shared 30-second
+request budget, so raising this setting does not guarantee requests beyond that
+budget. Keep automatic retries disabled for side-effecting operations unless the
+source contract provides safe idempotency and explicitly permits them.
+
 A code node has `"code": "<Python source>"` instead of pre_actions. The builder
 wraps it in code_exec. Keep its silent on_enter, passthrough, fallback and
 transitions explicit. An end_call node can omit terminal: the builder adds a
@@ -115,9 +133,10 @@ pre-hook, including staged URI parameters; test the actual unset/default inputs.
 Use compact stage-specific conversation nodes, required account lookups, code
 steps for policy calculations, and terminal nodes. The following collection
 patterns apply only when those actions exist in the supplied case. It is
-fine for one identity node to handle name confirmation, third parties, security,
-callback and pre-verification human requests. In the collection node preserve
-the complete conversation history. Avoid routing on guessed user intent when a
+necessary to separate speaking stages whose permitted questions or authorization
+boundaries differ. Shared evaluators can manage state, but a broad conversation
+task must not blend incompatible question types. Preserve complete conversation
+history across those stages. Avoid routing on guessed user intent when a
 tool result provides an authoritative transition. If the policy requires
 verification before lookup, make the lookup unreachable until those checks
 succeed. A failed security answer must
@@ -328,6 +347,19 @@ with hand-selected extraction values validates those values only; never present
 it as evidence that speech extraction or live dialogue passed.
 
 ## Platform invariants
+
+Python snippets must not use `global` declarations or depend on module-level
+execution. The platform guarantees the `vars` dictionary, not a shared module
+namespace; a helper's `global` can refer to a different namespace than its
+enclosing snippet. Keep mutable helper state in `vars` or an explicitly passed
+local dictionary; helpers may mutate dictionary entries without rebinding outer
+names. A local module-scope test passing does not establish runtime scope.
+Technical exception handlers must preserve a terse diagnostic in a dedicated
+`vars` field: exception type and the failing operation/reason. Use a short safe
+reason without credentials, headers, request/response bodies or caller data.
+Do this before fallback routing; merely resetting the route or swallowing an
+exception hides defects behind a successful code_exec envelope. Diagnostics are
+internal state, never customer speech.
 
 - No nulls and no agent_config. Valid node_type, node name matches its key.
 - All workflow test_variables values must be strings.

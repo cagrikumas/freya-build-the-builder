@@ -1,0 +1,80 @@
+{"event": "freya_request_start", "method": "POST", "path": "/api/v2/simulations", "attempt": 0}
+{"event": "freya_request_end", "method": "POST", "path": "/api/v2/simulations", "seconds": 0.56, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.43, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.42, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.64, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.41, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.44, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.39, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.43, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.37, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.42, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.4, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.37, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.39, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.34, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.41, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.33, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.38, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.33, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.41, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.55, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.35, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.93, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.32, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d", "seconds": 0.37, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d/iterations", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d/iterations", "seconds": 0.41, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d/iterations/eb6f6239-8b7a-41f7-ac4d-194804e5a0c9", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/8b2a788f-1639-4bae-90df-e0bf60c69c6d/iterations/eb6f6239-8b7a-41f7-ac4d-194804e5a0c9", "seconds": 0.59, "success": true}
+PASS PUB-11 medium Multi-product  | verify > verify > get_account > promise > promise > promise > close_call
+FAIL PUB-12 hard   Multi-product  | verify > verify > verify > get_account
+       - outcome (None, None), expected ('promise', None)
+       - promises [], expected [('p1', 510.0, '2026-10-15')]
+       - notes [], expected [('p2', 'refused'), ('p3', 'refused')]
+       - the call was not closed with close_call
+       - conversation: The assistant failed most of the success criteria and entered a repetitive loop that prevented the conversation from progressing. Specifically: - It failed to make an attempt on the car loan (early band). - It failed to record the promise for the
+PASS PUB-13 hard   Multi-product  | verify > verify > get_account > promise > promise > close_call
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/9f42d3b0-6807-4203-b31a-ff51ff0ef4b6", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/9f42d3b0-6807-4203-b31a-ff51ff0ef4b6", "seconds": 0.99, "success": true}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/d9fee154-de81-45ad-bcc6-8fd546d42ff1", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/d9fee154-de81-45ad-bcc6-8fd546d42ff1", "seconds": 1.69, "success": false, "error": "GET /api/v2/call/d9fee154-de81-45ad-bcc6-8fd546d42ff1 -> 413: {\"success\":false,\"data\":{\"message\":\"Response too large; page with a smaller limit or use the export.\",\"result\":null}}"}
+{"event": "freya_request_start", "method": "GET", "path": "/api/v2/call/20c0f386-c6fd-4462-9c84-2c7b1cd35f46", "attempt": 0}
+{"event": "freya_request_end", "method": "GET", "path": "/api/v2/call/20c0f386-c6fd-4462-9c84-2c7b1cd35f46", "seconds": 0.85, "success": true}
+
+slowest agent turn per call: median 6 s, worst 6 s. Failed calls where the customer hung up: 0.
+
+2 / 3 passed (bank records and conversation checks). Last simulation 8b2a788f-1639-4bae-90df-e0bf60c69c6d, status completed, 293 s.
