@@ -35,9 +35,9 @@ class DocumentTests(unittest.TestCase):
             z.writestr('xl/_rels/workbook.xml.rels', '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>')
             z.writestr('xl/styles.xml', f'<styleSheet xmlns="{ns}"><numFmts><numFmt numFmtId="164" formatCode="0000"/></numFmts><cellXfs><xf numFmtId="0"/><xf numFmtId="164"/><xf numFmtId="14"/></cellXfs></styleSheet>')
             z.writestr('xl/sharedStrings.xml', f'<sst xmlns="{ns}"><si><t>Çağrı</t></si></sst>')
-            z.writestr('xl/worksheets/sheet1.xml', f'<worksheet xmlns="{ns}"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" s="1"><v>7</v></c><c r="C1" s="2"><v>61</v></c><c r="D1"><f>1+2</f><v>3</v></c></row></sheetData></worksheet>')
+            z.writestr('xl/worksheets/sheet1.xml', f'<worksheet xmlns="{ns}"><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" s="1"><v>7</v></c><c r="C1" s="2"><v>61</v></c><c r="D1"><f>1+2</f><v>3</v></c><c r="E1"><f>D1*2</f><v/></c></row></sheetData></worksheet>')
         text, _ = spreadsheet(p, self.assets)
-        for expected in ['Kayıtlar', 'A1="Çağrı"', 'B1="0007"', '1900-03-01', 'formula=1+2']:
+        for expected in ['Kayıtlar', 'A1="Çağrı"', 'B1="0007"', '1900-03-01', 'formula=1+2', 'formula=D1*2']:
             self.assertIn(expected, text)
 
     def test_folder_manifests_all_documents_and_rejects_unknown_types(self):

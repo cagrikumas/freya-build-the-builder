@@ -46,7 +46,7 @@ def main():
     ap.add_argument('--offline', action='store_true', help='Compile and verify locally, without Freya calls')
     ap.add_argument('--practice', choices=['A', 'B', 'all'])
     ap.add_argument('--style', choices=['pieces', 'corrects', 'talkative', 'asks_back', 'in_words'])
-    ap.add_argument('--max-seconds', type=int, help='Local build deadline; 3600 for a folder, 1740 for practice')
+    ap.add_argument('--max-seconds', type=int, default=3600, help='Local build deadline, default 3600 seconds')
     args = ap.parse_args()
     folder_mode = len(args.inputs) == 2 and Path(args.inputs[0]).is_dir()
     mock_url = args.inputs[1].rstrip('/') if folder_mode else None
@@ -67,7 +67,6 @@ def main():
         api = json.loads(api_paths[0].read_text())
         if 'openapi' not in api: ap.error('The JSON input must be an OpenAPI specification')
         slot = args.slot or briefs[-1].stem
-    args.max_seconds = args.max_seconds or (3600 if folder_mode else 1740)
     if not 60 <= args.max_seconds <= 10800: ap.error('max-seconds must be 60..10800')
     if not re.fullmatch(r'[a-zA-Z0-9_-]+', slot): ap.error('Invalid slot name')
     load_env()
@@ -133,10 +132,10 @@ def main():
         if derive_api:
             compiler_instructions += '\nThe case supplies its service contract in documents rather than OpenAPI. Add an openapi field to your output containing a complete OpenAPI 3 specification derived strictly from that service contract. Preserve endpoint paths, methods, body fields, types, enumerations and response shapes. Set servers to the supplied deployed mock URL. Your tool_config and workflow must use this derived schema. Do not import the practice bank tools or policy.\n'
         prompt = compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUT DOCUMENTS\n' + documents
-        artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(900 if folder_mode else 720, int(remaining()-20)), images=images)
+        artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
         audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
         audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact),
-                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(900 if folder_mode else 660, int(remaining()-30)), images=images)
+                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(1200, int(remaining()-30)), images=images)
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
         if not audit.get('approved'):

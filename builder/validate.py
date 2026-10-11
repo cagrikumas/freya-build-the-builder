@@ -24,7 +24,7 @@ def resolve(obj, api):
 def api_operations(api):
     api = resolve(api, api)
     base = api['servers'][0]['url'].rstrip('/')
-    return {base + path: (method.upper(), op) for path, methods in api['paths'].items()
+    return {(base + path, method.upper()): op for path, methods in api['paths'].items()
             for method, op in methods.items() if method.lower() in ('get', 'post', 'put', 'patch', 'delete')}
 
 
@@ -45,6 +45,7 @@ def snippets(workflow):
 def validate(workflow, api):
     errors = []
     ops = api_operations(api)
+    allowed_urls = {url for url, method in ops}
     nodes = workflow.get('nodes', {})
     if workflow.get('initial_node') not in nodes:
         errors.append('initial_node is missing')
@@ -84,12 +85,13 @@ def validate(workflow, api):
             if handler != '__function__:api_call': continue
             props = f.get('parameters', {}).get('properties', {})
             url = props.get('url', {}).get('default')
-            if url not in ops:
+            if url not in allowed_urls:
                 errors.append(f'{name}/{f.get("name")}: URL is not an input bank endpoint')
                 continue
-            method, op = ops[url]
-            if props.get('method', {}).get('default') != method:
+            op = ops.get((url, props.get('method', {}).get('default')))
+            if op is None:
                 errors.append(f'{name}/{f.get("name")}: wrong HTTP method')
+                continue
             expected = op.get('requestBody', {}).get('content', {}).get('application/json', {}).get('schema', {})
             fields = props.get('body', {}).get('properties', {})
             for field in expected.get('required', []):

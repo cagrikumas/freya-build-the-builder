@@ -11,7 +11,7 @@ Resmi sayfa bugün değiştirildi: https://www.freyavoice.ai/hackathon
 - Teslim 23.00 İstanbul: tek workflow JSON, onu üreten tek trace, repo/commit,
   üyelerin ad/e-postası ve mock_url. Komut: case_folder + mock_url.
 - Önceki iki hidden-brief biçimi ve 30 dakikalık sınır güncel sayfada yok.
-  Builder’ın yerel süre sınırı klasör için 60 dakika; pratik için 29 dakika.
+  Builder’ın güncel yerel süre sınırı tüm koşular için 60 dakika; gerekirse --max-seconds ile değişir.
 - Final belgelerinden hiçbir kural/değer/isim builder koduna veya promptlarına
   elle yazılamaz; ajan elle düzenlenemez. Genel hata düzeltmesi yapılabilir.
 - Değerlendirme: gizli müşteriler ve workflow incelemesi; ağırlıklar açıklanmıyor.
@@ -84,3 +84,22 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
   yerel kontrol geçti.
 - B için yeni üç müşterilik simülasyon; A için sıfırdan yeni builder koşusu
   başlatıldı. Final teslimi yapılmadı.
+
+## 18.24 İstanbul durum kaydı
+
+- A yeni otomatik koşusu tamamlandı: 1165.29 saniye, 68 üretilmiş yerel kontrol,
+  Freya dry-run başarılı, practice-a sürüm 2 dışa aktarıldı.
+- Ardından 10 konuşmanın tamamı ilk asistan mesajı oluşmadan kapandı: 0/10,
+  hiçbir banka aracı çağrılmadı, judge sonuçları yok. Bu davranışı politika
+  başarısızlığı diye tek başına yorumlamıyoruz. A doğrudan chat de 504 verdi.
+- Kontrol olarak daha önce 2/3 geçen B sürümüne tek chat gönderildi; o da 504.
+  Hesap kredisi yeterli. Yeni simülasyon açılmıyor; kontrol API’leri yanıt veriyor.
+- Ayrı B derlemesi 720 saniyelik model çağrısı sınırında kesildi. Güncel sayfada
+  eski 30 dakika sınırı kalktığı için yerel toplam 3600 saniye; ilk model çağrısı
+  1500, denetim 1200 saniyeye kadar, tümü gerçek toplam süreye dahil.
+  18.23’te yeni B derlemesi başladı; kendi başına konuşma simülasyonu açmayacak.
+- 38 yerel test geçti. Açılış chat API’sinde atlanabildiği için gerekli girişin
+  ilk node task_message içinde de geçmişe bağlı olarak sağlanması isteniyor.
+- Cloudflare için Node 22 ve Wrangler proje içine kuruldu; deploy --dry-run
+  geçti. Hesap kimlik bilgileri ayrı private/cloudflare dizininde tutulacak.
+  Kişisel hesap bilgisi bekleniyor; login, hesap seçimi veya deploy yapılmadı.

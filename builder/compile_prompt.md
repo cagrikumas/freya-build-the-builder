@@ -59,21 +59,24 @@ pre-hooks. The post-hook can remember pre-hook values stored under separate name
 A code node has `"code": "<Python source>"` instead of pre_actions. The builder
 wraps it in code_exec. Keep its silent on_enter, passthrough, fallback and
 transitions explicit. An end_call node can omit terminal: the builder adds a
-silent end_call with message_mode=none. Your prompts must say goodbye before
-close_call. This compact syntax changes serialization only, never policy.
+silent end_call with message_mode=none. Deliver the required farewell before
+hangup and in the order required relative to any bank closing operation.
+This compact syntax changes serialization only, never policy.
 
 ## Workflow architecture
 
-Use compact stage-specific conversation nodes, a silent account lookup when
-verified, a code step for calendar and product facts, and terminal nodes. It is
+Use compact stage-specific conversation nodes, required account lookups, code
+steps for policy calculations, and terminal nodes. The following collection
+patterns apply only when those actions exist in the supplied case. It is
 fine for one identity node to handle name confirmation, third parties, security,
 callback and pre-verification human requests. In the collection node preserve
 the complete conversation history. Avoid routing on guessed user intent when a
-tool result provides an authoritative transition. An account lookup must be
-unreachable before all security checks succeed. A failed security answer must
+tool result provides an authoritative transition. If the policy requires
+verification before lookup, make the lookup unreachable until those checks
+succeed. A failed security answer must
 not be treated as success. A correction before validation is not a failed attempt.
-Gate entry to EVERY account discussion/write stage on verified identity AND
-successful account loading, including exception/fallback routes. A code failure
+Enforce the policy's verification and data-loading prerequisites at EVERY
+account discussion/write stage, including exception/fallback routes. A code failure
 must never send an unverified caller to an account conversation with empty facts.
 Do not reuse a payment-write conversation as a security-answer executor. If
 complete answers need deterministic validation, use a dedicated engine-run
@@ -91,7 +94,8 @@ placeholder must never be a stored workflow state variable. Declare field enums
 and descriptions on the body property's leaf. Do not add fictitious request fields.
 Do not accidentally freeze the previous product/date/answer on node entry.
 
-Deterministically calculate from the CALL's `now`, never the server clock:
+Perform the calculations the case actually requires. Calculate from the CALL's
+`now`, never the server clock, for policy-defined matters such as:
 business-day deadlines per product, next permissible days, persuasion offer days,
 callback windows, floors and any amount rounding. Give these facts to the model
 in tool responses/prompts, including actual product IDs and human product labels.
@@ -102,6 +106,10 @@ is wrapped in try/except, and has no double opening or closing braces anywhere.
 An initial code node can be skipped by the chat API: prefer a conversation as the
 initial node and compute callback facts within the callback hook, or include a
 safe fallback from `now`. Account-derived calculations run after account lookup.
+The chat API can start directly with the caller's first message without running
+the initial on_enter greeting. Put the required opening in the initial node's
+task_message too, conditioned on it not already having been spoken in history.
+Do not assume an entry action ran merely because the initial node is active.
 The builder also persists declared response_mapping values from the post-hook,
 so structured lists and objects are available under your mapped variable names.
 For automatic pre_actions the flattened response prefix is the NODE name, such
@@ -128,14 +136,17 @@ defer such notes until final resolution. Pending promises are distinct from
 recorded promises. A later transfer must not record unconfirmed or merely agreed
 promises if the policy forbids it. Preserve valid recorded promises.
 
-Close exactly once. It is the last BANK tool call. Say required confirmation,
-notification and farewell BEFORE close_call, then transition on successful close
-to an end_call node with message_mode='none'. Do not attach a second lifecycle
-close tool. Optional closing reason must be omitted for outcomes requiring none.
+Follow the case's closing protocol exactly once. If it supplies a bank closing
+operation, obey its required ordering (including making it the last bank call
+when specified), and gate completion on its actual success. If there is no such
+operation, do not invent one. Say required confirmations and farewell before
+the silent end_call. Do not add a duplicate lifecycle close. Omit optional
+closing reasons for outcomes that require none.
 Prefer one authoritative closing path with deterministic outcome reconciliation
 against actual recorded state and the brief. A transfer takes precedence if the
 brief says so. Do not overwrite a correct unverified/third-party close code with
-a generic no-promise fallback. Never disclose debt to an unverified speaker.
+a generic no-promise fallback. Never disclose protected account information
+outside the case's verification and privacy rules.
 
 ## Conversation robustness
 
@@ -177,7 +188,7 @@ details in customer-facing dialogue. Keep questions short and sequential.
 - Top-level condition groups use logic=or; nest and-groups if needed.
 - Every passthrough node has a final always transition and fallback target.
 - Nodes holding ongoing conversation need no unconditional self-transition.
-- Only terminal handler performs hangup, after close_call has succeeded.
+- Only the terminal handler performs hangup, after the required closing protocol.
 - No context_variables dependency: the platform can silently strip it.
 - No placeholder substitution inside code. Use vars directly.
 - Tools must trigger actions, not merely describe them. After any result the

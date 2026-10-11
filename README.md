@@ -36,8 +36,9 @@ The default folder slot is `final`; practice uses the brief filename. Repeating 
 updates and publishes the same workflow. The builder records model calls,
 validations, timestamps, workflow/agent IDs, and exports the saved workflow into
 `submission/<slot>.workflow.json`. Each run has its own `traces/<timestamp>-<slot>/`.
-Folder builds have a local 60-minute deadline; practice builds keep a 29-minute
-deadline. `--max-seconds` changes that local limit. The updated final rules no
+Builds have a local 60-minute deadline. `--max-seconds` changes that local limit.
+The earlier short model-call timeout was insufficient for some full builds.
+The updated final rules no
 longer list the earlier 30-minute cap; the submission deadline remains binding.
 
 `--offline` skips Freya operations but still calls Codex to compile the documents.

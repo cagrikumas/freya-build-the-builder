@@ -78,6 +78,14 @@ class AssemblyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unknown bank tool'):
             assemble(self.artifact, self.api)
 
+    def test_two_methods_on_same_path_keep_distinct_contracts(self):
+        self.api['paths']['/record']['get'] = {'operationId': 'fetch'}
+        self.artifact['workflow']['nodes']['start']['tools'] = ['record', 'fetch']
+        workflow = assemble(self.artifact, self.api)
+        self.assertEqual(validate(workflow, self.api), [])
+        methods = [t['function']['parameters']['properties']['method']['default'] for t in workflow['nodes']['start']['tools']]
+        self.assertEqual(methods, ['POST', 'GET'])
+
     def test_compact_code_is_executable_and_end_call_is_silent(self):
         nodes = self.artifact['workflow']['nodes']
         nodes['compute'] = {'name': 'compute', 'node_type': 'code', 'code': "vars['total'] = 3 * 7"}

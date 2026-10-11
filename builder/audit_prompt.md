@@ -43,6 +43,10 @@ paths. Reason through both success and failure. Look especially for:
 - Python code that crashes or uses unsupported modules, unreachable snippets,
   silently stripped fields, wrong response envelopes, undefined prompt variables,
   a passthrough deadlock, or empty speech after a tool result.
+- A required opening that exists only in on_enter. A chat may begin with the
+  caller's first message before that action; the initial task must also produce
+  the required opening if it is absent from conversation history, without
+  repeating it when a simulation already delivered it.
 
 Prefer small, concrete corrections to a wholesale redesign. Local checks must
 assert expected results computed independently from the relevant bank rule, not

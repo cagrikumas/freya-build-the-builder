@@ -25,7 +25,7 @@ def office_images(archive, prefix, output):
 def word(path, output):
     with zipfile.ZipFile(path) as z:
         parts = []
-        names = [n for n in z.namelist() if re.fullmatch(r'word/(document|footnotes|endnotes|header\d+|footer\d+)\.xml', n)]
+        names = [n for n in z.namelist() if re.fullmatch(r'word/(document|footnotes|endnotes|comments|header\d+|footer\d+)\.xml', n)]
         for name in sorted(names, key=lambda n: (n != 'word/document.xml', n)):
             root = ET.fromstring(z.read(name))
             parts.append('PART ' + name)
@@ -35,6 +35,8 @@ def word(path, output):
                     if node.tag == W + 't': pieces.append(node.text or '')
                     elif node.tag == W + 'tab': pieces.append('\t')
                     elif node.tag == W + 'br': pieces.append('\n')
+                    elif node.tag in (W+'footnoteReference', W+'endnoteReference', W+'commentReference'):
+                        pieces.append(' [' + node.tag.split('}')[1] + '=' + node.get(W+'id', '') + ']')
                 return ''.join(pieces)
             def visit(node):
                 if node.tag == W+'p':
@@ -46,6 +48,8 @@ def word(path, output):
                         parts.append(' | '.join(json.dumps('\n'.join(paragraph(p) for p in cell.iter(W+'p')), ensure_ascii=False) for cell in row.findall(W+'tc')))
                     parts.append('END TABLE')
                 else:
+                    if node.tag in (W+'footnote', W+'endnote', W+'comment'):
+                        parts.append(node.tag.split('}')[1].upper() + ' id=' + node.get(W+'id', ''))
                     for child in node: visit(child)
             visit(root)
         return '\n'.join(parts), office_images(z, 'word/media/', output)
@@ -75,7 +79,7 @@ def spreadsheet(path, output):
             for row in root.iter(S+'row'):
                 cells = []
                 for c in row.findall(S+'c'):
-                    v = c.find(S+'v'); value = v.text if v is not None else ''
+                    v = c.find(S+'v'); value = (v.text or '') if v is not None else ''
                     typ = c.get('t', '')
                     if typ == 's' and value: value = strings[int(value)]
                     elif typ == 'inlineStr': value = ''.join(t.text or '' for t in c.iter(S+'t'))
