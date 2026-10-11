@@ -18,6 +18,9 @@ sys.path.insert(0, str(KIT))
 from model import call
 from validate import validate, check_examples
 from assemble import assemble
+from freya_client import bind_workspace
+from patches import apply_patches
+from http_transport import install_curl_transport
 
 
 def load_env():
@@ -76,6 +79,9 @@ def main():
           inputs=[{'path': str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs])
     final = None
     try:
+        if not args.offline:
+            install_curl_transport(freya)
+            bind_workspace(freya, trace)
         documents = '\n\n'.join(f'### INPUT {p.name}\n{p.read_text()}' for p in inputs)
         docs = '\n\n'.join((KIT / 'docs' / p).read_text() for p in ['workflow-format.md', 'tools-and-code.md'])
         compiler_instructions = (ROOT / 'builder' / 'compile_prompt.md').read_text()
@@ -87,7 +93,7 @@ def main():
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
         if not audit.get('approved'):
-            artifact = audit['artifact']
+            artifact = audit['artifact'] if 'artifact' in audit else apply_patches(artifact, audit['patches'])
         for attempt in range(4):
             path = run_dir / f'candidate-{attempt}.json'
             path.write_text(json.dumps(artifact, indent=2))
@@ -113,12 +119,13 @@ def main():
             final = {'workflow': str(run_dir / 'workflow.json'), 'trace': str(trace_path)}
             return
         ids = freya.save_workflow(slot, workflow, state_file=str(ROOT / '.freya-agents.json'))
-        # Also normalize/publish model config on first create; kit create alone does not do this.
-        ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
+        # Existing slots are already normalized and published by save_workflow.
+        if 'version' not in ids:
+            ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
         trace('published', **ids, nodes=len(workflow['nodes']), tools=sum(len(n.get('tools', [])) + len(n.get('pre_actions', [])) for n in workflow['nodes'].values()))
         if args.practice:
             out_path = run_dir / 'practice.json'
-            cmd = [sys.executable, str(KIT / 'tools' / 'run_cases.py'), ids['agent_id'], '--out', str(out_path)]
+            cmd = [sys.executable, str(ROOT / 'builder' / 'practice.py'), ids['agent_id'], '--out', str(out_path)]
             if args.practice != 'all': cmd += ['--brief', args.practice]
             if args.style: cmd += ['--style', args.style]
             if remaining() < 60: raise TimeoutError('Insufficient time for test')
@@ -140,8 +147,10 @@ def main():
                         detail['messages'] = [{k: m[k] for k in ('role', 'message', 'nodeId') if k in m} for m in call_data.get('messages', [])]
                     failures.append(detail)
                 trace('repair_start', failed_cases=[f['case'] for f in failures])
-                repaired = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OBSERVED PRACTICE FAILURES\n' + redact(failures) + '\nFix general policy/runtime causes. Do not hardcode customer facts or expected case outputs. Return a full corrected artifact.',
+                repair = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OBSERVED PRACTICE FAILURES\n' + redact(failures) + '\nFix general policy/runtime causes. Do not hardcode customer facts or expected case outputs. Override the compilation output format: return JSON {"issues": [...], "patches": [...]} with JSON Patch add/replace/remove operations into the candidate. Replace complete code strings when needed and append new checks with path /checks/-. Do not re-emit the entire artifact.',
                                 'Repair policy or runtime defects revealed by practice conversations', trace, run_dir, timeout=min(420, int(remaining()-150)))
+                (run_dir / 'repair-patches.json').write_text(json.dumps(repair, indent=2))
+                repaired = apply_patches(artifact, repair['patches'])
                 repaired_workflow = assemble(repaired, api)
                 repair_errors = validate(repaired_workflow, api)
                 if not repair_errors: repair_errors += check_examples(repaired_workflow, repaired.get('checks', []))

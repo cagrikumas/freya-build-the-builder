@@ -27,6 +27,14 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
 
 - Hazır v3 kit çalışma alanında mevcut; değiştirilmeden referans olarak tutuluyor.
 - Freya workspace bağlantısı doğrulandı; tek API anahtarı oluşturuldu.
-- Builder mevcut Codex CLI ile çalışıyor. İlk model üretimi ve ardından yapılacak
-  Brief A testi sürüyor; henüz başarı oranı yok.
+- Builder mevcut Codex CLI ile çalışıyor. İlk Brief A ajanı 43 yerel kontrolden
+  geçti; 10 müşterilik resmi simülasyon başladı. Henüz tamamlanmış puan yok.
+- Kişisel depo: https://github.com/cagrikumas/freya-build-the-builder (hazırlık
+  sırasında özel). Şirket organizasyonunda işlem yapılmadı. Depo erişim anahtarı
+  yalnızca bu kişisel depoya bağlı.
+- Freya bağlantısında urllib çağrıları 504 verirken aynı istekler curl ile
+  başarıyla çalıştı. Adapter curl kullanıyor ve workspaceId ekliyor; kit ve
+  telefon modeli değiştirilmedi.
+- İlk Brief B derlemesinin tüm çıktıyı yeniden yazan denetimi süre sınırına
+  takıldı. Denetim artık yalnız gereken JSON düzeltmelerini döndürüyor.
 - Gizli şartnameler henüz yayımlanmadı; final teslimi yapılmadı.

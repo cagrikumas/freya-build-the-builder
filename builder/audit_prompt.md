@@ -1,10 +1,14 @@
 Independently audit this generated phone workflow against ALL the supplied bank
 documents and the tool API. Return JSON:
-{"approved": true or false, "issues": [specific defects], "artifact": corrected_artifact_if_needed}
+{"approved": true or false, "issues": [specific defects], "patches": [JSON edits if needed]}
 
-If approved, omit artifact. If any substantive defect exists, return the complete
-corrected artifact (policy, workflow, tool_config, checks); never return a diff or a partial
-workflow. Apply only the supplied policy. Distinguish amendments from superseded
+If approved, patches is empty. Otherwise return precise JSON Patch operations:
+each has op (add, replace, remove), path (a JSON Pointer into the candidate), and
+value (except remove). Use /checks/- to append a check. Replace an entire code
+string if fixing it. Do not return a rewritten full artifact. The builder applies
+these edits deterministically and validates the resulting artifact. Keep edits
+small enough to leave time for platform validation and practice tests.
+Apply only the supplied policy. Distinguish amendments from superseded
 rules. Do not invent a default bank rule for a missing piece.
 
 The candidate may use the supplied compiler's compact serialization. Named tools

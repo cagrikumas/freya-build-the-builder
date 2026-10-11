@@ -6,7 +6,7 @@ derived during the build from the input documents.
 
 ## Requirements
 
-- Python 3.10 or newer (standard library only).
+- Python 3.10 or newer (standard library only), and `curl`.
 - An authenticated Codex CLI. The builder uses the locally selected Codex model;
   `BUILDER_MODEL` can explicitly select a model. No Claude dependency.
 - A Freya workspace API key and one stable mock-bank team key.
@@ -50,9 +50,16 @@ python3 builder/build.py \
 
 Brief B must be supplied with Brief A. The hidden final briefs are each supplied
 with their own OpenAPI file. Do not use the public cases for an unrelated brief.
-Use the kit's `tools/run_cases.py` for repeated evaluations (`--reps 3`) and styles
+Use `python3 builder/practice.py <agent_id>` for repeated evaluations (`--reps 3`) and styles
 (`--style pieces`, `corrects`, `talkative`, `asks_back`, `in_words`). Only one
 simulation may run at a time in the workspace.
+
+This wrapper runs the unchanged kit scorer with `workspaceId` attached to Freya
+requests. The staging create endpoint requires that explicit workspace context.
+An interrupted public build can be tested without regenerating its unchanged
+workflow using `builder/practice.py --publish-generated <workflow.json> --slot
+<practice-slot> --brief A --out <results.json>`. Such recovery is recorded as a
+practice run and cannot be used as a final builder trace.
 
 The model only returns compilation artifacts. The Python program owns validation,
 publication and testing. A second compilation call audits the candidate against
