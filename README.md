@@ -55,11 +55,18 @@ Use `python3 builder/practice.py <agent_id>` for repeated evaluations (`--reps 3
 simulation may run at a time in the workspace.
 
 This wrapper runs the unchanged kit scorer with `workspaceId` attached to Freya
-requests. The staging create endpoint requires that explicit workspace context.
+requests. Explicit workspace context and curl transport were added after staging
+requests timed out; organisers have also confirmed a platform incident.
 An interrupted public build can be tested without regenerating its unchanged
 workflow using `builder/practice.py --publish-generated <workflow.json> --slot
 <practice-slot> --brief A --out <results.json>`. Such recovery is recorded as a
 practice run and cannot be used as a final builder trace.
+
+Practice runs also save `<results>.session.json`. If a platform status request
+fails after starting a simulation, `python3 builder/practice.py --resume-session
+<results>.session.json` resumes scoring the original calls; it does not create
+another simulation. Recovery currently supports single-repetition evaluations;
+it refuses to report one recovered run as several independent repetitions.
 
 The model only returns compilation artifacts. The Python program owns validation,
 publication and testing. A second compilation call audits the candidate against

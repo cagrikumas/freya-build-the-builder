@@ -43,6 +43,18 @@ class WorkspaceTests(unittest.TestCase):
             self.assertEqual(client.api('GET', '/api/v2/call/test'), {'ok': True})
         self.assertEqual(len(calls), 2)
 
+    def test_poll_can_use_official_list_when_detail_times_out(self):
+        calls = []
+        def api(method, path, body=None, **kw):
+            calls.append(path)
+            if path.endswith('/test-id'): raise RuntimeError('GET '+path+' -> 504')
+            return {'simulations': [{'id': 'test-id', 'status': 'completed'}]}
+        client = SimpleNamespace(workspace_id=lambda: 'test', api=api)
+        bind_workspace(client)
+        for _ in range(2):
+            self.assertEqual(client.api('GET', '/api/v2/simulations/test-id')['simulation']['status'], 'completed')
+        self.assertEqual(calls.count('/api/v2/simulations/test-id'), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

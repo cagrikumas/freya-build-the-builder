@@ -17,6 +17,13 @@ def load_result(path):
     events = [json.loads(line) for line in trace.read_text().splitlines() if line.strip()]
     if not events or events[-1].get('event') != 'build_end' or not events[-1].get('completed'):
         raise ValueError(f'Build did not finish successfully: {trace}')
+    start = next((e for e in events if e.get('event') == 'build_start'), {})
+    current_sources = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+                       for p in sorted((ROOT / 'builder').glob('*')) if p.is_file()}
+    if start.get('builder_files') != current_sources:
+        raise ValueError('Builder source changed after this run; rebuild before final submission')
+    if events[-1].get('result') != result:
+        raise ValueError('Result file disagrees with the completed build trace')
     if events[-1]['seconds'] > 1800:
         raise ValueError('Build exceeded the event time limit')
     export = ROOT / result['export']
@@ -40,6 +47,8 @@ def main():
     if not a.repo.startswith('https://github.com/'):
         ap.error('Use the GitHub repository URL required by the event')
     results = {name: load_result(p) for name, p in [('hidden-1', a.hidden_1), ('hidden-2', a.hidden_2)]}
+    if results['hidden-1']['workflow_id'] == results['hidden-2']['workflow_id']:
+        raise ValueError('The two hidden briefs must have separate workflow exports')
     status = subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True)
     if status.strip():
         raise SystemExit('Commit the source, exports and traces first; the working tree must be clean.')

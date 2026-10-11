@@ -37,4 +37,8 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
   telefon modeli değiştirilmedi.
 - İlk Brief B derlemesinin tüm çıktıyı yeniden yazan denetimi süre sınırına
   takıldı. Denetim artık yalnız gereken JSON düzeltmelerini döndürüyor.
+- 14.25 civarında kullanıcı, Freya ekibinin platform hatasını doğruladığını ve
+  yaklaşık 10 dakika içinde düzeltmeyi beklediğini bildirdi. Yerel builder
+  Freya isteklerini durdurmak için bekletildi; mevcut simülasyon tekrar açılmadı.
+  Derleme süresi sıfırlanmadı; bakım süresi de gerçek toplam sürede kalıyor.
 - Gizli şartnameler henüz yayımlanmadı; final teslimi yapılmadı.

@@ -1,5 +1,6 @@
 """Workspace-scoped adapter around the unmodified event client."""
 import time
+import re
 
 
 def bind_workspace(freya, trace=None):
@@ -7,11 +8,27 @@ def bind_workspace(freya, trace=None):
         return freya
     workspace = freya.workspace_id()
     original = freya.api
+    list_status_paths = set()
+
+    def simulation_from_list(path):
+        target = path.rsplit('/', 1)[-1]
+        offset = 0
+        while True:
+            result = original('GET', '/api/v2/simulations', workspaceId=workspace, limit=100, offset=offset)
+            rows = result.get('simulations', result.get('items', []))
+            for row in rows:
+                if row.get('id') == target:
+                    if trace: trace('simulation_status_from_list', simulation_id=target, status=row.get('status'))
+                    return {'simulation': row}
+            if len(rows) < 100: raise RuntimeError('Simulation not present in its authenticated workspace')
+            offset += 100
 
     def scoped_api(method, path, body=None, **params):
-        # The staging create endpoint times out without this explicit context.
+        # Supply explicit context after observed staging timeouts.
         # Use the authenticated key's workspace, never a guessed account ID.
         params.setdefault('workspaceId', workspace)
+        if method == 'GET' and path in list_status_paths:
+            return simulation_from_list(path)
         for attempt in range(2):
             started = time.monotonic()
             if trace: trace('freya_request_start', method=method, path=path, attempt=attempt)
@@ -21,6 +38,9 @@ def bind_workspace(freya, trace=None):
                 return result
             except RuntimeError as e:
                 if trace: trace('freya_request_end', method=method, path=path, seconds=round(time.monotonic()-started, 2), success=False, error=str(e))
+                if method == 'GET' and '-> 504' in str(e) and re.fullmatch(r'/api/v2/simulations/[a-zA-Z0-9-]+', path):
+                    list_status_paths.add(path)
+                    return simulation_from_list(path)
                 # Repeating an identical PUT is safe; POST creation is not.
                 if attempt or method not in ('GET', 'PUT') or not any('-> '+str(c) in str(e) for c in (502, 503, 504)):
                     raise
