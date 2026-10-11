@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+from session_trace import validate_full_session
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -85,6 +86,10 @@ def load_result(path):
     for p in (trace, export):
         if 'fak_' in p.read_text(): raise ValueError(f'API-key-like value in {p}')
     artifacts = trace_artifacts(trace, events[-1])
+    session_trace = repository_file(result.get('session_trace', ''))
+    if session_trace != trace.parent / 'full-session.jsonl':
+        raise ValueError('Full session trace must belong to this completed build')
+    validate_full_session(trace.parent, events, result)
     if path != trace.parent / 'result.json':
         raise ValueError('Use the completed trace directory or its original result.json')
     require_committed([*artifacts, export, *(ROOT / p for p in current_sources)])
@@ -120,7 +125,7 @@ def main():
     form = {'team': a.team, 'repo': a.repo, 'commit': commit,
             'members': [{'name': a.name, 'email': a.email}],
             'run_command': command,
-            'workflow': result['export'], 'trace': result['trace'], 'mock_url': a.mock_url.rstrip('/')}
+            'workflow': result['export'], 'trace': result['session_trace'], 'mock_url': a.mock_url.rstrip('/')}
     print(json.dumps(form, indent=2))
 
 

@@ -1,0 +1,1940 @@
+{
+  "artifact": "traces/20261011T163752Z-practice-b/candidate-0.json",
+  "scope": "Read-only analysis of existing actual live call logs; no new simulation, code execution, or generated artifact edits. Raw code, tool arguments, raw responses and credentials are omitted.",
+  "message_indices": "Zero-based indices into data.result.call.messages, not transcript display numbers.",
+  "collection_entry_type": "llm",
+  "source_paths": {
+    "collection_speech": "/workflow/nodes/collection/on_enter/prompt",
+    "proposal_contract": "/workflow/nodes/collection/extraction_schema/1",
+    "evaluator": "/workflow/nodes/decide/code"
+  },
+  "findings": [
+    {
+      "kind": "observed_dialogue_drift",
+      "conclusion": "Actual collection utterances repeatedly differ materially from the already-correct computed collection_say. The node is LLM entry, not TTS. Rendered model requests are absent, so this does not establish an interpolation-engine defect."
+    },
+    {
+      "kind": "observed_extraction_failure",
+      "conclusion": "c_items is a string containing JSON by description only. Actual extraction emits caller prose, malformed JSON, errors, and a paid claim absent from caller input. This is distinct from incompatible enum validation."
+    },
+    {
+      "kind": "source_derived_causal_path",
+      "conclusion": "decide.unpack silently replaces malformed JSON with []; proposal with no items then reaches refuse(scope). Live proposal loss therefore advances negotiation/refusal instead of preserving the supplied proposal or asking for clarification.",
+      "source": "/workflow/nodes/decide/code: unpack, main items extraction, final else/refuse"
+    },
+    {
+      "kind": "observed_confirmation_misalignment",
+      "conclusion": "The engine consumes acceptance against its computed offer even when the actual spoken offer differs. PUB13 message70 speaks a card offer for 30 October while its state offers the personal loan for 16 October; the next acceptance leads to a personal-loan read-back for 16 October."
+    },
+    {
+      "kind": "identity_limit",
+      "conclusion": "The first-self discard condition was not observed: both completed calls advance from the first confirmation to DOB. Their visible variable tables omit system.conversation, so absence there does not establish absence in code execution."
+    }
+  ],
+  "calls": [
+    {
+      "public_id": "PUB-11",
+      "source_file": "/tmp/freya-b5-live-call-1.json",
+      "status": "16",
+      "message_count": 148,
+      "assistant_collection_speech": [
+        {
+          "message_index": 50,
+          "actual": "Thank you. I have verified your identity. How can I help you today?",
+          "computed": "I am calling from the collections team about a late payment. Your credit card ending 2288 has a past-due amount of 220 and is 9 days late. Your personal loan has a past-due amount of 640 and is 9 days late. Your car loan has a past-due amount of 75 and is 3 days late. Can you pay all of them today?",
+          "exact_match": false,
+          "phase": "all_today",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 60,
+          "actual": "Can you pay 220 for your credit card ending 2288 on 16 October 2026?",
+          "computed": "Can you pay 220 for your credit card ending 2288 on 16 October 2026?",
+          "exact_match": true,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 70,
+          "actual": "Can you pay 640 for your personal loan on 16 October 2026?",
+          "computed": "For your credit card ending 2288, 220 on 16 October 2026. For your personal loan, 640 on 16 October 2026. For your car loan, 75 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 80,
+          "actual": "Can you pay 120 for your credit card ending 1144 on 16 October 2026?",
+          "computed": "The rest stays overdue. Can you pay 66 for your credit card ending 2288 on 23 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 90,
+          "actual": "I have updated your records to show that you will pay all three amounts this Friday. Is there anything else I can help you with?",
+          "computed": "The rest stays overdue. Can you pay 213 for your personal loan on 23 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 99,
+          "actual": "The rest stays overdue. For your personal loan, 213 on 23 October 2026. Do you confirm?",
+          "computed": "The rest stays overdue. For your personal loan, 213 on 23 October 2026. Do you confirm?",
+          "exact_match": true,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        }
+      ],
+      "extraction_events": [
+        {
+          "message_index": 52,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I cannot pay today. I will pay all three this Friday."
+        },
+        {
+          "message_index": 53,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": "I cannot pay today. I will pay all three this Friday.",
+          "caller_input": "I cannot pay today. I will pay all three this Friday.",
+          "valid_json_array": false
+        },
+        {
+          "message_index": 62,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I will pay all three this Friday"
+        },
+        {
+          "message_index": 63,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": "[ { \"product\": \"all three\", \"amount\": \"\", \"date\": \"this Friday\", \"kind\": \"proposal\" } ]",
+          "caller_input": "I will pay all three this Friday",
+          "valid_json_array": true
+        },
+        {
+          "message_index": 72,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I will pay all three this Friday."
+        },
+        {
+          "message_index": 73,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 82,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I will pay all three this Friday."
+        },
+        {
+          "message_index": 83,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 92,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I confirm."
+        },
+        {
+          "message_index": 101,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I confirm."
+        },
+        {
+          "message_index": 102,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 119,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "No, that is all."
+        }
+      ],
+      "validation_error_locations": [],
+      "bank_operation_counts": {
+        "api_call": 3,
+        "create_promise": 1,
+        "add_note": 2,
+        "close_call": 1,
+        "end_call": 1
+      },
+      "executed_code_matches_artifact": [
+        {
+          "message_index": 6,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 19,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 34,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 46,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 56,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 66,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 76,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 86,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 95,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 105,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 113,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 124,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 134,
+          "node": "decide",
+          "matches": true
+        }
+      ],
+      "identity_observations": [
+        {
+          "message_index": 10,
+          "actual": "What is your date of birth?",
+          "stage": "dob",
+          "name_confirmed": "yes",
+          "code_visible_history_not_established_by_table": true,
+          "table_contains_system_conversation": false
+        }
+      ],
+      "event_counts": {
+        "node_enter": 30,
+        "variable_extracted": 18,
+        "tool_call_routing": 12,
+        "function_call_start": 21,
+        "function_call_complete": 21,
+        "route_evaluated": 17,
+        "extraction_error": 3,
+        "function_call_complete_deferred": 1,
+        "call_ended": 1
+      },
+      "nonempty_validation_error_count": 0
+    },
+    {
+      "public_id": "PUB-13",
+      "source_file": "/tmp/freya-b5-live-call-2.json",
+      "status": "16",
+      "message_count": 139,
+      "assistant_collection_speech": [
+        {
+          "message_index": 50,
+          "actual": "Thank you. I have verified your identity.",
+          "computed": "I am calling from the collections team about a late payment. Your credit card ending 6604 has a past-due amount of 300 and is 4 days late. Your personal loan has a past-due amount of 900 and is 20 days late. Can you pay all of them today?",
+          "exact_match": false,
+          "phase": "all_today",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 60,
+          "actual": "Can you pay 300 for your credit card ending 6604 on 16 October 2026?",
+          "computed": "Can you pay 300 for your credit card ending 6604 on 16 October 2026?",
+          "exact_match": true,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 70,
+          "actual": "Can you pay 300 for your credit card ending 6604 on 30 October 2026?",
+          "computed": "Can you pay 900 for your personal loan on 16 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 80,
+          "actual": "For your personal loan, 900 on 16 October 2026. Do you confirm?",
+          "computed": "For your personal loan, 900 on 16 October 2026. Do you confirm?",
+          "exact_match": true,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 90,
+          "actual": "Can you pay 900 for your personal loan on 30 October 2026?",
+          "computed": "The rest stays overdue. Can you pay 300 for your personal loan on 23 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        }
+      ],
+      "extraction_events": [
+        {
+          "message_index": 52,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I can't pay today. I want to pay both on the thirtieth of October."
+        },
+        {
+          "message_index": 53,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 62,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I would like to pay on the thirtieth of October instead."
+        },
+        {
+          "message_index": 63,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 72,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I can do that."
+        },
+        {
+          "message_index": 73,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": ":[{",
+          "caller_input": "Yes, I can do that.",
+          "valid_json_array": false
+        },
+        {
+          "message_index": 82,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I want to pay that on the thirtieth"
+        },
+        {
+          "message_index": 83,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 92,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I can."
+        },
+        {
+          "message_index": 93,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": "[{\"product\": \"personal loan\", \"amount\": \"900\", \"date\": \"30 October 2026\", \"kind\": \"paid\"}]",
+          "caller_input": "Yes, I can.",
+          "valid_json_array": true
+        },
+        {
+          "message_index": 102,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "No, that is all."
+        }
+      ],
+      "validation_error_locations": [],
+      "bank_operation_counts": {
+        "api_call": 3,
+        "add_note": 2,
+        "close_call": 1,
+        "end_call": 1
+      },
+      "executed_code_matches_artifact": [
+        {
+          "message_index": 6,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 19,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 34,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 46,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 56,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 66,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 76,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 86,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 96,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 105,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 115,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 125,
+          "node": "decide",
+          "matches": true
+        }
+      ],
+      "identity_observations": [
+        {
+          "message_index": 10,
+          "actual": "What is your date of birth?",
+          "stage": "dob",
+          "name_confirmed": "yes",
+          "code_visible_history_not_established_by_table": true,
+          "table_contains_system_conversation": false
+        }
+      ],
+      "event_counts": {
+        "node_enter": 28,
+        "variable_extracted": 17,
+        "tool_call_routing": 11,
+        "function_call_start": 19,
+        "function_call_complete": 19,
+        "route_evaluated": 16,
+        "extraction_error": 3,
+        "function_call_complete_deferred": 1,
+        "call_ended": 1
+      },
+      "nonempty_validation_error_count": 0
+    },
+    {
+      "public_id": "PUB-12",
+      "source_file": "/tmp/freya-b5-live-call-3.json",
+      "status": "16",
+      "message_count": 321,
+      "assistant_collection_speech": [
+        {
+          "message_index": 64,
+          "actual": "Thank you. You have been verified. How can I help you today?",
+          "computed": "I am calling from the collections team about a late payment. Your credit card ending 9015 has a past-due amount of 510 and is 16 days late. Your personal loan has a past-due amount of 1,320 and is 16 days late. Your car loan has a past-due amount of 140 and is 7 days late. Can you pay all of them today?",
+          "exact_match": false,
+          "phase": "all_today",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 74,
+          "actual": "Can you pay 510 for your credit card ending 9015 on 16 October 2026?",
+          "computed": "Can you pay 510 for your credit card ending 9015 on 16 October 2026?",
+          "exact_match": true,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 84,
+          "actual": "I have scheduled a payment of 510 for your credit card ending 9015 for 17 October 2026. Is there anything else I can help you with?",
+          "computed": "Can you pay 1,320 for your personal loan on 16 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 94,
+          "actual": "Can you pay 1320 for your personal loan on 16 October 2026?",
+          "computed": "Can you pay 140 for your car loan on 16 October 2026?",
+          "exact_match": false,
+          "phase": "product_offer",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 104,
+          "actual": "I understand. Is there anything else I can help you with today?",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 107,
+          "actual": "Thank you for your time, Mr Bell. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "reject"
+        },
+        {
+          "message_index": 110,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 113,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 116,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 119,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 122,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 125,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 128,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 131,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 134,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 137,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 140,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 143,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 146,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 149,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 152,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 155,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 158,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 161,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 164,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 167,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 170,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 173,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 176,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 179,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 182,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 185,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 188,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 191,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 194,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 197,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 200,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 203,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 206,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 209,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 212,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 215,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 218,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 221,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 224,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 227,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 230,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 233,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 236,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 239,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 242,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 245,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 248,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 251,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 254,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 257,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 260,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 263,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 266,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 269,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 272,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 275,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 278,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 281,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 284,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 287,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 290,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 293,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 296,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 299,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 302,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 305,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 308,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 311,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 314,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 317,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        },
+        {
+          "message_index": 320,
+          "actual": "Thank you for calling Freya Bank. Goodbye.",
+          "computed": "For your credit card ending 9015, 510 on 16 October 2026. For your personal loan, 1,320 on 16 October 2026. Do you confirm?",
+          "exact_match": false,
+          "phase": "readback",
+          "verified": "yes",
+          "account_ready": "yes",
+          "consumed_event": "idle"
+        }
+      ],
+      "extraction_events": [
+        {
+          "message_index": 66,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": ":[{",
+          "caller_input": "I'm calling about my credit card payment. I will pay that tomorrow.",
+          "valid_json_array": false
+        },
+        {
+          "message_index": 67,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "proposal",
+          "caller_input": "I'm calling about my credit card payment. I will pay that tomorrow."
+        },
+        {
+          "message_index": 76,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I will pay that tomorrow."
+        },
+        {
+          "message_index": 77,
+          "event": "extraction_error",
+          "variables": [
+            "c_items"
+          ],
+          "error": ""
+        },
+        {
+          "message_index": 86,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "accept",
+          "caller_input": "Yes, I confirm. I also have a"
+        },
+        {
+          "message_index": 87,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": "} {",
+          "caller_input": "Yes, I confirm. I also have a",
+          "valid_json_array": false
+        },
+        {
+          "message_index": 96,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "reject",
+          "caller_input": "No, I won't be paying the personal loan."
+        },
+        {
+          "message_index": 97,
+          "event": "variable_extracted",
+          "name": "c_items",
+          "value": ":[{",
+          "caller_input": "No, I won't be paying the personal loan.",
+          "valid_json_array": false
+        },
+        {
+          "message_index": 106,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "reject",
+          "caller_input": "No, that is all."
+        },
+        {
+          "message_index": 109,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 112,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 115,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 118,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 121,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 124,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 127,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 130,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 133,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 136,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 139,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 142,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 145,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 148,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 151,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 154,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 157,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 160,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 163,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 166,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 169,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 172,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 175,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 178,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 181,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 184,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 187,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 190,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 193,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 196,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 199,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 202,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 205,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 208,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 211,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 214,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 217,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 220,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 223,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 226,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 229,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 232,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 235,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 238,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 241,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 244,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 247,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 250,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 253,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 256,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 259,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 262,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 265,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 268,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 271,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 274,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 277,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 280,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 283,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye.n\nThank you, goodbye."
+        },
+        {
+          "message_index": 286,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 289,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 292,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 295,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 298,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 301,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 304,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 307,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 310,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 313,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 316,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        },
+        {
+          "message_index": 319,
+          "event": "variable_extracted",
+          "name": "c_event",
+          "value": "idle",
+          "caller_input": "Thank you, goodbye."
+        }
+      ],
+      "validation_error_locations": [],
+      "bank_operation_counts": {
+        "api_call": 4
+      },
+      "executed_code_matches_artifact": [
+        {
+          "message_index": 6,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 19,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 34,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 48,
+          "node": "identity_engine",
+          "matches": true
+        },
+        {
+          "message_index": 60,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 70,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 80,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 90,
+          "node": "decide",
+          "matches": true
+        },
+        {
+          "message_index": 100,
+          "node": "decide",
+          "matches": true
+        }
+      ],
+      "identity_observations": [
+        {
+          "message_index": 10,
+          "actual": "What is your date of birth?",
+          "stage": "dob",
+          "name_confirmed": "yes",
+          "code_visible_history_not_established_by_table": true,
+          "table_contains_system_conversation": false
+        }
+      ],
+      "event_counts": {
+        "node_enter": 22,
+        "variable_extracted": 90,
+        "tool_call_routing": 8,
+        "function_call_start": 13,
+        "function_call_complete": 13,
+        "route_evaluated": 13,
+        "extraction_error": 1
+      },
+      "nonempty_validation_error_count": 0
+    }
+  ]
+}

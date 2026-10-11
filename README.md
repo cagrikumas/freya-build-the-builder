@@ -78,9 +78,11 @@ fails after starting a simulation, `python3 builder/practice.py --resume-session
 another simulation. Recovery currently supports single-repetition evaluations;
 it refuses to report one recovered run as several independent repetitions.
 
+Computed questions are spoken through fixed TTS entry with deterministic reply routing;
+primitive extraction fields carry caller facts without JSON serialized inside strings.
 The model only returns compilation artifacts. The Python program owns validation,
 publication and testing. A second compilation call audits the candidate against
-the input policy. Public practice failures can trigger an automatic repair and
+the input policy, with static syntax/schema diagnostics from the draft. Public practice failures can trigger an automatic repair and
 retest, within the same deadline. A measured regression restores the earlier
 candidate. Phone agents use the unmodified model from the supplied
 `freya.py`; only the builder uses Codex.
@@ -101,7 +103,8 @@ failures. The repair must preserve the original scenarios and local checks.
 An inconclusive or worse retest restores the previous workflow. Calls with no
 assistant speech or no completed judgment remain inconclusive, not policy
 failures or passes. These internal checks are not the official hidden score.
-The full conversation evidence is retained in the run. Automatic repair receives
+The full conversation evidence is retained in the run. Both public-practice and
+folder-mode automatic repair receive
 a bounded projection of speech, tool outcomes, routing and validation errors;
 repeated code and large snapshots are omitted, with any truncation recorded.
 The trace explicitly records when the remaining time is insufficient to test;
@@ -136,12 +139,16 @@ The mock must remain available until results are announced.
 2. Run the generic builder on the unedited case folder and mock URL. Never write
    final-case rules into builder source or edit the generated phone agent.
 3. Commit the frozen source, final workflow export and complete trace directory.
+   Each compiler call archives its own complete Codex session, with credentials
+   redacted. `full-session.jsonl` combines those records and all build milestones
+   into the required single trace attachment. The summary `trace.jsonl` alone
+   is not the final session attachment.
    The completed build records hashes of every trace artifact, the builder,
    the platform client/reference documents, and the input files. The packager
    rejects changed or missing artifacts and requires the source, export and
    complete trace to match the bytes in HEAD. Older runs without the manifest
    must be rebuilt for final submission.
-4. Produce the current single-case form (keep it outside tracked files):
+4. Produce the current single-case form for review:
 
 ```sh
 python3 builder/package_submission.py --team cagrikumas \
@@ -151,6 +158,10 @@ python3 builder/package_submission.py --team cagrikumas \
   --name 'Your Name' --email 'you@example.com' > private/submission.json
 ```
 
-Send the reviewed form to the event address before the deadline. The repository
-remains private during preparation; organiser clone access must be settled before
-submission. No final agent or submission has been sent.
+The Submit page updated at 17:00 UTC requires an email to
+`yavuz@freyavoice.ai` before the deadline with three attachments: the reviewed
+`submission.json`, exported workflow, and full coding-agent session trace.
+It also requires those same files in the repository at the named commit.
+The manifest above is initially private for review; its final repository reference
+and organiser clone access must be settled before submission. The repository
+remains private during preparation. No final agent or submission has been sent.

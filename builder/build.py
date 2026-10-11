@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """One-command brief -> generated, verified and exported Freya phone agent."""
 import argparse
+import copy
 import datetime as dt
 import hashlib
 import json
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 KIT = ROOT / 'build-the-builder-v3' / 'build-the-builder'
 sys.path.insert(0, str(KIT))
 from model import call
+from session_trace import append_record, redact_secrets
 from validate import validate, check_examples
 from assemble import assemble
 from freya_client import bind_workspace, availability_check
@@ -46,9 +48,37 @@ def validate_and_check(workflow, artifact, api):
     return errors
 
 
+def pre_audit_static_errors(artifact, api=None, mock_url=None):
+    """Give the auditor draft diagnostics without executing generated code."""
+    try:
+        if not isinstance(artifact, dict):
+            raise ValueError('Compilation artifact must be an object')
+        draft_api = copy.deepcopy(api if api is not None else artifact['openapi'])
+        if not isinstance(draft_api, dict) or 'openapi' not in draft_api:
+            raise ValueError('No usable OpenAPI specification')
+        if api is None and not draft_api.get('paths'):
+            raise ValueError('No usable OpenAPI was derived from the service contract')
+        if mock_url is not None:
+            draft_api['servers'] = [{'url': mock_url}]
+        return validate(assemble(artifact, draft_api), draft_api)
+    except (KeyError, ValueError, TypeError, AttributeError, IndexError,
+            RecursionError, OverflowError, SyntaxError) as error:
+        return ['Malformed draft artifact: ' + str(error)]
+
+
 def artifact_manifest(run_dir):
     return {str(p.relative_to(run_dir)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted(run_dir.rglob('*')) if p.is_file() and p != run_dir / 'trace.jsonl'}
+
+
+def compact_practice_feedback(failures, workflow):
+    """Adapt public scorer evidence to the shared bounded repair format."""
+    rows = [{'name': failure['case'], 'outcome': 'fail',
+             'reason': {'failed': failure.get('failed'), 'tools': failure.get('tools')},
+             'call_id': failure.get('call_id'), 'messages': failure.get('messages', [])}
+            for failure in failures]
+    return compact_feedback({'total': len(rows), 'passed': 0, 'failed': len(rows),
+                             'conclusive': True, 'rows': rows}, workflow, max_rows=16)
 
 
 def load_env():
@@ -102,14 +132,14 @@ def main():
     run_dir.mkdir(parents=True)
     trace_path = run_dir / 'trace.jsonl'
     def redact(value):
-        s = json.dumps(value, ensure_ascii=False, default=str)
-        for k in ('FREYA_API_KEY', 'FREYA_BANK_TEAM_KEY'):
-            if os.environ.get(k): s = s.replace(os.environ[k], '[REDACTED]')
-        return s
+        return json.dumps(redact_secrets(value), ensure_ascii=False, default=str)
     def trace(event, **data):
         row = {'at': dt.datetime.now(dt.timezone.utc).isoformat(), 'event': event, **data}
         line = redact(row)
         with trace_path.open('a') as out: out.write(line + '\n')
+        # Final build_end contains the artifact hash of the already frozen log.
+        if event != 'build_end':
+            append_record(run_dir / 'full-session.jsonl', json.loads(line))
         print(line, flush=True)
     def remaining(): return args.max_seconds - (time.monotonic() - started)
     def deadline(sig, frame): raise TimeoutError('Builder deadline reached')
@@ -162,8 +192,12 @@ def main():
             compiler_instructions += '\nThe case supplies its service contract in documents rather than OpenAPI. Add an openapi field to your output containing a complete OpenAPI 3 specification derived strictly from that service contract. Preserve endpoint paths, methods, body fields, types, enumerations and response shapes. Set servers to the supplied deployed mock URL. Your tool_config and workflow must use this derived schema. Do not import the practice bank tools or policy.\n'
         prompt = compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUT DOCUMENTS\n' + documents
         artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
+        pre_audit_errors = pre_audit_static_errors(artifact, api, mock_url)
+        trace('pre_audit_static_validation', errors=pre_audit_errors, code_executed=False)
         audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
-        audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact),
+        audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact)
+                     + '\n\n# PRE-AUDIT STATIC VALIDATION\n' + json.dumps(pre_audit_errors)
+                     + '\nThese diagnostics only assemble and statically validate the draft; generated code has not run. Correct their causes. Post-audit validation remains authoritative.',
                      'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(1200, int(remaining()-30)), images=images)
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
@@ -305,14 +339,20 @@ def main():
                 failures = []
                 for row in scored.get('rows', []):
                     if row.get('pass'): continue
-                    detail = {'case': row['id'], 'failed': row.get('failed'), 'tools': row.get('tools')}
+                    detail = {'case': row['id'], 'failed': row.get('failed'),
+                              'tools': row.get('tools'), 'call_id': row.get('call_id')}
                     if row.get('call_id'):
                         call_data = freya.get_call(row['call_id'])
                         detail['transcript'] = call_data.get('transcript')
                         detail['messages'] = [{k: m[k] for k in ('role', 'message', 'nodeId') if k in m} for m in call_data.get('messages', [])]
                     failures.append(detail)
+                (run_dir / 'practice-repair-evidence.json').write_text(redact(failures))
+                feedback = compact_practice_feedback(failures, workflow)
+                (run_dir / 'practice-repair-feedback.json').write_text(redact(feedback))
+                trace('practice_repair_feedback', full_evidence='practice-repair-evidence.json',
+                      model_feedback='practice-repair-feedback.json', characters=len(redact(feedback)))
                 trace('repair_start', failed_cases=[f['case'] for f in failures])
-                repair = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OBSERVED PRACTICE FAILURES\n' + redact(failures) + '\nFix general policy/runtime causes. Do not hardcode customer facts or expected case outputs. Override the compilation output format: return JSON {"issues": [...], "patches": [...]} with JSON Patch add/replace/remove operations into the candidate. Replace complete code strings when needed and append new checks with path /checks/-. Do not re-emit the entire artifact.',
+                repair = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OBSERVED PRACTICE FAILURES\n' + redact(feedback) + '\nFix general policy/runtime causes. Do not hardcode customer facts or expected case outputs. Override the compilation output format: return JSON {"issues": [...], "patches": [...]} with JSON Patch add/replace/remove operations into the candidate. Replace complete code strings when needed and append new checks with path /checks/-. Do not re-emit the entire artifact.',
                                 'Repair policy or runtime defects revealed by practice conversations', trace, run_dir, timeout=min(420, int(remaining()-150)))
                 (run_dir / 'repair-patches.json').write_text(json.dumps(repair, indent=2))
                 repaired = preserve_tests(artifact, apply_patches(artifact, repair['patches']))
@@ -350,7 +390,7 @@ def main():
         export_path = ROOT / 'submission' / f'{slot}.workflow.json'
         export_path.parent.mkdir(exist_ok=True)
         freya.export_workflow(ids['workflow_id'], str(export_path))
-        final = {**ids, 'export': str(export_path.relative_to(ROOT)), 'trace': str(trace_path.relative_to(ROOT)), 'sha256': hashlib.sha256(export_path.read_bytes()).hexdigest()}
+        final = {**ids, 'export': str(export_path.relative_to(ROOT)), 'trace': str(trace_path.relative_to(ROOT)), 'session_trace': str((run_dir / 'full-session.jsonl').relative_to(ROOT)), 'sha256': hashlib.sha256(export_path.read_bytes()).hexdigest()}
         (run_dir / 'result.json').write_text(json.dumps(final, indent=2))
         trace('exported', **final)
     except BaseException as e:
@@ -358,7 +398,9 @@ def main():
         raise
     finally:
         signal.alarm(0)
-        trace('build_end', seconds=round(time.monotonic()-started, 2), completed=final is not None,
+        seconds = round(time.monotonic()-started, 2)
+        trace('run_completed', seconds=seconds, completed=final is not None, result=final)
+        trace('build_end', seconds=seconds, completed=final is not None,
               result=final, artifacts=artifact_manifest(run_dir))
 
 

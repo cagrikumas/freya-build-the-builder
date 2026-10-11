@@ -206,6 +206,20 @@ a separate processed-state variable; clearing an enum to an undeclared empty
 string can be rejected and leave the previous value active. Check these writes
 and the next turn, including out-of-vocabulary model output handled safely.
 
+Use small primitive extraction fields with explicit neutral/unknown values. Do
+not encode a complex list or object as JSON inside an extraction string and
+assume its description guarantees valid serialization. Assemble correlated
+statements in code from source-appropriate primitive fields. If several
+statements are permitted, preserve each statement's entity, amount, date and
+kind together through bounded primitive slots derived from the source, or
+clarify the statements in stages without discarding the caller's other terms.
+Validate representation and semantic consistency before consuming a reply.
+Unknown, malformed or conflicting extraction is an explicit unresolved-input
+state: clarify under source rules. It must not silently become a refusal, a
+paid/disputed claim, acceptance, or a fabricated customer proposal. In
+particular, a proposal classification with missing/unparseable terms cannot
+consume a refusal budget merely because a parser returned an empty list.
+
 Every speaking node must state its exact permitted questions and next actions,
 derived from the source. Critical identity-field names and restrictions cannot
 exist only in code or extraction descriptions: the dialogue model needs them in
@@ -213,16 +227,24 @@ its own task. Do not let it invent a plausible security question, add a new step
 or continue an earlier stage after a closing transition. If deterministic code
 supplies the next utterance, make that instruction authoritative and do not
 combine it with a broad invitation to improvise the workflow.
-Keep entry speech separate from processing the next fresh caller reply. For an
-LLM entry, a narrow on_enter.prompt can restrict it to the computed current-stage
-utterance. A custom entry prompt must be self-contained: interpolate the actual
-computed utterance with {{variable_name}} and include the exact source-derived
-opening/fallback and its conditions. Merely naming a variable or saying "use the
-current task" does not supply its value; do not depend on other task context
-being present in an overridden entry instruction. Prefer separate speaking stages
-when their permitted question types differ. Initialized question-only stages may use on_enter tts/text with a
-template to speak the computed question exactly, while their task processes a
-new reply. A fixed TTS entry does not automatically invoke conversation tools:
+Keep entry speech separate from processing the next fresh caller reply. For
+an initialized question-only stage whose complete authorized utterance is
+computed by code, use on_enter {"type":"tts","text":"{{computed_speech}}"}.
+Initialize that variable on every reachable entry; never speak an unresolved
+placeholder or rely on an LLM entry to repeat the value exactly. Route the
+next user reply to the evaluator through an ordinary deterministic transition
+with condition {"operator":"always"}, omitting is_tool_call (or setting it
+false), and no loop_condition that can intercept it. Documented extraction
+runs before this routing. The question node must wait for the reply: it is
+not passthrough. The evaluator processes the fresh fields and chooses the
+next initialized speaking stage. Do not ask an LLM entry to dispatch fresh
+input or choose whether the evaluator runs. Explicitly retain/consume fresh
+input once across result-only re-entry and preserve caller-first behavior.
+Use separate speaking stages when permitted question types differ. Reserve
+LLM entry for stages whose task actually requires model action selection; a
+custom prompt there must be self-contained, interpolate its actual values,
+and state exact source-derived boundaries and authorized action.
+A fixed TTS entry does not automatically invoke conversation tools:
 preserve any source-required action after speech through an explicit, verified
 engine route or a tightly specified LLM action stage. In particular, closing
 must not wait for another user reply if the source requires immediate action.

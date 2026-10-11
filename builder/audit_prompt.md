@@ -35,6 +35,14 @@ paths. Reason through both success and failure. Look especially for:
   especially empty/none/unclear/non-answer, against source-defined clarification,
   attempt and termination rules. The extraction model does not see the dialogue
   prompt or arbitrary runtime variables.
+- Complex JSON lists/objects hidden inside string extraction fields. A valid
+  string can still contain prose or malformed serialization. Prefer small
+  primitive fields and code-assembled correlated statements, retaining source
+  scopes and each amount/date/kind together. Trace missing/malformed/conflicting
+  fields and a proposal with no usable terms. These must remain unresolved
+  input handled under source clarification rules, not become refusal, paid,
+  dispute, acceptance, or a fabricated proposal. Check that one extracted
+  field cannot contradict another and silently change the customer's act.
 - Shared extraction names with incompatible types, enum sets or meanings across
   stages. Check all code/hook writes against the registered extraction schemas,
   including clearing/consumption: an undeclared empty enum value can be rejected
@@ -46,15 +54,22 @@ paths. Reason through both success and failure. Look especially for:
   model may invent a familiar but unauthorized question or continue security in
   a closing node. Make the source-derived permitted speech explicit in each
   applicable task and make a computed next utterance authoritative.
-  Separate entry speech from new-reply processing; use a narrow entry prompt or
-  initialized fixed speech when appropriate. Current-stage state must override
-  unfinished tasks suggested by conversation history. Do not replace an
-  action-after-speech stage with TTS alone: required tools still need an explicit
-  engine route or a constrained action step in the source-prescribed order.
-  If on_enter.prompt overrides entry instructions, ensure it is self-contained:
-  actual interpolated computed speech, exact source opening/fallback and required
-  conditions. Variable identifiers and references to "the current task" do not
-  provide those values. Do not assume unspecified entry-context behavior.
+  For initialized question-only stages with code-computed authorized speech,
+  require on_enter {"type":"tts","text":"{{computed_speech}}"}, an ordinary
+  deterministic always transition to the evaluator after the user reply,
+  and no is_tool_call/loop_condition that delegates or blocks that route.
+  The question stage waits for a reply; do not make it passthrough. Verify
+  every entry initializes the speech and that extraction precedes the route.
+  A strong "say exactly" LLM instruction is not equivalent to fixed speech.
+  Trace caller-first input, delayed answers and result-only re-entry so fresh
+  replies are consumed once before the next question. Separate stages whose
+  permitted question types differ. Do not replace action-after-speech stages
+  with TTS alone: required tools still need a documented explicit engine route
+  or constrained action stage in source-prescribed order. TTS does not itself
+  invoke tools, and a closing stage must not wait for another caller reply
+  when immediate action is required. For remaining model-action entries, make
+  custom prompts self-contained with actual interpolated values, source
+  boundaries and the authorized operation.
 - Counters initialized as though an entry question already ran, or counters that
   never advance when a repeated unclear reply takes a different taxonomy branch.
   Trace both caller-first and agent-first starts, actual speaking steps, delayed

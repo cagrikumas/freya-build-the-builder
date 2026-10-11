@@ -27,18 +27,31 @@ class SubmissionTests(unittest.TestCase):
         (self.root / 'submission').mkdir()
         self.export = self.root / 'submission/final.workflow.json'
         self.export.write_text(json.dumps({'workflow_id': 'w'}))
-        result = {'workflow_id': 'w', 'trace': 'traces/final/trace.jsonl', 'export': 'submission/final.workflow.json',
+        result = {'session_trace': 'traces/final/full-session.jsonl', 'workflow_id': 'w', 'trace': 'traces/final/trace.jsonl', 'export': 'submission/final.workflow.json',
                   'sha256': hashlib.sha256(self.export.read_bytes()).hexdigest()}
         self.result = self.run / 'result.json'
         self.result.write_text(json.dumps(result))
         self.patch = patch.object(package_submission, 'ROOT', self.root)
         self.patch.start()
         self.input = self.root / 'BRIEF.md'; self.input.write_text('Original input')
+        session_record = {'timestamp': '2026-10-11T17:00:00Z', 'type': 'session_meta',
+                          'payload': {'id': 'thread', 'cwd': str(self.run)}}
+        session_file = self.run / 'model-01.session.jsonl'
+        session_file.write_text(json.dumps(session_record) + '\n')
         events = [{'event': 'build_start', 'builder_files': package_submission.source_hashes(),
                    'inputs': [{'path': 'BRIEF.md', 'sha256': hashlib.sha256(self.input.read_bytes()).hexdigest()}]},
-                  {'event': 'build_end', 'completed': True, 'seconds': 30, 'result': result,
-                   'artifacts': {p.relative_to(self.run).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-                                 for p in self.run.rglob('*') if p.is_file()}}]
+                  {'event': 'model_call_start', 'call_id': 'model-01'},
+                  {'event': 'model_session_captured', 'call_id': 'model-01', 'thread_id': 'thread',
+                   'file': session_file.name, 'records': 1, 'complete': True,
+                   'sha256': hashlib.sha256(session_file.read_bytes()).hexdigest()},
+                  {'event': 'run_completed', 'completed': True, 'result': result}]
+        full_trace = [events[0], events[1],
+                      {'event': 'codex_session_record', 'call_id': 'model-01', 'thread_id': 'thread',
+                       'sequence': 1, 'record': session_record}, *events[2:]]
+        (self.run / 'full-session.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in full_trace))
+        events.append({'event': 'build_end', 'completed': True, 'seconds': 30, 'result': result,
+                       'artifacts': {p.relative_to(self.run).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                                     for p in self.run.rglob('*') if p.is_file()}})
         (self.run / 'trace.jsonl').write_text('\n'.join(json.dumps(e) for e in events))
         self.committed = {p.relative_to(self.root).as_posix(): p.read_bytes()
                           for p in self.root.rglob('*') if p.is_file()}

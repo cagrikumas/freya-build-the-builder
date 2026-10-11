@@ -69,16 +69,20 @@ _FEEDBACK_OMIT = {'headers', 'request_headers', 'response_headers', 'raw_respons
                   'api_token', 'access_token'}
 
 
-def compact_feedback(summary, workflow=None):
+def compact_feedback(summary, workflow=None, *, max_rows=12):
     """Bound model repair evidence; the persisted full summary stays untouched.
 
     Limits count JSON characters with ASCII escaping (a conservative bound for
-    the UTF-8 prompt). At most twelve scenario rows are accepted, matching the
-    compiler contract. Facts removed by a limit are explicitly reported.
+    the UTF-8 prompt). Twelve rows match the compiler contract; practice may
+    explicitly allow up to sixteen under the same total budget. Facts removed
+    by a limit are explicitly reported.
     """
     rows = summary.get('rows') if isinstance(summary, dict) else None
-    if not isinstance(rows, list) or len(rows) > 12:
-        raise ValueError('Repair feedback requires a summary with at most twelve rows')
+    if isinstance(max_rows, bool) or not isinstance(max_rows, int) or not 1 <= max_rows <= 16:
+        raise ValueError('Repair feedback row limit must be between one and sixteen')
+    if not isinstance(rows, list) or len(rows) > max_rows:
+        limit = 'twelve' if max_rows == 12 else str(max_rows)
+        raise ValueError(f'Repair feedback requires a summary with at most {limit} rows')
 
     def size(value): return len(json.dumps(value))
 
