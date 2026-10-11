@@ -127,7 +127,7 @@ V4 19:44:55 UTC’de tamamlandı. 94 yerel kontrol, platform ve açılış
 kontrolleri geçti; önceki 79 kontrol aynen korundu. Uygun kart yok HTTP404
 ve gerçek teknik hata HTTP500 senaryoları 19:45:36 UTC’de **2/2 geçti**.
 
-## Son dar kapsamlı düzeltme (v5, sürüyor)
+## Son dar kapsamlı düzeltme denemesi (v5, tamamlanamadı)
 
 `traces/20261011T194542Z-final` çalışması 19:45:42 UTC’de 900 saniyelik
 bütçeyle başladı. Değişmemiş v4 üretimi ve kalan iki gerçek v3 başarısız
@@ -143,3 +143,15 @@ python3 builder/build.py {case_folder} {mock_url} \
   --repair-feedback traces/20261011T194542Z-final/refinement-evidence.json \
   --max-seconds 900
 ```
+
+V5 model çağrısı 19:50:42 UTC’de 279,86 saniyelik model süre sınırına takıldı.
+Yeni aday, yama veya dışa aktarım üretilmedi; platform ajanı değiştirilmedi.
+Bu deneme başarılı sayılmaz. Son tamamlanmış ve teslim için seçilen sürüm
+**v4**, üretim izi `traces/20261011T193910Z-final`dir.
+
+V4 için aynı 12 kritik senaryonun son ölçümü 19:51:13 UTC’de başladı;
+180 saniyelik ölçüm sınırı teslim hazırlığına zaman bırakır. Tamamlanmayan
+kararlar belirsiz sayılır. Bilinen kalan riskler: teşekkürle birleşen eksik
+e-posta isteğinin bitirme sayılması ve bazı bitiş yollarında modelin
+hesaplanan cümleyi izlemeyip konuşmayı sürdürmesi/yanlış işlem iddiası.
+Bunlar düzelmiş veya tüm vaka %100 başarılı olarak sunulmamaktadır.

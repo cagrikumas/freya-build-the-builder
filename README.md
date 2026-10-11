@@ -197,3 +197,14 @@ It also requires those same files in the repository at the named commit.
 The manifest above is initially private for review; its final repository reference
 and organiser clone access must be settled before submission. The repository
 remains private during preparation. No final submission email has been sent.
+
+
+## Selected event submission
+
+The selected completed run is `traces/20261011T193910Z-final` (workflow v4).
+It passed 94 local checks, platform validation, the opening check and two live
+HTTP warning/error scenarios. These are internal tests, not the hidden score.
+See `results/20261011-final-tests.md` and raw results for broader measured
+performance and remaining limitations. The later v5 refinement timed out
+before producing or applying a patch; its failed trace is retained as evidence
+and is not the submitted trace. The exported v4 phone agent was not hand-edited.

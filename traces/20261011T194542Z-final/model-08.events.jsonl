@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"01a12c80-3574-7ce1-ada4-2322e7cf3def"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"Under-development features enabled: skip_host_skill_discovery. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in /home/ahmetkumas/.codex/config.toml."}}
+{"type":"turn.started"}
