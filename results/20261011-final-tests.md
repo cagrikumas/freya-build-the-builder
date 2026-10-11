@@ -76,9 +76,40 @@ Son gruptaki iki görüşme bir süre hiç mesaj üretmeden `initiating` durumun
 kaldı; platform daha sonra yeni görüşme denemeleriyle grubu tamamladı. Grup
 durdurulmadı ve tamamlanmamış görüşmeler başarılı sayılmadı.
 
-## İkinci otomatik düzeltme (v3, sürüyor)
+## İkinci otomatik düzeltme (v3)
 
 `traces/20261011T192924Z-final` çalışması 19:29:24 UTC’de başladı. Tamamlanan
 v2 üretimi ve dört gerçek başarısız görüşmenin 298 özgün mesajı girdi olarak
 kullanıldı. Kaynak kod değiştirilmedi; mevcut 60 yerel kontrol ve 12 temel
-senaryo korunmak zorunda. Yeni sürümün canlı sonucu henüz yok.
+senaryo korundu. Üretim 19:37:02 UTC’de tamamlandı; 79 yerel kontrol,
+platform doğrulaması ve açılış kontrolü geçti. Önceki 60 kontrol değişmeden
+korundu, 19 yeni kontrol eklendi. Tam oturum kaydı 13.319.968 bayttır.
+
+12 öncelikli gerçek Freya senaryosu 19:37:09 UTC’de başlatıldı. İlk sonuçlar,
+konu dışı yanıttan kart seçimine dönüşün düzeldiğini, HTTP404 uygun kart yok
+uyarısının ise hâlâ teknik hata sayıldığını gösterdi. Gerçek platform cevabı
+tek tırnaklı Python sözlük metni; v3 normalleştiricisi yalnız JSON okuyordu.
+Bu fark hem özgün mesajlarla yerel olarak hem sürüm3 canlı görüşmesinde
+`335b4dec-e1a0-4d98-a446-34f5698edef6` doğrulandı.
+
+## Üçüncü otomatik düzeltme (v4, sürüyor)
+
+`traces/20261011T193910Z-final` çalışması 19:39:10 UTC’de başladı.
+Değişmemiş v3 üretimini, 79 kontrolü, 12 temel senaryoyu ve tek gerçek
+v3 HTTP404 başarısız görüşmesinin özgün mesajlarını kullanır. İstenen
+onarım hata metninin güvenli biçim normalleştirmesiyle sınırlıdır; HTTP
+kodları, uyarı kodu/türü, güncellik koşulları ve teknik hata ayrımı korunur.
+
+Gerçek artımlı üretim komutu:
+
+```sh
+python3 builder/build.py {case_folder} {mock_url} \
+  --refine-run traces/20261011T192924Z-final \
+  --repair-feedback traces/20261011T193910Z-final/refinement-evidence.json \
+  --max-seconds 1200
+```
+
+Teslim formundaki sıfırdan üretim komutu 5400 saniyelik bütçe kullanır;
+yukarıdaki 1200 saniyelik süre yalnız önceki tamamlanmış üretimi içeri alan
+artımlı düzeltmeye aittir. Tam oturum kaydı tüm önceki model çağrılarını ve
+yeni düzeltme oturumunu birlikte saklar.
