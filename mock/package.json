@@ -2,11 +2,16 @@
   "name": "freya-hackathon-bank-mock",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "python3 ../scripts/wrangler.py dev --local",
     "deploy": "python3 ../scripts/wrangler.py deploy",
-    "check": "python3 ../scripts/wrangler.py deploy --dry-run"
+    "check": "python3 ../scripts/wrangler.py deploy --dry-run",
+    "test": "node --test test/*.test.js"
   },
-  "devDependencies": { "wrangler": "4.149.0" }
+  "devDependencies": {
+    "wrangler": "4.149.0"
+  }
 }
