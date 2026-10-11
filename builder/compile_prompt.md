@@ -81,6 +81,11 @@ is wrapped in try/except, and has no double opening or closing braces anywhere.
 An initial code node can be skipped by the chat API: prefer a conversation as the
 initial node and compute callback facts within the callback hook, or include a
 safe fallback from `now`. Account-derived calculations run after account lookup.
+The builder also persists declared response_mapping values from the post-hook,
+so structured lists and objects are available under your mapped variable names.
+For automatic pre_actions the flattened response prefix is the NODE name, such
+as lookup_response, not necessarily the tool name. Use the actual node name if
+you implement a flattened fallback; test that fallback with the same prefix.
 
 Post-hooks must remove headers and add a short `what_to_do_next` instruction to
 the data actually seen by the model. Cover success AND failure. Direct it to speak
@@ -143,6 +148,7 @@ details in customer-facing dialogue. Keep questions short and sequential.
 ## Platform invariants
 
 - No nulls and no agent_config. Valid node_type, node name matches its key.
+- All workflow test_variables values must be strings.
 - No tools on code/api_request nodes; no pre_actions on conversation nodes.
 - response_mapping on the tool for conversation tools, on the node for pre_actions.
 - Mapping paths start with data.; boolean conditions accept true and True or

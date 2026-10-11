@@ -4,11 +4,26 @@ This code knows platform syntax, not bank rules. Prompts, hooks, routing and
 policy calculations are generated from the input brief on every build.
 """
 import copy
+import json
 from validate import resolve
+
+
+def materialize_mappings(tool, mappings):
+    """Persist mapped structured results before Freya flattens the envelope."""
+    if tool.get('function', {}).get('handler') != '__function__:api_call' or not mappings:
+        return
+    for mapping in mappings:
+        if not isinstance(mapping.get('path'), str) or not isinstance(mapping.get('variable'), str):
+            raise ValueError('Response mappings require path and variable strings')
+    bridge = "\ntry:\n    for _mapping in " + repr(mappings) + ":\n        try:\n            _mapped = result\n            for _part in _mapping['path'].split('.'):\n                _mapped = _mapped[int(_part)] if isinstance(_mapped, list) else _mapped[_part]\n            vars[_mapping['variable']] = _mapped\n        except (KeyError, IndexError, TypeError, ValueError):\n            pass\nexcept Exception:\n    pass\n"
+    tool['post_process_code'] = tool.get('post_process_code', '') + bridge
 
 
 def assemble(artifact, api):
     workflow = copy.deepcopy(artifact['workflow'])
+    if 'test_variables' in workflow:
+        workflow['test_variables'] = {k: v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+                                      for k, v in workflow['test_variables'].items()}
     api = resolve(api, api)
     base = api['servers'][0]['url'].rstrip('/')
     specs = {}
@@ -55,6 +70,10 @@ def assemble(artifact, api):
                         node.setdefault('response_mapping', []).extend(tool.pop('response_mapping'))
                     expanded.append(tool)
                 node[group] = expanded
+        for tool in node.get('tools', []):
+            materialize_mappings(tool, tool.get('response_mapping', []))
+        for tool in node.get('pre_actions', []):
+            materialize_mappings(tool, node.get('response_mapping', []))
         if 'code' in node:
             if node.get('node_type') != 'code': raise ValueError('The compact code field requires node_type=code')
             if node.get('pre_actions'): raise ValueError('Use either code or pre_actions, not both')

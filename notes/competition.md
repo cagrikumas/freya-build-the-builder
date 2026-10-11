@@ -42,3 +42,19 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
   Freya isteklerini durdurmak için bekletildi; mevcut simülasyon tekrar açılmadı.
   Derleme süresi sıfırlanmadı; bakım süresi de gerçek toplam sürede kalıyor.
 - Gizli şartnameler henüz yayımlanmadı; final teslimi yapılmadı.
+
+## 17.46 sonrası devam
+
+- Freya duraklatma isteğini daha önce kabul etmişti; yeniden bağlanıldığında
+  simülasyonu completed olarak bildirdi. Eksik yargı sonuçlarıyla kurtarılan
+  değerlendirme 1/10. Kesinti dönemindeki bu koşu güvenilir nihai ölçüm değil.
+- Gerçek görüşmede hesap yanıtı `lookup_response.data.products.0.*` altında
+  görüldü, buna karşılık ürün listesi eşlenen değişkende oluşmamıştı.
+  Builder artık ilan edilmiş response_mapping değerlerini post-hook içinde
+  vars'a da geçiriyor. Banka kuralları veya üretilmiş ajan metinleri elle
+  değiştirilmedi. Aynı gerçek yanıtla yerel tekrar ödeme yoluna geçti.
+- Platformun string istediği test_variables alanları assembler tarafından
+  JSON metnine çevriliyor. 30 birim testi, A için 43 ve B için 59 üretilmiş
+  yerel kontrol geçti.
+- B için yeni üç müşterilik simülasyon; A için sıfırdan yeni builder koşusu
+  başlatıldı. Final teslimi yapılmadı.

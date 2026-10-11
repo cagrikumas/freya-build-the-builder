@@ -89,7 +89,7 @@ def main():
         artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(720, int(remaining()-20)))
         audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()
         audit = call(audit_instructions + '\n\n# COMPILER CONTRACT\n' + compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUTS\n' + documents + '\n\n# CANDIDATE\n' + json.dumps(artifact),
-                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(480, int(remaining()-30)))
+                     'Independently audit policy coverage, deterministic code and failure paths', trace, run_dir, timeout=min(660, int(remaining()-30)))
         trace('policy_audit', approved=audit.get('approved'), issues=audit.get('issues', []))
         (run_dir / 'audit.json').write_text(json.dumps(audit, indent=2))
         if not audit.get('approved'):

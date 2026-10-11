@@ -40,11 +40,32 @@ class AssemblyTests(unittest.TestCase):
 
     def test_pre_action_mappings_are_attached_to_node(self):
         self.artifact['workflow']['nodes']['start'] = {'name': 'start', 'node_type': 'api_request', 'pre_actions': ['record']}
-        mapping = [{'response_path': 'data.ok', 'variable_name': 'saved'}]
+        mapping = [{'path': 'data.ok', 'variable': 'saved'}]
         self.artifact['tool_config']['record']['response_mapping'] = mapping
         node = assemble(self.artifact, self.api)['nodes']['start']
         self.assertEqual(node['response_mapping'], mapping)
         self.assertNotIn('response_mapping', node['pre_actions'][0])
+
+    def test_mapped_structures_survive_before_platform_flattens_results(self):
+        self.artifact['workflow']['nodes']['start'] = {'name': 'start', 'node_type': 'api_request', 'pre_actions': ['record']}
+        self.artifact['tool_config']['record']['response_mapping'] = [
+            {'path': 'data.items', 'variable': 'account_items'},
+            {'path': 'data.items.0.code', 'variable': 'first_code'},
+            {'path': 'data.absent', 'variable': 'missing'},
+        ]
+        workflow = assemble(self.artifact, self.api)
+        items = [{'code': 'new-schema-value', 'total': 27.5}]
+        checks = [{'name': 'structured pre-action result', 'node': 'start', 'tool': 'record', 'hook': 'post',
+                   'result': {'data': {'ok': True, 'items': items}},
+                   'expect_vars': {'account_items': items, 'first_code': 'new-schema-value', 'saved': 'yes'}}]
+        self.assertEqual(check_examples(workflow, checks), [])
+
+    def test_test_variables_are_platform_strings_without_mutating_artifact(self):
+        original = {'attempts': 0, 'ready': False, 'items': ['a'], 'digits': '0007'}
+        self.artifact['workflow']['test_variables'] = original.copy()
+        workflow = assemble(self.artifact, self.api)
+        self.assertEqual(workflow['test_variables'], {'attempts': '0', 'ready': 'false', 'items': '["a"]', 'digits': '0007'})
+        self.assertEqual(self.artifact['workflow']['test_variables'], original)
 
     def test_generated_hook_executes_on_expanded_tool(self):
         wf = assemble(self.artifact, self.api)
