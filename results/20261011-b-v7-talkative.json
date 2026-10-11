@@ -1,0 +1,188 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "ee760630-2c2a-43d8-8565-b59315798b30",
+ "iteration_id": "286a0720-4acc-402e-8264-f0baaeb86ccd",
+ "seconds": 106,
+ "passed": 0,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('no_promise', 'refused'), expected ('promise', None)",
+    "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+    "notes [('p1', 'refused'), ('p2', 'refused'), ('p3', 'refused')], expected []",
+    "conversation: The assistant failed two out of three success criteria. 1. While all three products were correctly stated before the first question in [Message 6], the assistant failed to perform a read-back or secure a confirmation for the user's offer to pay all three accounts by Friday [Message 9, 11, 13]. 2. There were no 'create_promise' tool calls executed in the system events; instead, the assistant logged"
+   ],
+   "call_id": "379b2361-b32c-48c3-b1d5-e7a4d00002cd",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "add_note",
+    "add_note",
+    "add_note",
+    "close_call"
+   ],
+   "customer_id": "c_0f1d694f-cb0",
+   "slowest_turn_s": 10.7,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('no_promise', 'refused'), expected ('promise', None)",
+    "promises [], expected [('p1', 510.0, '2026-10-15')]",
+    "notes [('p1', 'refused'), ('p2', 'refused'), ('p3', 'refused')], expected [('p2', 'refused'), ('p3', 'refused')]",
+    "conversation: The agent failed the success criteria regarding the credit card promise. Although the user expressed intent to pay the credit card in [Message 11], the agent did not successfully record a promise for it. System events show that a 'refused' note was added for all three products, including the credit card (p1), instead of a promise. All other criteria were met: the phone question was repeated once ["
+   ],
+   "call_id": "e6f260a2-49e1-44b7-975c-05f4a3bdfa06",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "add_note",
+    "add_note",
+    "add_note",
+    "close_call"
+   ],
+   "customer_id": "c_e4c81e60-7d1",
+   "slowest_turn_s": 5.0,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('no_promise', 'refused'), expected ('promise', None)",
+    "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+    "notes [('p1', 'refused'), ('p2', 'refused')], expected []",
+    "conversation: - The credit card was not recorded for October 30; system events show it was marked as 'refused' in the final API call. - The personal loan was not recorded for October 23; system events show it was also marked as 'refused'. - There was no read-back naming any dates; the agent ended the call with a generic goodbye at Message 44. - The agent failed to progress the conversation effectively, entering"
+   ],
+   "call_id": "a285dd30-754c-44d7-8905-2ab23a018387",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "add_note",
+    "add_note",
+    "close_call"
+   ],
+   "customer_id": "c_7af27a2b-6da",
+   "slowest_turn_s": 7.2,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('no_promise', 'refused'), expected ('promise', None)",
+     "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+     "notes [('p1', 'refused'), ('p2', 'refused'), ('p3', 'refused')], expected []",
+     "conversation: The assistant failed two out of three success criteria. 1. While all three products were correctly stated before the first question in [Message 6], the assistant failed to perform a read-back or secure a confirmation for the user's offer to pay all three accounts by Friday [Message 9, 11, 13]. 2. There were no 'create_promise' tool calls executed in the system events; instead, the assistant logged"
+    ],
+    "call_id": "379b2361-b32c-48c3-b1d5-e7a4d00002cd",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "add_note",
+     "add_note",
+     "add_note",
+     "close_call"
+    ],
+    "customer_id": "c_0f1d694f-cb0",
+    "slowest_turn_s": 10.7,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('no_promise', 'refused'), expected ('promise', None)",
+     "promises [], expected [('p1', 510.0, '2026-10-15')]",
+     "notes [('p1', 'refused'), ('p2', 'refused'), ('p3', 'refused')], expected [('p2', 'refused'), ('p3', 'refused')]",
+     "conversation: The agent failed the success criteria regarding the credit card promise. Although the user expressed intent to pay the credit card in [Message 11], the agent did not successfully record a promise for it. System events show that a 'refused' note was added for all three products, including the credit card (p1), instead of a promise. All other criteria were met: the phone question was repeated once ["
+    ],
+    "call_id": "e6f260a2-49e1-44b7-975c-05f4a3bdfa06",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "add_note",
+     "add_note",
+     "add_note",
+     "close_call"
+    ],
+    "customer_id": "c_e4c81e60-7d1",
+    "slowest_turn_s": 5.0,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('no_promise', 'refused'), expected ('promise', None)",
+     "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+     "notes [('p1', 'refused'), ('p2', 'refused')], expected []",
+     "conversation: - The credit card was not recorded for October 30; system events show it was marked as 'refused' in the final API call. - The personal loan was not recorded for October 23; system events show it was also marked as 'refused'. - There was no read-back naming any dates; the agent ended the call with a generic goodbye at Message 44. - The agent failed to progress the conversation effectively, entering"
+    ],
+    "call_id": "a285dd30-754c-44d7-8905-2ab23a018387",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "add_note",
+     "add_note",
+     "close_call"
+    ],
+    "customer_id": "c_7af27a2b-6da",
+    "slowest_turn_s": 7.2,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

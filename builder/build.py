@@ -17,7 +17,8 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 KIT = ROOT / 'build-the-builder-v3' / 'build-the-builder'
 sys.path.insert(0, str(KIT))
-from model import call
+from model import call, recover_answer
+from compile_resume import import_failed_compile
 from session_trace import append_record, redact_secrets
 from validate import validate, check_examples
 from assemble import assemble
@@ -98,6 +99,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('inputs', nargs='+', help='A case folder and mock URL, or practice briefs and OpenAPI JSON')
     ap.add_argument('--slot')
+    ap.add_argument('--resume-compile', type=Path, help='Recover only malformed JSON from an unchanged, fully traced failed compiler call')
     ap.add_argument('--offline', action='store_true', help='Compile and verify locally, without Freya calls')
     ap.add_argument('--practice', choices=['A', 'B', 'all'])
     ap.add_argument('--style', choices=['pieces', 'corrects', 'talkative', 'asks_back', 'in_words'])
@@ -191,7 +193,13 @@ def main():
         if derive_api:
             compiler_instructions += '\nThe case supplies its service contract in documents rather than OpenAPI. Add an openapi field to your output containing a complete OpenAPI 3 specification derived strictly from that service contract. Preserve endpoint paths, methods, body fields, types, enumerations and response shapes. Set servers to the supplied deployed mock URL. Your tool_config and workflow must use this derived schema. Do not import the practice bank tools or policy.\n'
         prompt = compiler_instructions + '\n\n# PLATFORM REFERENCE\n' + docs + '\n\n# BANK INPUT DOCUMENTS\n' + documents
-        artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
+        if args.resume_compile:
+            input_hashes = [{'path': str(p.relative_to(ROOT)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs]
+            raw = import_failed_compile(args.resume_compile, run_dir, prompt, input_hashes, trace)
+            artifact = recover_answer(raw, 'Recover malformed compiler JSON without changing its policy', trace, run_dir,
+                                      timeout=min(600, int(remaining()-20)), original_call_id='model-01')
+        else:
+            artifact = call(prompt, 'Compile all supplied rules and API schema into workflow and local checks', trace, run_dir, timeout=min(1500, int(remaining()-20)), images=images)
         pre_audit_errors = pre_audit_static_errors(artifact, api, mock_url)
         trace('pre_audit_static_validation', errors=pre_audit_errors, code_executed=False)
         audit_instructions = (ROOT / 'builder' / 'audit_prompt.md').read_text()

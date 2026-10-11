@@ -1,0 +1,164 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "cb57b67d-0611-4c12-860d-6f61903f76cc",
+ "iteration_id": "2bf020a5-b6c0-414a-8325-6f9f06921278",
+ "seconds": 63,
+ "passed": 2,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 1,
+   "runs": 1,
+   "pass": true
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": true,
+   "failed": [],
+   "call_id": "f6a31fc0-d64a-41e1-a342-3babc99092eb",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "create_promise",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_702266d2-4a7",
+   "slowest_turn_s": 2.5,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "promises [('p1', 510.0, '2026-10-21')], expected [('p1', 510.0, '2026-10-15')]",
+    "conversation: The agent failed to adhere to the specified attempt counts for the loans. While other criteria were met\u2014the phone question was asked again once (Messages 4 and 6), the date of birth was asked only once (Message 2), exactly one promise was recorded for the credit card (p1), and refused notes were added for the other products\u2014the agent exceeded the allowed attempts for both loans. Specifically, it m"
+   ],
+   "call_id": "0b61163a-09ee-48f6-a61c-3bde10663c5d",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "add_note",
+    "add_note",
+    "close_call"
+   ],
+   "customer_id": "c_c4529b16-2ef",
+   "slowest_turn_s": 2.9,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": true,
+   "failed": [],
+   "call_id": "32cdca97-2758-4304-9886-3c1cad50cc24",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_d45dc5fe-9fe",
+   "slowest_turn_s": 2.1,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": true,
+    "failed": [],
+    "call_id": "f6a31fc0-d64a-41e1-a342-3babc99092eb",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "create_promise",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_702266d2-4a7",
+    "slowest_turn_s": 2.5,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "promises [('p1', 510.0, '2026-10-21')], expected [('p1', 510.0, '2026-10-15')]",
+     "conversation: The agent failed to adhere to the specified attempt counts for the loans. While other criteria were met\u2014the phone question was asked again once (Messages 4 and 6), the date of birth was asked only once (Message 2), exactly one promise was recorded for the credit card (p1), and refused notes were added for the other products\u2014the agent exceeded the allowed attempts for both loans. Specifically, it m"
+    ],
+    "call_id": "0b61163a-09ee-48f6-a61c-3bde10663c5d",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "add_note",
+     "add_note",
+     "close_call"
+    ],
+    "customer_id": "c_c4529b16-2ef",
+    "slowest_turn_s": 2.9,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": true,
+    "failed": [],
+    "call_id": "32cdca97-2758-4304-9886-3c1cad50cc24",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_d45dc5fe-9fe",
+    "slowest_turn_s": 2.1,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}
