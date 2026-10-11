@@ -1,0 +1,33 @@
+{
+  "arguments": [
+    "443c6e24-bdce-4133-90b5-802bc30df0b1",
+    "--brief",
+    "B",
+    "--out",
+    "results/20261011-b-v3-recovery-live.json"
+  ],
+  "sessions": {
+    "PUB-11": {
+      "customer_id": "c_4b2c9542-9bf",
+      "first_name": "Sofia",
+      "last_name": "Almeida",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-12": {
+      "customer_id": "c_abb1df4c-47a",
+      "first_name": "Marcus",
+      "last_name": "Bell",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    },
+    "PUB-13": {
+      "customer_id": "c_30a27858-aad",
+      "first_name": "Elena",
+      "last_name": "Rossi",
+      "title": "Ms",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "31dd98bf-9e95-4939-a491-938841dd626e"
+}

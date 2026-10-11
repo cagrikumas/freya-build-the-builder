@@ -1,0 +1,394 @@
+{
+  "scope": "Actual Freya public-practice conversations after availability recovered; B version3, not the new in-progress build.",
+  "simulation_id": "31dd98bf-9e95-4939-a491-938841dd626e",
+  "iteration_id": "7762fe4e-c6fd-418f-8ca6-816cd765a902",
+  "passed": 0,
+  "total": 3,
+  "artifact": "traces/20261011T152310Z-practice-b/candidate-0.json",
+  "artifact_sha256": "2d05488343fd2c4d475f3ad5f92bc3efa462c77f2dcee7d4194da9f578187b96",
+  "cases": [
+    {
+      "case": "PUB-11",
+      "call_id": "d46907df-e464-4768-a57b-8cdf7a5c1f8a",
+      "agent_version": 3,
+      "ended_reason": "assistant-ended-call",
+      "speech": [
+        {
+          "role": "assistant",
+          "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Ms Almeida?",
+          "nodeId": "identity",
+          "secondsFromStart": 0.016544818878173828
+        },
+        {
+          "role": "user",
+          "message": "Yes, this is Sofia Almeida.",
+          "nodeId": "identity",
+          "secondsFromStart": 2.2105448246002197
+        },
+        {
+          "role": "assistant",
+          "message": "What is the last four digits of your social security number, Ms Almeida?",
+          "nodeId": "identity",
+          "secondsFromStart": 3.8445448875427246
+        },
+        {
+          "role": "user",
+          "message": "I don't have that information.",
+          "nodeId": "identity",
+          "secondsFromStart": 6.507544994354248
+        },
+        {
+          "role": "assistant",
+          "message": "Thank you. Goodbye.",
+          "nodeId": "finish",
+          "secondsFromStart": 7.427544832229614
+        }
+      ],
+      "events": [
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "confirm",
+          "source_node": "identity",
+          "input_text": "Yes, this is Sofia Almeida."
+        },
+        {
+          "event": "variable_extracted",
+          "name": "answer_replaces",
+          "value": "no",
+          "source_node": "identity",
+          "input_text": "Yes, this is Sofia Almeida."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "identity",
+          "matched": true,
+          "state": {
+            "event": "confirm",
+            "phase": "name",
+            "identity_prompt": "Am I speaking with Ms Almeida?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "refuse",
+          "source_node": "identity",
+          "input_text": "I don't have that information."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "finish",
+          "matched": true,
+          "state": {
+            "event": "refuse",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Ms Almeida?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "finish",
+          "target": "end",
+          "matched": true,
+          "state": {
+            "event": "refuse",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Ms Almeida?",
+            "name_asks": 2
+          }
+        }
+      ]
+    },
+    {
+      "case": "PUB-12",
+      "call_id": "1d6243d8-8df2-46d9-8a25-43e956fef12c",
+      "agent_version": 3,
+      "ended_reason": "assistant-ended-call",
+      "speech": [
+        {
+          "role": "assistant",
+          "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Mr Bell?",
+          "nodeId": "identity",
+          "secondsFromStart": 0.011985063552856445
+        },
+        {
+          "role": "user",
+          "message": "Yes, this is Marcus Bell.",
+          "nodeId": "identity",
+          "secondsFromStart": 1.8059852123260498
+        },
+        {
+          "role": "assistant",
+          "message": "Could you please tell me the first three digits of your Social Security number, Mr. Bell?",
+          "nodeId": "identity",
+          "secondsFromStart": 3.93098521232605
+        },
+        {
+          "role": "user",
+          "message": "I don't have that information handy.",
+          "nodeId": "identity",
+          "secondsFromStart": 6.146985054016113
+        },
+        {
+          "role": "assistant",
+          "message": "Thank you. Goodbye.",
+          "nodeId": "finish",
+          "secondsFromStart": 7.153985023498535
+        }
+      ],
+      "events": [
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "confirm",
+          "source_node": "identity",
+          "input_text": "Yes, this is Marcus Bell."
+        },
+        {
+          "event": "variable_extracted",
+          "name": "answer_replaces",
+          "value": "no",
+          "source_node": "identity",
+          "input_text": "Yes, this is Marcus Bell."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "identity",
+          "matched": true,
+          "state": {
+            "event": "confirm",
+            "phase": "name",
+            "identity_prompt": "Am I speaking with Mr Bell?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "refuse",
+          "source_node": "identity",
+          "input_text": "I don't have that information handy."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "finish",
+          "matched": true,
+          "state": {
+            "event": "refuse",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Mr Bell?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "finish",
+          "target": "end",
+          "matched": true,
+          "state": {
+            "event": "refuse",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Mr Bell?",
+            "name_asks": 2
+          }
+        }
+      ]
+    },
+    {
+      "case": "PUB-13",
+      "call_id": "8fc1a7f1-79dc-440b-b9ab-be61d3b440b4",
+      "agent_version": 3,
+      "ended_reason": "assistant-ended-call",
+      "speech": [
+        {
+          "role": "assistant",
+          "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Ms. Rossi?",
+          "nodeId": "identity",
+          "secondsFromStart": 0.018627166748046875
+        },
+        {
+          "role": "user",
+          "message": "Yes, this is Elena Rossi.",
+          "nodeId": "identity",
+          "secondsFromStart": 2.0276269912719727
+        },
+        {
+          "role": "assistant",
+          "message": "Could you please tell me your date of birth?",
+          "nodeId": "identity",
+          "secondsFromStart": 3.056627035140991
+        },
+        {
+          "role": "user",
+          "message": "8 January 1991.",
+          "nodeId": "identity",
+          "secondsFromStart": 4.6076271533966064
+        },
+        {
+          "role": "assistant",
+          "message": "Thank you. For the second security question, what is your mother's maiden name?",
+          "nodeId": "finish",
+          "secondsFromStart": 5.878627061843872
+        },
+        {
+          "role": "user",
+          "message": "I don't have that information.",
+          "nodeId": "finish",
+          "secondsFromStart": 7.451627016067505
+        },
+        {
+          "role": "assistant",
+          "message": "Thank you. I am sorry, but I cannot proceed without verifying your identity. Thank you. Goodbye.",
+          "nodeId": "finish",
+          "secondsFromStart": 7.485627174377441
+        }
+      ],
+      "events": [
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "confirm",
+          "source_node": "identity",
+          "input_text": "Yes, this is Elena Rossi."
+        },
+        {
+          "event": "variable_extracted",
+          "name": "answer_replaces",
+          "value": "no",
+          "source_node": "identity",
+          "input_text": "Yes, this is Elena Rossi."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "identity",
+          "matched": true,
+          "state": {
+            "event": "confirm",
+            "phase": "name",
+            "identity_prompt": "Am I speaking with Ms Rossi?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "variable_extracted",
+          "name": "answer_text",
+          "value": "8 January 1991",
+          "source_node": "identity",
+          "input_text": "8 January 1991."
+        },
+        {
+          "event": "variable_extracted",
+          "name": "event",
+          "value": "answer",
+          "source_node": "identity",
+          "input_text": "8 January 1991."
+        },
+        {
+          "event": "variable_extracted",
+          "name": "answer_replaces",
+          "value": "no",
+          "source_node": "identity",
+          "input_text": "8 January 1991."
+        },
+        {
+          "event": "function_call_complete",
+          "function": "code_exec",
+          "validation_errors": [
+            "variable 'event' rejected by schema validation",
+            "variable 'answer_replaces' rejected by schema validation",
+            "variable 'amount_scope' rejected by schema validation"
+          ]
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "evaluate",
+          "target": "finish",
+          "matched": true,
+          "state": {
+            "event": "answer",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Ms Rossi?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "finish",
+          "target": null,
+          "matched": false,
+          "state": {
+            "event": "answer",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Ms Rossi?",
+            "name_asks": 2
+          }
+        },
+        {
+          "event": "route_evaluated",
+          "from_node": "finish",
+          "target": "end",
+          "matched": true,
+          "state": {
+            "event": "answer",
+            "phase": "finalize",
+            "identity_prompt": "Am I speaking with Ms Rossi?",
+            "name_asks": 2
+          }
+        }
+      ]
+    }
+  ]
+}

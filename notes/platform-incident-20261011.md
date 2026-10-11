@@ -23,3 +23,13 @@ No retry loop or load test was run. Broad simulations were stopped after the
 startup failures; only targeted single-turn controls were attempted. No bank
 operation was requested by those opening messages. No incident email has been
 sent from this workspace.
+
+
+## 19.13 İstanbul: tek görüşme tekrar yanıt verdi
+
+Mevcut B sürüm3 üzerinde tek açılış isteği HTTP200 ve konuşma döndürdü;
+görüşme chat/end ile HTTP200 sonucu kapatıldı. Bu erişilebilirlik kontrolü
+export test_variables değerleriyle yapıldı, resmi müşteri fixture'ı verilmedi.
+Dolayısıyla banka politikası veya müşteri başarısı kanıtı değildir. Kayıt:
+`results/20261011-availability-recovered.json`. Önceki 504 kayıtları korunuyor.
+Ardından B'nin üç resmi müşterili değerlendirmesi başlatıldı; henüz sonuç yok.

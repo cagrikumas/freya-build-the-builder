@@ -1,0 +1,64 @@
+{
+ "agent_id": "3cac90f2-ba83-4e6f-8a75-07533287c3a8",
+ "simulation_id": "8de58ba5-450d-4967-9040-578fc9d529fa",
+ "iteration_id": "33a74010-5e74-4a96-80da-6f48d19b954d",
+ "seconds": 43,
+ "passed": 0,
+ "total": 1,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-01",
+   "family": "Happy path",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-01",
+   "level": "easy",
+   "family": "Happy path",
+   "pass": false,
+   "failed": [
+    "conversation: The agent failed to mention a text message confirmation after the promise was recorded, which was a specific success criterion. All other criteria were met: identity was verified with two questions before calling 'get_account', the word 'collections' was never used, and 'create_promise' was called exactly once. The call ended properly via assistant-ended-call."
+   ],
+   "call_id": "1b67ebaa-2818-4bfb-802f-4a1e1a889742",
+   "tools": [
+    "verify_identity",
+    "verify_identity",
+    "get_account",
+    "create_promise",
+    "close_call"
+   ],
+   "customer_id": "c_6b964c25-b20",
+   "slowest_turn_s": 3.4,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-01",
+    "level": "easy",
+    "family": "Happy path",
+    "pass": false,
+    "failed": [
+     "conversation: The agent failed to mention a text message confirmation after the promise was recorded, which was a specific success criterion. All other criteria were met: identity was verified with two questions before calling 'get_account', the word 'collections' was never used, and 'create_promise' was called exactly once. The call ended properly via assistant-ended-call."
+    ],
+    "call_id": "1b67ebaa-2818-4bfb-802f-4a1e1a889742",
+    "tools": [
+     "verify_identity",
+     "verify_identity",
+     "get_account",
+     "create_promise",
+     "close_call"
+    ],
+    "customer_id": "c_6b964c25-b20",
+    "slowest_turn_s": 3.4,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

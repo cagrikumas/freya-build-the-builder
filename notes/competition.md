@@ -170,3 +170,36 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
 - Birleşik suite: 94 test geçti, diff kontrolü ve değişen dosyalarda gerçek
   anahtar taraması temiz. Bunlar canlı müşteri başarısı veya yarışma puanı değil.
 - Kişisel Cloudflare hesabı yanıtı hâlâ bekleniyor. Final dosyaları henüz açılmadı.
+
+
+## 19.16 İstanbul — B v3 gerçek görüşmelerde 0/3
+
+- Freya konuşma servisi tekrar yanıt verdi. Mevcut Bv3 üç resmi müşteriyle
+  32 saniyede 0/3: bu kez asistan konuştu ve her çağrıda close_call yapıldı.
+  En yavaş tur medyanı2s; bu sonuç kesinti diye sınıflandırılmıyor.
+- PUB11/12'de kimlik için belgelerde olmayan SSN soruları; PUB13'te doğum
+  tarihi ardından anne kızlık soyadı soruldu. Üçü de erken unclear kapandı.
+- İsim onayında extraction event=confirm üretmiş; identity enum'unda name_yes
+  var, collection aynı event adını farklı enum ile yeniden kullanıyor.
+  Code_exec ayrıca event/answer_replaces/amount_scope alanlarını enum dışı
+  boş metne temizlemeyi reddetti; eski değerler değişken tablosunda kaldı.
+  Gerçek konuşma ve kısa olay kanıtı results/20261011-b-v3-live-diagnostics.json.
+- 19.12'de başlayan yeni B derlemesi sürerken bu yeni kanıt geldi. Genel
+  audit talimatına stage-specific extraction adları, geçerli enum temizliği
+  ve konuşma node'larında kaynak kimlik alanlarının açık yazılması eklendi.
+  Bu public koşunun başlangıçtan sonra kaynakları değiştiği için final trace'i
+  olarak kullanılamaz; final zaten ayrı, taze ve dondurulmuş koşu gerektirir.
+
+
+## 19.25 İstanbul — konuşma arızasını ayıran başlangıç kontrolü
+
+- Değiştirilmemiş başlangıç ajanı tek PUB01 müşterisinde iki doğru güvenlik
+  sorusu, iki verify, hesap sorgusu, taahhüt ve kapanışı tamamladı. Resmi sonuç
+  0/1: konuşmada taahhüt sonrası SMS bildirim cümlesi eksik. Dolayısıyla tam
+  politika başarısı değil, temel telefon/araç akışının çalıştığına dair kontrol.
+- Genel extraction şema/enum durum kontrolleri ve konuşma bağlamı talimatları
+  tamamlandı; birleşik suite101test geçti. Bv3'ün gerçek enum sorunu yeni
+  validator ile1yapısalhata ve58kontrolün41'inde geçersiz değer olarak yakalandı.
+- Yeni B koşusunun ilk üretimi19.23'te bitti;9node/44yerelkontrol. İlk taslakta
+  yine iki paylaşılan extraction adı çakışması var. Sürmekte olan otomatik
+  bağımsız audit yeni genel dersleri içeriyor; henüz yeni canlı sürüm yok.

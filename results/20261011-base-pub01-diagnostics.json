@@ -1,0 +1,77 @@
+{
+  "scope": "Untouched starter workflow control, one public customer; not the builder-generated B agent.",
+  "call_id": "1b67ebaa-2818-4bfb-802f-4a1e1a889742",
+  "agent_version": 2,
+  "speech": [
+    {
+      "role": "assistant",
+      "message": "Hello, this is the digital assistant of Freya Bank. Am I speaking with Mr Reyes?",
+      "nodeId": "identity"
+    },
+    {
+      "role": "user",
+      "message": "Yes, this is Daniel Reyes.",
+      "nodeId": "identity"
+    },
+    {
+      "role": "assistant",
+      "message": "Thank you. Could you please provide your date of birth?",
+      "nodeId": "identity"
+    },
+    {
+      "role": "user",
+      "message": "My date of birth is 14 March 1988.",
+      "nodeId": "identity"
+    },
+    {
+      "role": "assistant",
+      "message": "Thank you. Now, could you please provide the last four digits of your phone number?",
+      "nodeId": "identity"
+    },
+    {
+      "role": "user",
+      "message": "The last four digits are 4471.",
+      "nodeId": "identity"
+    },
+    {
+      "role": "assistant",
+      "message": "Thank you, that's verified. I'm calling about your Freya Bank account, do you have a minute?",
+      "nodeId": "collection"
+    },
+    {
+      "role": "user",
+      "message": "Yes, I have a minute.",
+      "nodeId": "collection"
+    },
+    {
+      "role": "assistant",
+      "message": "Your credit card ending in 4821 is past due for 420 dollars. When can you pay this amount?",
+      "nodeId": "collection"
+    },
+    {
+      "role": "user",
+      "message": "I can pay the full amount today.",
+      "nodeId": "collection"
+    },
+    {
+      "role": "assistant",
+      "message": "Just to confirm, you will pay 420 dollars today, October 14th, 2026. Is that correct?",
+      "nodeId": "collection"
+    },
+    {
+      "role": "user",
+      "message": "Yes, I confirm.",
+      "nodeId": "collection"
+    },
+    {
+      "role": "assistant",
+      "message": "Thank you. Your payment promise has been recorded. Have a good day.",
+      "nodeId": "collection"
+    },
+    {
+      "role": "user",
+      "message": "Thank you, goodbye.",
+      "nodeId": "collection"
+    }
+  ]
+}

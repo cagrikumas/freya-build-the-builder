@@ -1,0 +1,21 @@
+{
+  "arguments": [
+    "3cac90f2-ba83-4e6f-8a75-07533287c3a8",
+    "--brief",
+    "A",
+    "--only",
+    "PUB-01",
+    "--out",
+    "results/20261011-base-pub01-control.json"
+  ],
+  "sessions": {
+    "PUB-01": {
+      "customer_id": "c_6b964c25-b20",
+      "first_name": "Daniel",
+      "last_name": "Reyes",
+      "title": "Mr",
+      "now": "2026-10-14T11:00"
+    }
+  },
+  "simulation_id": "8de58ba5-450d-4967-9040-578fc9d529fa"
+}

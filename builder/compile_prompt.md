@@ -197,6 +197,31 @@ IDs or repeat a complete label when the shorter name identifies one entity.
 Clarify genuinely ambiguous references without inventing an entity. The
 extraction model sees recent messages and its schema, not the dialogue prompt or
 arbitrary workflow variables; do not assume it can infer invisible runtime IDs.
+Extraction variables are shared across the workflow. Use distinct stage-specific
+names for fields with different meanings or enum vocabularies; never reuse a
+generic event name with incompatible identity and action-stage definitions.
+Every value written by code or hooks into an extracted variable must satisfy its
+declared schema too. To mark input consumed, use a declared neutral sentinel or
+a separate processed-state variable; clearing an enum to an undeclared empty
+string can be rejected and leave the previous value active. Check these writes
+and the next turn, including out-of-vocabulary model output handled safely.
+
+Every speaking node must state its exact permitted questions and next actions,
+derived from the source. Critical identity-field names and restrictions cannot
+exist only in code or extraction descriptions: the dialogue model needs them in
+its own task. Do not let it invent a plausible security question, add a new step,
+or continue an earlier stage after a closing transition. If deterministic code
+supplies the next utterance, make that instruction authoritative and do not
+combine it with a broad invitation to improvise the workflow.
+Keep entry speech separate from processing the next fresh caller reply. For an
+LLM entry, a narrow on_enter.prompt can restrict it to the computed current-stage
+utterance. Prefer separate speaking stages when their permitted question types
+differ. Initialized question-only stages may use on_enter tts/text with a
+template to speak the computed question exactly, while their task processes a
+new reply. A fixed TTS entry does not automatically invoke conversation tools:
+preserve any source-required action after speech through an explicit, verified
+engine route or a tightly specified LLM action stage. In particular, closing
+must not wait for another user reply if the source requires immediate action.
 
 Give empty, unclear, non-answer and refusal classifications explicit handling
 under the SOURCE policy, including its clarification and attempt limits. A

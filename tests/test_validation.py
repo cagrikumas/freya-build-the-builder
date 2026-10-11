@@ -130,6 +130,85 @@ class WorkflowValidationTests(unittest.TestCase):
         self.workflow['nodes']['start']['tools'] = [tool]
         self.assertTrue(any('Unsafe code name: __builtins__' in error for error in validate(self.workflow, self.api)))
 
+    def add_code(self, code):
+        self.workflow['nodes']['compute'] = {'name': 'compute', 'node_type': 'code', 'pre_actions': [{
+            'type': 'function', 'function': {'name': 'code_exec', 'handler': '__function__:code_exec',
+                'parameters': {'type': 'object', 'properties': {'code': {'type': 'string', 'default': code}}}}}]}
+
+    def test_shared_extraction_name_cannot_have_stage_specific_enum_sets(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'intent', 'type': 'string', 'enum_values': ['identify', 'retry']}]
+        self.workflow['nodes']['other'] = {'name': 'other', 'node_type': 'conversation', 'extraction_schema': [{
+            'name': 'intent', 'type': 'string', 'enum_values': ['accept', 'reject']}]}
+        errors = validate(self.workflow, self.api)
+        self.assertTrue(any("Extraction variable 'intent' has incompatible schemas" in error
+                            and 'start' in error and 'other' in error for error in errors))
+
+    def test_shared_extraction_type_and_pattern_must_be_compatible(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'value', 'type': 'string', 'validation_pattern': '^a'}]
+        self.workflow['global_nodes'] = {'interrupt': {'name': 'interrupt', 'node_type': 'conversation',
+            'extraction_schema': [{'name': 'value', 'type': 'integer', 'validation_pattern': '^a'}]}}
+        self.assertTrue(any('incompatible schemas' in error for error in validate(self.workflow, self.api)))
+        field = self.workflow['global_nodes']['interrupt']['extraction_schema'][0]
+        field['type'] = 'string'; field['validation_pattern'] = '^b'
+        self.assertTrue(any('incompatible schemas' in error for error in validate(self.workflow, self.api)))
+
+    def test_tool_result_extraction_also_shares_variable_contract(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'state', 'type': 'string', 'enum_values': ['ready', 'waiting']}]
+        tool = self.tool()
+        tool['extraction_schema'] = [{'name': 'state', 'type': 'string', 'enum_values': ['complete']}]
+        self.workflow['nodes']['start']['tools'] = [tool]
+        self.assertTrue(any('incompatible schemas' in error and 'get_account' in error
+                            for error in validate(self.workflow, self.api)))
+
+    def test_shared_equivalent_enum_sets_allow_order_and_description_changes(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'choice', 'type': 'string', 'enum_values': ['1', '2'], 'description': 'First question.'}]
+        self.workflow['global_nodes'] = {'interrupt': {'name': 'interrupt', 'node_type': 'conversation',
+            'extraction_schema': [{'name': 'choice', 'type': 'enum', 'enum_values': [2, 1],
+                                   'description': 'Ask again.', 'min_confidence': 0.9}]}}
+        self.assertEqual(validate(self.workflow, self.api), [])
+
+    def test_local_code_cannot_clear_an_enum_with_an_undeclared_empty_string(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'state', 'type': 'string', 'enum_values': ['ready', 'waiting']}]
+        self.add_code("vars['state'] = ''")
+        checks = [{'name': 'reset enum', 'node': 'compute', 'hook': 'code',
+                   'vars': {'state': 'ready'}, 'expect_vars': {'state': ''}}]
+        original_workflow, original_checks = copy.deepcopy(self.workflow), copy.deepcopy(checks)
+        failures = check_examples(self.workflow, checks)
+        self.assertEqual(len(failures), 1)
+        self.assertIn('outside declared enum_values', failures[0])
+        self.assertIn('declared sentinel or remove the key', failures[0])
+        self.assertEqual(self.workflow, original_workflow)
+        self.assertEqual(checks, original_checks)
+
+    def test_enum_reset_can_use_declared_sentinel_or_remove_variable(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [{
+            'name': 'state', 'type': 'string', 'enum_values': ['ready', 'waiting', '']}]
+        self.add_code("vars['state'] = ''")
+        checks = [{'name': 'declared reset', 'node': 'compute', 'hook': 'code',
+                   'vars': {'state': 'ready'}, 'expect_vars': {'state': ''}}]
+        self.assertEqual(check_examples(self.workflow, checks), [])
+        self.workflow['nodes']['start']['extraction_schema'][0]['enum_values'] = ['ready', 'waiting']
+        self.add_code("vars.pop('state', None)")
+        checks[0]['expect_vars'] = {}
+        self.assertEqual(check_examples(self.workflow, checks), [])
+
+    def test_enum_checks_compare_platform_scalars_without_changing_expected_types(self):
+        self.workflow['nodes']['start']['extraction_schema'] = [
+            {'name': 'choice', 'type': 'integer', 'enum_values': ['1', '2']},
+            {'name': 'flag', 'type': 'boolean', 'enum_values': ['true', 'false']},
+        ]
+        self.add_code("vars['choice'] = 1\nvars['flag'] = True\nvars['unconstrained'] = ''")
+        checks = [{'name': 'scalar enums', 'node': 'compute', 'hook': 'code',
+                   'expect_vars': {'choice': 1, 'flag': True, 'unconstrained': ''}}]
+        self.assertEqual(check_examples(self.workflow, checks), [])
+        self.add_code("vars['choice'] = 3")
+        self.assertTrue(any('outside declared enum_values' in error for error in check_examples(self.workflow, checks)))
+
 
 if __name__ == '__main__':
     unittest.main()

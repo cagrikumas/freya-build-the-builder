@@ -1,0 +1,148 @@
+{
+ "agent_id": "443c6e24-bdce-4133-90b5-802bc30df0b1",
+ "simulation_id": "31dd98bf-9e95-4939-a491-938841dd626e",
+ "iteration_id": "7762fe4e-c6fd-418f-8ca6-816cd765a902",
+ "seconds": 32,
+ "passed": 0,
+ "total": 3,
+ "runs": 1,
+ "final": [
+  {
+   "id": "PUB-11",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-12",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  },
+  {
+   "id": "PUB-13",
+   "family": "Multi-product",
+   "passes": 0,
+   "runs": 1,
+   "pass": false
+  }
+ ],
+ "rows": [
+  {
+   "id": "PUB-11",
+   "level": "medium",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+    "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+    "conversation: The assistant failed to meet all success criteria. No products were stated, no read-backs or confirmations occurred, and no promises were created. The call ended prematurely after message 4 because the user was unable to provide the social security information requested for verification in message 3."
+   ],
+   "call_id": "d46907df-e464-4768-a57b-8cdf7a5c1f8a",
+   "tools": [
+    "close_call"
+   ],
+   "customer_id": "c_4b2c9542-9bf",
+   "slowest_turn_s": 1.6,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-12",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+    "promises [], expected [('p1', 510.0, '2026-10-15')]",
+    "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+    "conversation: The call was terminated early by the agent after the customer could not provide their Social Security number. As a result, none of the specific success criteria were met: the phone and date of birth verification questions were not handled according to the instructions, no financial products (credit card, personal loan, or car loan) were discussed, and no promises or refusal notes were recorded."
+   ],
+   "call_id": "1d6243d8-8df2-46d9-8a25-43e956fef12c",
+   "tools": [
+    "close_call"
+   ],
+   "customer_id": "c_abb1df4c-47a",
+   "slowest_turn_s": 2.1,
+   "ended": "assistant-ended-call"
+  },
+  {
+   "id": "PUB-13",
+   "level": "hard",
+   "family": "Multi-product",
+   "pass": false,
+   "failed": [
+    "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+    "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+    "conversation: The call did not meet any of the success criteria because the agent terminated the conversation after the user failed to answer the security questions. Specifically: - No credit card payment was recorded for 30 October. - No loan payment was recorded for 23 October. - No read-back of dates occurred. The call ended properly as the assistant correctly terminated the call upon the verification failur"
+   ],
+   "call_id": "8fc1a7f1-79dc-440b-b9ab-be61d3b440b4",
+   "tools": [
+    "close_call"
+   ],
+   "customer_id": "c_30a27858-aad",
+   "slowest_turn_s": 1.3,
+   "ended": "assistant-ended-call"
+  }
+ ],
+ "all_rows": [
+  [
+   {
+    "id": "PUB-11",
+    "level": "medium",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+     "promises [], expected [('p1', 220.0, '2026-10-16'), ('p2', 640.0, '2026-10-16'), ('p3', 75.0, '2026-10-16')]",
+     "conversation: The assistant failed to meet all success criteria. No products were stated, no read-backs or confirmations occurred, and no promises were created. The call ended prematurely after message 4 because the user was unable to provide the social security information requested for verification in message 3."
+    ],
+    "call_id": "d46907df-e464-4768-a57b-8cdf7a5c1f8a",
+    "tools": [
+     "close_call"
+    ],
+    "customer_id": "c_4b2c9542-9bf",
+    "slowest_turn_s": 1.6,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-12",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+     "promises [], expected [('p1', 510.0, '2026-10-15')]",
+     "notes [], expected [('p2', 'refused'), ('p3', 'refused')]",
+     "conversation: The call was terminated early by the agent after the customer could not provide their Social Security number. As a result, none of the specific success criteria were met: the phone and date of birth verification questions were not handled according to the instructions, no financial products (credit card, personal loan, or car loan) were discussed, and no promises or refusal notes were recorded."
+    ],
+    "call_id": "1d6243d8-8df2-46d9-8a25-43e956fef12c",
+    "tools": [
+     "close_call"
+    ],
+    "customer_id": "c_abb1df4c-47a",
+    "slowest_turn_s": 2.1,
+    "ended": "assistant-ended-call"
+   },
+   {
+    "id": "PUB-13",
+    "level": "hard",
+    "family": "Multi-product",
+    "pass": false,
+    "failed": [
+     "outcome ('not_reached', 'unclear'), expected ('promise', None)",
+     "promises [], expected [('p1', 300.0, '2026-10-30'), ('p2', 900.0, '2026-10-23')]",
+     "conversation: The call did not meet any of the success criteria because the agent terminated the conversation after the user failed to answer the security questions. Specifically: - No credit card payment was recorded for 30 October. - No loan payment was recorded for 23 October. - No read-back of dates occurred. The call ended properly as the assistant correctly terminated the call upon the verification failur"
+    ],
+    "call_id": "8fc1a7f1-79dc-440b-b9ab-be61d3b440b4",
+    "tools": [
+     "close_call"
+    ],
+    "customer_id": "c_30a27858-aad",
+    "slowest_turn_s": 1.3,
+    "ended": "assistant-ended-call"
+   }
+  ]
+ ]
+}

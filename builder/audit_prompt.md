@@ -35,6 +35,22 @@ paths. Reason through both success and failure. Look especially for:
   especially empty/none/unclear/non-answer, against source-defined clarification,
   attempt and termination rules. The extraction model does not see the dialogue
   prompt or arbitrary runtime variables.
+- Shared extraction names with incompatible types, enum sets or meanings across
+  stages. Check all code/hook writes against the registered extraction schemas,
+  including clearing/consumption: an undeclared empty enum value can be rejected
+  by the platform and retain stale input. Use namespaced fields and valid neutral
+  sentinels or separate processing state; update affected local checks to assert
+  the valid contract before the test suite is frozen for later repairs.
+- A dialogue task missing the exact source-defined identity questions and
+  boundaries because those facts appear only in code/extraction. A small phone
+  model may invent a familiar but unauthorized question or continue security in
+  a closing node. Make the source-derived permitted speech explicit in each
+  applicable task and make a computed next utterance authoritative.
+  Separate entry speech from new-reply processing; use a narrow entry prompt or
+  initialized fixed speech when appropriate. Current-stage state must override
+  unfinished tasks suggested by conversation history. Do not replace an
+  action-after-speech stage with TTS alone: required tools still need an explicit
+  engine route or a constrained action step in the source-prescribed order.
 - Counters initialized as though an entry question already ran, or counters that
   never advance when a repeated unclear reply takes a different taxonomy branch.
   Trace both caller-first and agent-first starts, actual speaking steps, delayed

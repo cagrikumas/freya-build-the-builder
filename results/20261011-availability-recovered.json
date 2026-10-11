@@ -1,0 +1,11 @@
+{
+  "recorded_at": "2026-10-11T16:15:02.869695+00:00",
+  "workflow_id": "b034a904-0df3-46ef-a6f0-e511e5109055",
+  "agent_version": 3,
+  "scope": "One-turn availability control using exported workflow test_variables only. Canonical customer fixture was not supplied; this is not a policy or customer-score test.",
+  "http_status": 200,
+  "call_id": "b3cde584-0f4f-43c8-8d06-844b4e864ade",
+  "response": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Mr. Miller?",
+  "end_http_status": 200,
+  "end_success": true
+}

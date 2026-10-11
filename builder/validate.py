@@ -181,6 +181,47 @@ def snippets(workflow):
             yield nk, name, 'code', code
 
 
+def variable_text(value):
+    """Compare declared enum values as scalars stored in Freya's variable table."""
+    if isinstance(value, str): return value
+    if value is True: return 'true'
+    if value is False: return 'false'
+    if value is None: return 'null'
+    if isinstance(value, (int, float)): return str(value)
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+
+
+def extraction_contracts(workflow):
+    declarations = [(name, node.get('extraction_schema', [])) for name, node, _ in workflow_nodes(workflow)]
+    declarations += [(name + '/' + str(tool.get('function', {}).get('name', '')),
+                      tool.get('extraction_schema', [])) for name, _, tool in actions(workflow) if isinstance(tool, dict)]
+    contracts, errors = {}, []
+    for source, fields in declarations:
+        if not isinstance(fields, list):
+            errors.append(source + ': extraction_schema must be an array')
+            continue
+        for field in fields:
+            if not isinstance(field, dict) or not isinstance(field.get('name'), str) or not field['name']:
+                errors.append(source + ': extraction field needs a name')
+                continue
+            name = field['name']
+            kind = field.get('type', 'string')
+            if kind == 'enum': kind = 'string'
+            values = field.get('enum_values', [])
+            if not isinstance(values, list):
+                errors.append(f'{source}/{name}: enum_values must be an array')
+                continue
+            allowed = frozenset(variable_text(value) for value in values) if values else None
+            signature = (kind, allowed, field.get('validation_pattern'))
+            previous = contracts.get(name)
+            if previous and previous['signature'] != signature:
+                errors.append(f"Extraction variable '{name}' has incompatible schemas in {previous['source']} and {source}; "
+                              'use distinct names or identical type, enum_values and validation_pattern')
+            else:
+                contracts.setdefault(name, {'source': source, 'signature': signature, 'allowed': allowed})
+    return contracts, errors
+
+
 def validate(workflow, api):
     errors = []
     ops = api_operations(api)
@@ -202,6 +243,8 @@ def validate(workflow, api):
         elif isinstance(obj, list):
             for i, v in enumerate(obj): walk(v, path + f'[{i}]')
     walk(workflow)
+    _, extraction_errors = extraction_contracts(workflow)
+    errors.extend(extraction_errors)
     for name, node, is_global in workflow_nodes(workflow):
         typ = node.get('node_type', 'conversation' if is_global else None)
         if typ not in ('conversation', 'code', 'api_request', 'end_call'):
@@ -305,7 +348,7 @@ def validate(workflow, api):
 
 def check_examples(workflow, checks):
     code_map = {(n, t, h): c for n, t, h, c in snippets(workflow)}
-    failures = []
+    contracts, failures = extraction_contracts(workflow)
     def subset(expected, actual, path):
         if isinstance(expected, dict):
             for k, v in expected.items():
@@ -319,6 +362,15 @@ def check_examples(workflow, checks):
             if len(matches) != 1: raise ValueError('Check must identify exactly one code snippet')
             env = {'vars': copy.deepcopy(check.get('vars', {})), 'config': copy.deepcopy(check.get('config', {})), 'result': copy.deepcopy(check.get('result', {}))}
             exec(matches[0], env, env)
+            enum_errors = []
+            for name, contract in contracts.items():
+                if contract['allowed'] is not None and name in env['vars']:
+                    value = env['vars'][name]
+                    if variable_text(value) not in contract['allowed']:
+                        enum_errors.append(f"vars.{name}: value {value!r} is outside declared enum_values "
+                                           f"{sorted(contract['allowed'])!r}")
+            if enum_errors:
+                raise AssertionError('; '.join(enum_errors) + '; resets must use a declared sentinel or remove the key')
             for key in ('vars', 'config', 'result'):
                 if 'expect_' + key in check:
                     subset(check['expect_' + key], env[key], key)
