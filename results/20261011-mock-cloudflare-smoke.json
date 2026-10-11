@@ -1,0 +1,90 @@
+{
+  "checked_at": "2026-10-11T18:08:19.712525+00:00",
+  "mock_url": "https://freya-bank-mock-cagrikumas.freya-hackathon-bank-mock.workers.dev",
+  "worker_version": "41f921e7-a2de-42fc-ba20-8c1b195dfe57",
+  "source_commit": "95dc191",
+  "checks": [
+    {
+      "ok": true,
+      "check": "health",
+      "http": 200,
+      "elapsedSeconds": 0.239
+    },
+    {
+      "ok": true,
+      "check": "openapi",
+      "http": 200,
+      "elapsedSeconds": 0.223
+    },
+    {
+      "ok": true,
+      "check": "success:cards.list",
+      "http": 200,
+      "elapsedSeconds": 0.211
+    },
+    {
+      "ok": true,
+      "check": "success:cards.balance",
+      "http": 200,
+      "elapsedSeconds": 0.222
+    },
+    {
+      "ok": true,
+      "check": "success:statement.week.get",
+      "http": 200,
+      "elapsedSeconds": 0.215
+    },
+    {
+      "ok": true,
+      "check": "success:statement.week.decide",
+      "http": 200,
+      "elapsedSeconds": 0.192
+    },
+    {
+      "ok": true,
+      "check": "success:statement.week.change",
+      "http": 200,
+      "elapsedSeconds": 0.362
+    },
+    {
+      "ok": true,
+      "check": "success:contact.email.get",
+      "http": 200,
+      "elapsedSeconds": 0.28
+    },
+    {
+      "ok": true,
+      "check": "success:statement.pdf.send",
+      "http": 200,
+      "elapsedSeconds": 0.218
+    },
+    {
+      "ok": true,
+      "check": "fixture:404",
+      "http": 404,
+      "elapsedSeconds": 0.225
+    },
+    {
+      "ok": true,
+      "check": "fixture:500",
+      "http": 500,
+      "elapsedSeconds": 0.193
+    },
+    {
+      "ok": true,
+      "check": "real-delay",
+      "http": 200,
+      "elapsedSeconds": 12.199
+    },
+    {
+      "ok": true,
+      "requests": 12,
+      "elapsedSeconds": 14.783
+    }
+  ],
+  "client": "Freya-hackathon-mock-verifier/1.0",
+  "notes": [
+    "Initial TLS provisioning completed after deployment.",
+    "Cloudflare Browser Integrity Check rejects Python-urllib/3.10 (1010). Identified verifier and python-httpx/0.27.0 reach health successfully. Freya phone tool access will be tested by the final build."
+  ]
+}

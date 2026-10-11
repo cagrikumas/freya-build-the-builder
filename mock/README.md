@@ -62,5 +62,11 @@ match the recorded personal account.
 Deployment uses `python3 scripts/wrangler.py deploy` after local verification and
 account authorization. Keep the same public Worker reachable until event results
 are announced. Point the builder at its HTTPS origin; the builder reads the
-published schema without needing credentials. No deployment has been performed
-as part of this implementation.
+published schema without needing credentials. Deployed on 2026-10-11 to
+`https://freya-bank-mock-cagrikumas.freya-hackathon-bank-mock.workers.dev`
+(version `41f921e7-a2de-42fc-ba20-8c1b195dfe57`). Twelve remote checks passed,
+covering all seven services, exact 404/500 fixtures and the real twelve-second
+delay. See `results/20261011-mock-cloudflare-smoke.json`. The verifier uses its
+own descriptive User-Agent because Cloudflare rejects the generic Python-urllib
+client signature; ordinary httpx access also passed. Final Freya tool access is
+verified separately by the builder run.

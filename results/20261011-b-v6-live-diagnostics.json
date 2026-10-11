@@ -1,0 +1,260 @@
+[
+  {
+    "call_id": "8bb2489d-a54d-4aa6-a726-baecffd7da57",
+    "version": 6,
+    "endedReason": "customer-ended-call",
+    "messages": 248,
+    "opening": [
+      {
+        "role": "assistant",
+        "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Ms Rossi?",
+        "nodeId": "opening"
+      },
+      {
+        "role": "user",
+        "message": "Yes, this is Elena Rossi.",
+        "nodeId": "opening"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete that action. I do not have any further information.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "I am sorry, what do you",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I apologize, Ms. Rossi, but I could not complete the action and do not have further information.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "Why are you calling me today?",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I apologize, Ms. Rossi, but I could not complete the action and do not have further information.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "Is there something wrong with your system?",
+        "nodeId": "technical_hold"
+      }
+    ],
+    "events": [
+      {
+        "event": "function_call_complete",
+        "function": "code_exec",
+        "result": {
+          "status": "success",
+          "data": null,
+          "message": "Code executed successfully",
+          "status_code": 200
+        }
+      },
+      {
+        "event": "route_evaluated",
+        "target": "technical_hold",
+        "state": {
+          "id_event": "none",
+          "route": "technical_hold",
+          "speech": "I could not complete that action. I do not have any further information.",
+          "call_state": {
+            "phase": "dob",
+            "name_asks": 1,
+            "wrong": 0,
+            "declines": 0,
+            "no_talk": 0,
+            "human_asked": false,
+            "callback_invalid": 0,
+            "products": [],
+            "loaded": false,
+            "notice": "",
+            "opening_spoken": true,
+            "name_confirmed": true,
+            "question": "What is your date of birth?"
+          },
+          "evaluate_response.status": "success",
+          "evaluate_response.data": "null"
+        }
+      }
+    ]
+  },
+  {
+    "call_id": "07eeb2b5-6ae5-482c-af90-77f7285f1bc5",
+    "version": 6,
+    "endedReason": "customer-ended-call",
+    "messages": 248,
+    "opening": [
+      {
+        "role": "assistant",
+        "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Mr Bell?",
+        "nodeId": "opening"
+      },
+      {
+        "role": "user",
+        "message": "Yes, this is Marcus Bell.",
+        "nodeId": "opening"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete that action. I do not have any further information.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "What is this regarding?",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete the action and do not have further information, Mr. Bell.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "Why are you calling me?",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete the action and do not have further information, Mr. Bell.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "If you don't have information, why did you call me?",
+        "nodeId": "technical_hold"
+      }
+    ],
+    "events": [
+      {
+        "event": "function_call_complete",
+        "function": "code_exec",
+        "result": {
+          "status": "success",
+          "data": null,
+          "message": "Code executed successfully",
+          "status_code": 200
+        }
+      },
+      {
+        "event": "route_evaluated",
+        "target": "technical_hold",
+        "state": {
+          "id_event": "none",
+          "route": "technical_hold",
+          "speech": "I could not complete that action. I do not have any further information.",
+          "call_state": {
+            "phase": "dob",
+            "name_asks": 1,
+            "wrong": 0,
+            "declines": 0,
+            "no_talk": 0,
+            "human_asked": false,
+            "callback_invalid": 0,
+            "products": [],
+            "loaded": false,
+            "notice": "",
+            "opening_spoken": true,
+            "name_confirmed": true,
+            "question": "What is your date of birth?"
+          },
+          "evaluate_response.status": "success",
+          "evaluate_response.data": "null"
+        }
+      }
+    ]
+  },
+  {
+    "call_id": "8ed109eb-0940-40f3-a65a-7e59e2489794",
+    "version": 6,
+    "endedReason": "customer-ended-call",
+    "messages": 248,
+    "opening": [
+      {
+        "role": "assistant",
+        "message": "I am a digital assistant calling from Freya Bank, and this call is recorded. Am I speaking with Ms Almeida?",
+        "nodeId": "opening"
+      },
+      {
+        "role": "user",
+        "message": "Yes, this is Sofia Almeida.",
+        "nodeId": "opening"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete that action. I do not have any further information.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "What is this call about?",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete the action and do not have further information, Ms. Almeida.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "I'm not sure I understand why you're calling",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "assistant",
+        "message": "I could not complete the action and do not have further information, Ms. Almeida.",
+        "nodeId": "technical_hold"
+      },
+      {
+        "role": "user",
+        "message": "Is this about my account?",
+        "nodeId": "technical_hold"
+      }
+    ],
+    "events": [
+      {
+        "event": "function_call_complete",
+        "function": "code_exec",
+        "result": {
+          "status": "success",
+          "data": null,
+          "message": "Code executed successfully",
+          "status_code": 200
+        }
+      },
+      {
+        "event": "route_evaluated",
+        "target": "technical_hold",
+        "state": {
+          "id_event": "none",
+          "route": "technical_hold",
+          "speech": "I could not complete that action. I do not have any further information.",
+          "call_state": {
+            "phase": "dob",
+            "name_asks": 1,
+            "wrong": 0,
+            "declines": 0,
+            "no_talk": 0,
+            "human_asked": false,
+            "callback_invalid": 0,
+            "products": [],
+            "loaded": false,
+            "notice": "",
+            "opening_spoken": true,
+            "name_confirmed": true,
+            "question": "What is your date of birth?"
+          },
+          "evaluate_response.status": "success",
+          "evaluate_response.data": "null"
+        }
+      }
+    ]
+  }
+]
