@@ -143,3 +143,30 @@ Kod girdilerden politika çıkarmalı; banka adı, kimlik alanları, takvim, eş
   kimlik doğrulama/şema hataları saklanmaz. Klasör modu modele açıkça belirtilir.
 - Cloudflare kişisel hesap yanıtı bekleniyor. Hesap girişi veya deploy yapılmadı.
   Final belgeleri 20.00 İstanbul'da açılacak; final ajanı ve teslim henüz yok.
+
+
+## 19.00 İstanbul — çoklu ajan denetimi ve genel düzeltmeler
+
+- Kullanıcının izniyle üç yan ajan GPT-6.1/high ile çalıştı. B v3 için doğal
+  ürün adları, belirsiz yanıt sayaçları ve tarih dili gibi somut yerel karşı
+  örnekler bulundu. Önceki PUB-12 tekrarındaki p1 girdisinin extraction
+  aşamasını atladığı açıkça kaydedildi; kanıtlar results altında hash ile saklandı.
+  Üretilmiş B ajanı elle değiştirilmedi; genel derleyici/audit talimatı güçlendi.
+- Bütün post-audit onarımlar eski testleri korur; güvenlik doğrulaması reddedilen
+  kod yerelde çalıştırılmaz. Smoke ve örnek tekrarları başarısız/belirsizse
+  önceki sürüm geri yüklenir. Simülasyonun ayrı süre sınırı export için pay bırakır.
+- Global node/lifecycle/terminal eylemleri doğrulanır. OpenAPI primitive
+  path/query/header girdileri schema'dan türetilir, URI değerleri kodlanır;
+  eksik/geçersiz parametre istek URL'sini boşaltır. Karmaşık zorunlu parametre
+  biçimleri açık hata verir. Bu yeni adapter henüz canlı Freya URI çağrısı
+  ile sınanmadı; public kit POST-body araçlarının davranışı korunuyor.
+- Excel yüzde ve format bilgileri, Word SmartArt metni/bağlantıları korunur.
+  Desteklenmeyen yerel Word grafikleri sessizce kaybolmaz, açık hata verir.
+- Build sonunda tam trace artifact manifesti oluşturulur. Paketleyici kaynak,
+  export ve tüm trace dosyalarını HEAD baytlarıyla karşılaştırır. Eski manifest
+  içermeyen koşular final için kullanılamaz. Girdi hash'leri de doğrulanır.
+- Cloudflare sarmalayıcısı config/env/account override'larını sınırlar. Yerel
+  --version ve deploy --dry-run başarılı; hesap girişi veya gerçek deploy yok.
+- Birleşik suite: 94 test geçti, diff kontrolü ve değişen dosyalarda gerçek
+  anahtar taraması temiz. Bunlar canlı müşteri başarısı veya yarışma puanı değil.
+- Kişisel Cloudflare hesabı yanıtı hâlâ bekleniyor. Final dosyaları henüz açılmadı.

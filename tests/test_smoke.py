@@ -21,3 +21,17 @@ class SmokeTests(unittest.TestCase):
         result=run_smoke(client,'workflow',{'message':'Hello','variables':{}})
         self.assertFalse(result['passed'])
         self.assertEqual(client.api.call_args.args[1],'/api/v2/chat/end')
+
+    def test_cleanup_outage_preserves_measured_opening_failure(self):
+        client = SimpleNamespace(api=Mock(side_effect=[{'callId': 'c', 'response': 'Wrong opening'},
+                                                      RuntimeError('POST /api/v2/chat/end -> 504: unavailable')]))
+        result = run_smoke(client, 'w', {'message': 'Hello', 'variables': {}, 'expected_fragments': ['Required opening']})
+        self.assertFalse(result['passed'])
+        self.assertFalse(result['cleanup_confirmed'])
+        self.assertIn('504', result['cleanup_error'])
+
+    def test_cleanup_auth_errors_are_not_hidden(self):
+        client = SimpleNamespace(api=Mock(side_effect=[{'callId': 'c', 'response': 'Hello'},
+                                                      RuntimeError('POST /api/v2/chat/end -> 401: denied')]))
+        with self.assertRaisesRegex(RuntimeError, '401'):
+            run_smoke(client, 'w', {'message': 'Hello', 'variables': {}})

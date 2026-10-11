@@ -21,7 +21,8 @@ Your output is JSON with these fields:
   tools and code nodes. All prompts, routes and bank-specific logic are authored
   by you from the input material.
 - `tool_config`: object keyed by bank tool name. Each value may hold `description`,
-  `field_descriptions` (map from API body field name to descriptive instruction),
+  `field_descriptions` (map from API body field name, or `path:<name>`,
+  `query:<name>` or `header:<name>`, to descriptive instruction),
   `pre_process_code`, `post_process_code`, and `response_mapping`.
 - `checks`: an array of local code checks. Each has `name`, `node`, optional `tool`,
   `hook` (`code`, `pre`, or `post`), `vars`, optional `config`, optional `result`,
@@ -77,6 +78,20 @@ transitions explicit. An end_call node can omit terminal: the builder adds a
 silent end_call with message_mode=none. Deliver the required farewell before
 hangup and in the order required relative to any bank closing operation.
 This compact syntax changes serialization only, never policy.
+
+Primitive OpenAPI path/query/header parameters are also derived from the schema.
+For path/query parameters the builder stages model arguments in temporary body
+leaves `__bank_path_<name>` and `__bank_query_<name>` (prepend another underscore
+if that name collides with an actual body field). Authored pre-hooks may normalize
+these leaves; header parameters are in `config['headers'][<name>]`. The builder
+then removes the temporary leaves and percent-encodes the URI parameters into
+the fixed contract endpoint. Do not manually rewrite its URL or method. Use
+location-prefixed field_descriptions when parameter names overlap body fields.
+Ordinary request-body fields retain their original names. Complex parameter
+serialization is not assumed; compilation must respect supported schema types.
+Automatic pre_actions have no caller-model argument turn. Supply their required
+values from documented call variables or previously verified state in the
+pre-hook, including staged URI parameters; test the actual unset/default inputs.
 
 ## Workflow architecture
 
@@ -174,6 +189,31 @@ Use the supplied date interpretation rules, including weekday conventions.
 An unrelated event/date in small talk is not a payment proposal.
 Brief-specific refusal/clarification limits still apply to questions asked back.
 
+Treat extraction and policy evaluation as one contract. For every extraction
+field, account for every declared enum and every representation its description
+permits. The evaluator must accept ordinary, unambiguous spoken entity names
+and aliases using the loaded entities; do not require a caller to supply internal
+IDs or repeat a complete label when the shorter name identifies one entity.
+Clarify genuinely ambiguous references without inventing an entity. The
+extraction model sees recent messages and its schema, not the dialogue prompt or
+arbitrary workflow variables; do not assume it can infer invisible runtime IDs.
+
+Give empty, unclear, non-answer and refusal classifications explicit handling
+under the SOURCE policy, including its clarification and attempt limits. A
+repeated unchanged question must not bypass a source-defined termination budget.
+Count questions actually delivered, including caller-first starts where no entry
+speech ran. Distinguish a new reply from a tool-result-only re-entry; retain new
+answers and clear consumed input exactly once. Combine initial-question rules
+with exception rules rather than applying either in isolation. A new proposal
+and a rejected offer remain distinct; preserve that distinction while obeying
+source limits on repeated offers.
+
+Recognize relative periods, incomplete dates and exact dates by their meaning
+and the supplied date conventions, not only a short phrase whitelist. Track
+clarification allowances across turns independently of the wording used. Retain
+relevant prior context and resolve only what the source and call inputs support;
+clarify ambiguity instead of guessing or letting a new wording reset a limit.
+
 Cover every policy branch: unclear name, wrong number, deceased, relative offers
 to pay, invalid callbacks, suspicion/AI/human questions, refusal of identity,
 wrong answers and hints, all-product opening, already-paid versus historical
@@ -191,6 +231,17 @@ rejected offers. For multiple products, follow source order and read-back rules.
 The user may change one element at confirmation: revalidate and confirm anew.
 No extraneous internal explanations, node names, tool names or implementation
 details in customer-facing dialogue. Keep questions short and sequential.
+
+Derive adversarial local checks from the source, independently of the generated
+implementation. Cover realistic extraction outputs, natural entity aliases,
+unclear replies, repeated rejected offers, date paraphrases and source-defined
+limits across consecutive turns. Trace complete node transitions, result hooks,
+speaking re-entry and the next caller correction before encoding checks in the
+supported format. Use reachable states, not invented success flags or oracle
+IDs unavailable to the extractor. Include interactions between rules and the
+first question, not only isolated happy paths. A deterministic replay supplied
+with hand-selected extraction values validates those values only; never present
+it as evidence that speech extraction or live dialogue passed.
 
 ## Platform invariants
 

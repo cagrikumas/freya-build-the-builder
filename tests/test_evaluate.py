@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'builder'))
-from evaluate import run_examples, summarize_runs, validate_scenarios
+from evaluate import run_examples, summarize_runs, validate_scenarios, EvaluationTimeout
 
 
 def scenario(name='example'):
@@ -57,6 +57,35 @@ class ExampleEvaluationTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             run_examples(client, 'agent', [scenario()], Mock(), persona_ids=['p'])
         self.assertEqual(client.api.call_count, 1)
+
+    def test_queued_simulation_timeout_preserves_id_and_does_not_retry(self):
+        client = SimpleNamespace(api=Mock(return_value={'id': 'sim'}), AGENT_LLM={}, SIM_LLM={})
+        with patch('evaluate.time.sleep', side_effect=EvaluationTimeout('queue timeout')):
+            result = run_examples(client, 'agent', [scenario()], Mock(), persona_ids=['p'], max_seconds=30)
+        self.assertFalse(result['conclusive'])
+        self.assertEqual(result['failed'], 0)
+        self.assertEqual(result['simulation_id'], 'sim')
+        self.assertEqual(client.api.call_count, 1)
+
+    def test_busy_workspace_is_inconclusive_without_creation_retry(self):
+        client = SimpleNamespace(api=Mock(side_effect=RuntimeError('API -> 409: concurrent simulations are not allowed')),
+                                 AGENT_LLM={}, SIM_LLM={})
+        result = run_examples(client, 'agent', [scenario()], Mock(), persona_ids=['p'])
+        self.assertFalse(result['conclusive'])
+        self.assertEqual(result['status'], 'workspace_busy')
+        self.assertEqual(client.api.call_count, 1)
+
+    def test_network_creation_is_bounded_by_local_alarm(self):
+        import time
+        import signal
+        def slow_api(*args): time.sleep(1)
+        client = SimpleNamespace(api=slow_api, AGENT_LLM={}, SIM_LLM={})
+        prior = signal.getsignal(signal.SIGALRM)
+        result = run_examples(client, 'agent', [scenario()], Mock(), persona_ids=['p'], max_seconds=0.02)
+        self.assertFalse(result['conclusive'])
+        self.assertIsNone(result['simulation_id'])
+        self.assertEqual(signal.getsignal(signal.SIGALRM), prior)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL)[0], 0)
 
     def test_a_scenario_without_source_or_fixture_is_rejected(self):
         item = scenario(); del item['source']

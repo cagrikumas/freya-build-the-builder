@@ -5,7 +5,8 @@ policy calculations are generated from the input brief on every build.
 """
 import copy
 import json
-from validate import resolve
+import re
+from validate import api_operations, parameter_layout, request_pre_hook, workflow_nodes
 
 
 def materialize_mappings(tool, mappings):
@@ -24,21 +25,20 @@ def assemble(artifact, api):
     if 'test_variables' in workflow:
         workflow['test_variables'] = {k: v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
                                       for k, v in workflow['test_variables'].items()}
-    api = resolve(api, api)
-    base = api['servers'][0]['url'].rstrip('/')
     specs = {}
-    for path, methods in api['paths'].items():
-        for method, op in methods.items():
-            if method.lower() not in ('post', 'get', 'put', 'patch', 'delete'):
-                continue
-            name = op.get('operationId') or path.rstrip('/').rsplit('/', 1)[-1]
-            if name in specs: raise ValueError('Ambiguous tool name in OpenAPI: ' + name)
-            specs[name] = (base + path, method.upper(), op)
+    for (url, method), op in api_operations(api).items():
+        name = op.get('operationId') or url.rstrip('/').rsplit('/', 1)[-1]
+        if name in specs: raise ValueError('Ambiguous tool name in OpenAPI: ' + name)
+        specs[name] = (url, method, op)
     registry = artifact.get('tool_config', {})
 
-    def bank_tool(name):
+    def bank_tool(name, *, lifecycle=False):
         if name not in specs: raise ValueError('Unknown bank tool: ' + name)
         url, method, op = specs[name]
+        layout = parameter_layout(op)
+        declared_paths = {p['name'] for p in layout if p['in'] == 'path'}
+        if set(re.findall(r'\{([^{}]+)\}', url)) != declared_paths:
+            raise ValueError(f'{name}: unresolved OpenAPI path parameter')
         cfg = registry.get(name, {})
         schema = copy.deepcopy(op.get('requestBody', {}).get('content', {}).get('application/json', {}).get('schema', {'type': 'object', 'properties': {}}))
         for field, leaf in schema.get('properties', {}).items():
@@ -58,9 +58,37 @@ def assemble(artifact, api):
                                  'body': schema}}}}
         for field in ('pre_process_code', 'post_process_code', 'response_mapping'):
             if field in cfg: tool[field] = copy.deepcopy(cfg[field])
+        props = tool['function']['parameters']['properties']
+        for parameter in layout:
+            field = parameter['name']
+            leaf = copy.deepcopy(parameter['schema'])
+            placeholder = field if field == 'customer_id' else 'arg_' + name + '_' + parameter['in'] + '_' + field
+            leaf['default'] = '{{' + placeholder + '}}'
+            descriptions = cfg.get('field_descriptions', {})
+            description = descriptions.get(parameter['in'] + ':' + field, descriptions.get(field))
+            if description: leaf['description'] = description
+            if parameter['in'] == 'header':
+                container = props['headers']
+                key = field
+                for previous in list(container['properties']):
+                    if previous.casefold() == key.casefold(): del container['properties'][previous]
+            else:
+                container = props['body']
+                key = parameter['stage']
+            container.setdefault('properties', {})[key] = leaf
+            if parameter['required']: container.setdefault('required', []).append(key)
+        if layout:
+            tool['pre_process_code'] = request_pre_hook(cfg.get('pre_process_code', ''), url, method, layout, 'requestBody' in op)
+        if lifecycle and 'alwaysRunsAt' in cfg:
+            tool['config']['alwaysRunsAt'] = copy.deepcopy(cfg['alwaysRunsAt'])
         return tool
 
-    for name, node in workflow.get('nodes', {}).items():
+    if 'tools' in workflow:
+        workflow['tools'] = [bank_tool(item, lifecycle=True) if isinstance(item, str) else item for item in workflow['tools']]
+        for tool in workflow['tools']:
+            materialize_mappings(tool, tool.get('response_mapping', []))
+    for name, node, is_global in workflow_nodes(workflow):
+        if is_global: node.setdefault('node_type', 'conversation')
         for group in ('tools', 'pre_actions'):
             if group in node:
                 expanded = []

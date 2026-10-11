@@ -3,14 +3,18 @@ import time
 import re
 
 
+def is_availability_error(error):
+    return isinstance(error, RuntimeError) and bool(re.search(
+        r'-> (502|503|504)(?:\D|$)|curl error (6|7|28|35|52|56):', str(error)))
+
+
 def availability_check(action, trace, name):
     """Keep a completed build exportable when a remote test cannot be measured."""
     try:
         return action()
     except RuntimeError as error:
         message = str(error)
-        transient = re.search(r'-> (502|503|504)(?:\D|$)|curl error (6|7|28|35|52|56):', message)
-        if not transient: raise
+        if not is_availability_error(error): raise
         result = {'passed': None, 'failed': 0, 'conclusive': False, 'rows': [],
                   'transport_error': message}
         trace('runtime_check_inconclusive', check=name, error=message,

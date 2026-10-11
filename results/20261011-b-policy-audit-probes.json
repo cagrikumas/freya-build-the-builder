@@ -1,0 +1,180 @@
+{
+  "scope": "Local generated-code counterexample with prescribed extraction values; not live speech or an official score.",
+  "artifact": "traces/20261011T152310Z-practice-b/candidate-0.json",
+  "artifact_sha256": "2d05488343fd2c4d475f3ad5f92bc3efa462c77f2dcee7d4194da9f578187b96",
+  "probes": {
+    "unclear_nonanswer_to_all_today": {
+      "phase": "all",
+      "route": "collection",
+      "prompt": "I am calling from the collections team about a late payment. Your credit card ending 9015 has a past-due amount of 510 and is 16 days late. Your personal loan has a past-due amount of 1320 and is 16 days late. Can you pay all of them today?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "unclear_nonanswer_again": {
+      "phase": "all",
+      "route": "collection",
+      "prompt": "I am calling from the collections team about a late payment. Your credit card ending 9015 has a past-due amount of 510 and is 16 days late. Your personal loan has a past-due amount of 1320 and is 16 days late. Can you pay all of them today?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "first_below_floor": {
+      "phase": "product",
+      "route": "collection",
+      "prompt": "I can record at least 153. The rest stays overdue. Can you pay 153 for your credit card ending 9015 on 15 October 2026?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": 153.0,
+          "offer_date": "2026-10-15",
+          "floor_offered": "yes"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "second_below_floor_same_day": {
+      "phase": "product",
+      "route": "collection",
+      "prompt": "That amount cannot be recorded. Do you accept the minimum amount already offered for your credit card ending 9015 on 15 October 2026?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": 153.0,
+          "offer_date": "2026-10-15",
+          "floor_offered": "yes"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "third_below_floor_same_day": {
+      "phase": "product",
+      "route": "collection",
+      "prompt": "That amount cannot be recorded. Do you accept the minimum amount already offered for your credit card ending 9015 on 15 October 2026?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": 153.0,
+          "offer_date": "2026-10-15",
+          "floor_offered": "yes"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": null,
+          "offer_date": null,
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "full_amount_too_much_for_all": {
+      "phase": "product",
+      "route": "collection",
+      "prompt": "I can record at least 153. The rest stays overdue. Can you pay 153 for your credit card ending 9015 on 14 October 2026?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": 153.0,
+          "offer_date": "2026-10-14",
+          "floor_offered": "yes"
+        },
+        {
+          "product_id": "p2",
+          "status": "open",
+          "attempts": 0,
+          "offer_amount": 440.0,
+          "offer_date": "2026-10-14",
+          "floor_offered": "yes"
+        }
+      ]
+    },
+    "shared_vague_then_no_exact_day": {
+      "phase": "confirm",
+      "route": "collection",
+      "prompt": "The latest date I can record for your credit card ending 9015 is 23 October 2026. The latest date I can record for your personal loan is 23 October 2026. For your credit card ending 9015, 510 on 23 October 2026. For your personal loan, 1320 on 23 October 2026. Do you confirm?",
+      "ledger": [
+        {
+          "product_id": "p1",
+          "status": "agreed",
+          "attempts": 0,
+          "offer_amount": 510.0,
+          "offer_date": "2026-10-23",
+          "floor_offered": "no"
+        },
+        {
+          "product_id": "p2",
+          "status": "agreed",
+          "attempts": 0,
+          "offer_amount": 1320.0,
+          "offer_date": "2026-10-23",
+          "floor_offered": "no"
+        }
+      ]
+    },
+    "first_caller_message_before_any_name_ask": {
+      "phase": "name",
+      "route": "identity",
+      "prompt": "Am I speaking with Mr Bell?",
+      "ledger": []
+    },
+    "unclear_after_only_one_actual_name_ask": {
+      "phase": "finalize",
+      "route": "finish",
+      "prompt": "Am I speaking with Mr Bell?",
+      "ledger": []
+    }
+  }
+}

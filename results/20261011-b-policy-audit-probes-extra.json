@@ -1,0 +1,62 @@
+{
+  "scope": "Local generated-code counterexample with prescribed extraction values; not live speech or an official score.",
+  "artifact": "traces/20261011T152310Z-practice-b/candidate-0.json",
+  "artifact_sha256": "2d05488343fd2c4d475f3ad5f92bc3efa462c77f2dcee7d4194da9f578187b96",
+  "probes": {
+    "first_human_request": {
+      "phase": "identity_human",
+      "route": "identity",
+      "identity_prompt": "May I try to help you first?",
+      "collection_prompt": "",
+      "requested_queue": null,
+      "pending_promise": null,
+      "wrong_answers": 0,
+      "close_outcome": null,
+      "close_reason": null
+    },
+    "nonanswer_to_help_first": {
+      "phase": "identity_human",
+      "route": "transfer",
+      "identity_prompt": "May I try to help you first?",
+      "collection_prompt": "",
+      "requested_queue": "general",
+      "pending_promise": null,
+      "wrong_answers": 0,
+      "close_outcome": null,
+      "close_reason": null
+    },
+    "numeric_swapped_invalid_date": {
+      "phase": "dob",
+      "route": "identity",
+      "identity_prompt": "Please give the missing day, month or four-digit year of your date of birth.",
+      "collection_prompt": "",
+      "requested_queue": null,
+      "pending_promise": null,
+      "wrong_answers": 0,
+      "close_outcome": null,
+      "close_reason": null
+    },
+    "week_after_next": {
+      "phase": "all",
+      "route": "collection",
+      "identity_prompt": "",
+      "collection_prompt": "Please give the exact payment day, month and year.",
+      "requested_queue": null,
+      "pending_promise": null,
+      "wrong_answers": 0,
+      "close_outcome": null,
+      "close_reason": null
+    },
+    "exact_weekday_and_day_followup": {
+      "phase": "all",
+      "route": "collection",
+      "identity_prompt": "",
+      "collection_prompt": "Please give the exact payment day, month and year.",
+      "requested_queue": null,
+      "pending_promise": null,
+      "wrong_answers": 0,
+      "close_outcome": null,
+      "close_reason": null
+    }
+  }
+}

@@ -27,6 +27,30 @@ from smoke import run_smoke
 from evaluate import run_examples, validate_scenarios, evaluation_seconds
 
 
+def preserve_tests(original, candidate):
+    """A repair may add checks, but cannot redefine the evidence it failed."""
+    checks = original.get('checks', [])
+    new_checks = candidate.get('checks', [])
+    if (not isinstance(checks, list) or not isinstance(new_checks, list)
+            or new_checks[:len(checks)] != checks
+            or any(candidate.get(k) != original.get(k) for k in ('smoke', 'scenarios'))):
+        raise ValueError('Automatic repair must preserve the original tests')
+    return candidate
+
+
+def validate_and_check(workflow, artifact, api):
+    errors = validate(workflow, api)
+    # Never execute model-generated code that failed the static safety checks.
+    if not errors:
+        errors += check_examples(workflow, artifact.get('checks', []))
+    return errors
+
+
+def artifact_manifest(run_dir):
+    return {str(p.relative_to(run_dir)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted(run_dir.rglob('*')) if p.is_file() and p != run_dir / 'trace.jsonl'}
+
+
 def load_env():
     env = ROOT / 'env.sh'
     if env.exists():
@@ -91,7 +115,10 @@ def main():
     def deadline(sig, frame): raise TimeoutError('Builder deadline reached')
     signal.signal(signal.SIGALRM, deadline); signal.alarm(args.max_seconds)
     trace('build_start', slot=slot, offline=args.offline, max_seconds=args.max_seconds, folder_mode=folder_mode, mock_url=mock_url,
-          builder_files={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((ROOT / 'builder').glob('*')) if p.is_file()},
+          builder_files={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+                         for p in sorted(list((ROOT / 'builder').glob('*')) + [KIT / 'freya.py']
+                                         + [KIT / 'docs' / name for name in ('workflow-format.md', 'tools-and-code.md')])
+                         if p.is_file()},
           inputs=[{'path': str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in inputs])
     final = None
     try:
@@ -153,8 +180,7 @@ def main():
                     api['servers'] = [{'url': mock_url}]
                     (run_dir / 'tool-api.json').write_text(json.dumps(api, indent=2))
                 workflow = assemble(artifact, api)
-                errors = validate(workflow, api)
-                if not errors: errors += check_examples(workflow, artifact.get('checks', []))
+                errors = validate_and_check(workflow, artifact, api)
                 if folder_mode and artifact.get('scenarios'):
                     validate_scenarios(artifact['scenarios'])
             except (KeyError, ValueError, TypeError, AttributeError) as e:
@@ -169,7 +195,8 @@ def main():
                     trace('platform_validation', success=False, error=str(e))
             if not errors: break
             if attempt == 3 or remaining() < 180: raise RuntimeError('Validation failed: ' + '; '.join(errors))
-            artifact = call(prompt + '\n\n# REPAIR REQUIRED\nPrevious artifact:\n' + json.dumps(artifact) + '\nFailures:\n' + json.dumps(errors) + '\nReturn the full corrected artifact. Fix causes, never weaken checks to conceal policy errors.', 'Repair locally or platform-detected compilation defects', trace, run_dir, timeout=min(900 if folder_mode else 600, int(remaining()-20)), images=images)
+            candidate = call(prompt + '\n\n# REPAIR REQUIRED\nPrevious artifact:\n' + json.dumps(artifact) + '\nFailures:\n' + json.dumps(errors) + '\nReturn the full corrected artifact. Preserve smoke, scenarios and all existing checks exactly; you may append checks. Fix causes, never weaken checks to conceal policy errors.', 'Repair locally or platform-detected compilation defects', trace, run_dir, timeout=min(900 if folder_mode else 600, int(remaining()-20)), images=images)
+            artifact = preserve_tests(artifact, candidate)
         (run_dir / 'workflow.json').write_text(json.dumps(workflow, indent=2))
         if args.offline:
             final = {'workflow': str(run_dir / 'workflow.json'), 'trace': str(trace_path)}
@@ -187,23 +214,30 @@ def main():
                 trace('smoke_test_end', **smoke_result)
                 live_available = smoke_result['passed'] is not None
                 if smoke_result['passed'] is False:
-                    if remaining() < 180: raise RuntimeError('Published workflow failed its opening smoke check')
+                    if remaining() < 600: raise RuntimeError('Published workflow failed its opening smoke check')
                     repaired = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OPENING SMOKE FAILURE\n' + json.dumps(smoke_result) + '\nReturn JSON with issues and patches (JSON Patch into the artifact). Repair the runtime or policy cause; do not remove or weaken expectations from the source documents.',
-                                    'Repair an observed opening/runtime failure', trace, run_dir, timeout=min(600, int(remaining()-120)), images=images)
-                    if any(p.get('path', '') == '' or p['path'].split('/')[1] == 'smoke' for p in repaired['patches']):
-                        raise ValueError('Automatic smoke repair must preserve the original test')
-                    artifact = apply_patches(artifact, repaired['patches'])
+                                    'Repair an observed opening/runtime failure', trace, run_dir, timeout=min(600, int(remaining()-420)), images=images)
+                    candidate = preserve_tests(artifact, apply_patches(artifact, repaired['patches']))
                     (run_dir/'smoke-repair.json').write_text(json.dumps(repaired, indent=2))
-                    workflow = assemble(artifact, api)
-                    errors = validate(workflow, api) + check_examples(workflow, artifact.get('checks', []))
+                    repaired_workflow = assemble(candidate, api)
+                    errors = validate_and_check(repaired_workflow, candidate, api)
                     if errors: raise RuntimeError('Smoke repair validation failed: ' + '; '.join(errors))
-                    freya.validate_workflow(slot, workflow)
-                    ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
-                    trace('smoke_repair_published', **ids)
-                    smoke_result = availability_check(lambda: run_smoke(freya, ids['workflow_id'], artifact['smoke']), trace, 'opening after repair')
-                    trace('smoke_test_end', **smoke_result)
-                    live_available = smoke_result['passed'] is not None
-                    if smoke_result['passed'] is False: raise RuntimeError('Opening smoke check failed after automatic repair')
+                    freya.validate_workflow(slot, repaired_workflow)
+                    selected = False
+                    try:
+                        ids['version'] = freya.update_workflow(ids['workflow_id'], repaired_workflow)
+                        trace('smoke_repair_published', **ids)
+                        smoke_result = availability_check(lambda: run_smoke(freya, ids['workflow_id'], artifact['smoke']), trace, 'opening after repair')
+                        trace('smoke_test_end', **smoke_result)
+                        live_available = smoke_result['passed'] is not None
+                        if smoke_result['passed'] is False: raise RuntimeError('Opening smoke check failed after automatic repair')
+                        if smoke_result['passed'] is True:
+                            workflow, artifact = repaired_workflow, candidate
+                            selected = True
+                    finally:
+                        if not selected:
+                            ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
+                            trace('original_restored', reason='Opening repair did not complete with a measured pass', **ids)
             else:
                 trace('smoke_test_skipped', reason='No usable synthetic test variables supplied by the documents')
             if artifact.get('scenarios'):
@@ -213,40 +247,43 @@ def main():
                 evaluation_budget = evaluation_seconds(scenarios)
                 if not live_available:
                     trace('example_evaluation_skipped', reason='Opening request exposed a conversation-service outage')
-                elif remaining() < evaluation_budget:
+                elif remaining() < evaluation_budget + 300:
                     trace('example_evaluation_skipped', reason='Insufficient remaining build time',
-                          required_seconds=evaluation_budget, remaining_seconds=int(remaining()))
+                          required_seconds=evaluation_budget + 300, remaining_seconds=int(remaining()))
                 else:
-                    evaluated = availability_check(lambda: run_examples(freya, ids['agent_id'], scenarios, trace), trace, 'document examples')
+                    evaluated = availability_check(lambda: run_examples(freya, ids['agent_id'], scenarios, trace,
+                                                                         max_seconds=min(evaluation_budget, remaining()-300)), trace, 'document examples')
                     (run_dir / 'examples.json').write_text(redact(evaluated))
-                    if evaluated['failed'] and evaluated['conclusive'] and remaining() >= evaluation_budget + 600:
+                    if evaluated['failed'] and evaluated['conclusive'] and remaining() >= evaluation_budget + 900:
                         failures = [r for r in evaluated['rows'] if r['outcome'] == 'fail']
                         repaired = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact)
                                         + '\n\n# OBSERVED EXAMPLE CONVERSATION FAILURES\n' + redact(failures)
                                         + '\nReturn JSON with issues and patches (JSON Patch into the artifact). Fix general runtime/policy causes from the documents. Never hardcode the example customer or coach tests. Preserve scenarios, smoke and existing checks exactly; you may append additional local checks.',
                                         'Repair policy/runtime defects in document-derived conversations', trace, run_dir,
-                                        timeout=min(600, int(remaining()-evaluation_budget)), images=images)
-                        candidate = apply_patches(artifact, repaired['patches'])
-                        if (candidate.get('scenarios') != scenarios or candidate.get('smoke') != artifact.get('smoke')
-                                or candidate.get('checks', [])[:len(artifact.get('checks', []))] != artifact.get('checks', [])):
-                            raise ValueError('Example repair must preserve the original tests')
+                                        timeout=min(600, int(remaining()-evaluation_budget-300)), images=images)
+                        candidate = preserve_tests(artifact, apply_patches(artifact, repaired['patches']))
                         repaired_workflow = assemble(candidate, api)
-                        errors = validate(repaired_workflow, api) + check_examples(repaired_workflow, candidate.get('checks', []))
+                        errors = validate_and_check(repaired_workflow, candidate, api)
                         trace('example_repair_validation', errors=errors)
                         (run_dir / 'example-repair.json').write_text(redact(repaired))
-                        if not errors and remaining() >= evaluation_budget:
+                        if not errors and remaining() >= evaluation_budget + 300:
                             freya.validate_workflow(slot, repaired_workflow)
-                            ids['version'] = freya.update_workflow(ids['workflow_id'], repaired_workflow)
-                            trace('example_repair_published', **ids)
-                            rescored = availability_check(lambda: run_examples(freya, ids['agent_id'], scenarios, trace,
-                                                                               persona_ids=evaluated['persona_ids']), trace, 'document examples after repair')
-                            (run_dir / 'examples-repaired.json').write_text(redact(rescored))
-                            if rescored['conclusive'] and rescored['passed'] >= evaluated['passed']:
-                                workflow, artifact = repaired_workflow, candidate
-                                trace('example_repair_selected', passed=rescored['passed'], total=rescored['total'])
-                            else:
-                                ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
-                                trace('original_restored', reason='Example repair did not improve a conclusive score', **ids)
+                            selected = False
+                            try:
+                                ids['version'] = freya.update_workflow(ids['workflow_id'], repaired_workflow)
+                                trace('example_repair_published', **ids)
+                                rescored = availability_check(lambda: run_examples(freya, ids['agent_id'], scenarios, trace,
+                                                                                   persona_ids=evaluated['persona_ids'],
+                                                                                   max_seconds=min(evaluation_budget, remaining()-300)), trace, 'document examples after repair')
+                                (run_dir / 'examples-repaired.json').write_text(redact(rescored))
+                                if rescored['conclusive'] and rescored['passed'] >= evaluated['passed']:
+                                    workflow, artifact = repaired_workflow, candidate
+                                    selected = True
+                                    trace('example_repair_selected', passed=rescored['passed'], total=rescored['total'])
+                            finally:
+                                if not selected:
+                                    ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
+                                    trace('original_restored', reason='Example repair did not complete with a conclusive improvement', **ids)
         if args.practice:
             out_path = run_dir / 'practice.json'
             cmd = [sys.executable, str(ROOT / 'builder' / 'practice.py'), ids['agent_id'], '--out', str(out_path)]
@@ -274,34 +311,37 @@ def main():
                 repair = call(prompt + '\n\n# CANDIDATE\n' + json.dumps(artifact) + '\n\n# OBSERVED PRACTICE FAILURES\n' + redact(failures) + '\nFix general policy/runtime causes. Do not hardcode customer facts or expected case outputs. Override the compilation output format: return JSON {"issues": [...], "patches": [...]} with JSON Patch add/replace/remove operations into the candidate. Replace complete code strings when needed and append new checks with path /checks/-. Do not re-emit the entire artifact.',
                                 'Repair policy or runtime defects revealed by practice conversations', trace, run_dir, timeout=min(420, int(remaining()-150)))
                 (run_dir / 'repair-patches.json').write_text(json.dumps(repair, indent=2))
-                repaired = apply_patches(artifact, repair['patches'])
+                repaired = preserve_tests(artifact, apply_patches(artifact, repair['patches']))
                 repaired_workflow = assemble(repaired, api)
-                repair_errors = validate(repaired_workflow, api)
-                if not repair_errors: repair_errors += check_examples(repaired_workflow, repaired.get('checks', []))
+                repair_errors = validate_and_check(repaired_workflow, repaired, api)
                 trace('repair_validation', errors=repair_errors)
-                if not repair_errors and remaining() > 120:
+                if not repair_errors and remaining() > 360:
+                    selected = False
+                    publication_attempted = False
                     try:
                         freya.validate_workflow(slot, repaired_workflow)
+                        publication_attempted = True
                         ids['version'] = freya.update_workflow(ids['workflow_id'], repaired_workflow)
                         trace('repair_published', **ids)
                         (run_dir / 'repair.json').write_text(json.dumps(repaired, indent=2))
                         repaired_path = run_dir / 'practice-repaired.json'
                         repair_cmd = cmd.copy(); repair_cmd[repair_cmd.index('--out') + 1] = str(repaired_path)
                         trace('test_start', command=repair_cmd)
-                        rr = subprocess.run(repair_cmd, cwd=KIT, text=True, capture_output=True, timeout=max(1, int(remaining()-30)))
+                        rr = subprocess.run(repair_cmd, cwd=KIT, text=True, capture_output=True, timeout=max(1, int(remaining()-300)))
                         (run_dir / 'practice-repaired.log').write_text(rr.stdout + rr.stderr)
                         rescored = json.loads(repaired_path.read_text()) if repaired_path.exists() else {}
                         trace('test_end', returncode=rr.returncode, passed=rescored.get('passed'), total=rescored.get('total'), output=rr.stdout[-14000:], error=rr.stderr[-2000:])
                         if rr.returncode == 0 and rescored.get('passed', -1) >= scored.get('passed', 0):
                             workflow = repaired_workflow; artifact = repaired; scored = rescored
+                            selected = True
                             trace('repair_selected', passed=scored.get('passed'), total=scored.get('total'))
-                        else:
-                            ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
-                            trace('original_restored', reason='Repair did not improve the measured practice score', **ids)
                     except (subprocess.TimeoutExpired, RuntimeError) as e:
                         if remaining() <= 10: raise
-                        ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
-                        trace('original_restored', reason=str(e), **ids)
+                        trace('practice_repair_inconclusive', error=str(e))
+                    finally:
+                        if publication_attempted and not selected:
+                            ids['version'] = freya.update_workflow(ids['workflow_id'], workflow)
+                            trace('original_restored', reason='Practice repair did not complete with an improved measured score', **ids)
         (run_dir / 'workflow.json').write_text(json.dumps(workflow, indent=2))
         export_path = ROOT / 'submission' / f'{slot}.workflow.json'
         export_path.parent.mkdir(exist_ok=True)
@@ -314,7 +354,8 @@ def main():
         raise
     finally:
         signal.alarm(0)
-        trace('build_end', seconds=round(time.monotonic()-started, 2), completed=final is not None, result=final)
+        trace('build_end', seconds=round(time.monotonic()-started, 2), completed=final is not None,
+              result=final, artifacts=artifact_manifest(run_dir))
 
 
 if __name__ == '__main__':

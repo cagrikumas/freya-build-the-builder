@@ -12,7 +12,7 @@ import build
 
 
 class FolderBuildTests(unittest.TestCase):
-    def run_online_example_repair(self, repaired_passed, change_tests=False):
+    def run_online_example_repair(self, repaired_passed, change_tests=False, retest_error=None, phase='examples'):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); case = root / 'case'; case.mkdir()
             (case / 'BRIEF.md').write_text('Follow this synthetic case and its example conversation.')
@@ -29,12 +29,15 @@ class FolderBuildTests(unittest.TestCase):
                 'name': 'start', 'node_type': 'conversation', 'task_message': 'original', 'transitions': []}}},
                 'checks': [], 'scenarios': [{'name': 'example', 'source': 'BRIEF.md', 'variables': {'fixture': 'test'},
                                            'prompt': 'Follow the example.', 'success_criteria': 'Follow the policy.'}]}
+            if phase == 'smoke':
+                artifact.pop('scenarios')
+                artifact['smoke'] = {'message': 'Hello', 'variables': {'fixture': 'test'}, 'expected_fragments': ['required']}
             repair = {'issues': ['observed error'], 'patches': [{'op': 'replace',
                       'path': '/workflow/nodes/start/task_message', 'value': 'repaired'}]}
             if change_tests: repair['patches'].append({'op': 'replace', 'path': '/scenarios/0/success_criteria', 'value': 'Always pass'})
             initial = {'failed': 1, 'passed': 0, 'total': 1, 'conclusive': True,
                        'rows': [{'name': 'example', 'outcome': 'fail'}], 'persona_ids': ['p']}
-            retest = {**initial, 'passed': repaired_passed, 'conclusive': repaired_passed >= 0}
+            retest = {**initial, 'passed': repaired_passed, 'conclusive': repaired_passed is not None and repaired_passed >= 0}
             saved = []
             def save(slot, workflow, **kwargs):
                 saved.append(copy.deepcopy(workflow))
@@ -48,15 +51,24 @@ class FolderBuildTests(unittest.TestCase):
             with patch.object(build, 'ROOT', root), patch.object(build, 'KIT', kit), patch.object(build, 'load_env'),\
                  patch.object(build, 'install_curl_transport'), patch.object(build, 'bind_workspace'),\
                  patch.object(build, 'call', side_effect=[artifact, {'approved': True}, repair]),\
-                 patch.object(build, 'run_examples', side_effect=[initial, retest]) as evaluate,\
+                 patch.object(build, 'run_examples', side_effect=[initial, retest_error or retest]) as evaluate,\
+                 patch.object(build, 'run_smoke', side_effect=[{'passed': False}, retest_error or {'passed': repaired_passed}]),\
                  patch.dict(sys.modules, {'freya': client}),\
                  patch.object(sys, 'argv', ['build.py', str(case), 'https://mock.example']):
                 if change_tests:
                     with self.assertRaisesRegex(ValueError, 'preserve the original tests'): build.main()
                     self.assertEqual(len(saved), 1)
                     return
+                if retest_error:
+                    with self.assertRaises(type(retest_error)): build.main()
+                    self.assertEqual(len(saved), 3)
+                    self.assertEqual(saved[-1]['nodes']['start']['task_message'], 'original')
+                    return
                 build.main()
-            self.assertEqual(evaluate.call_args_list[1].kwargs['persona_ids'], ['p'])
+            if phase == 'examples':
+                self.assertEqual(evaluate.call_args_list[1].kwargs['persona_ids'], ['p'])
+            else:
+                evaluate.assert_not_called()
             exported = json.loads((root / 'submission' / 'final.workflow.json').read_text())
             return exported['workflow']['nodes']['start']['task_message']
 
@@ -68,6 +80,16 @@ class FolderBuildTests(unittest.TestCase):
 
     def test_example_repair_cannot_weaken_the_judge_criteria(self):
         self.run_online_example_repair(1, change_tests=True)
+
+    def test_retest_failure_restores_original_before_propagating_error(self):
+        self.run_online_example_repair(0, retest_error=RuntimeError('API -> 400: invalid response'))
+
+    def test_smoke_repair_is_selected_only_after_measured_pass(self):
+        self.assertEqual(self.run_online_example_repair(True, phase='smoke'), 'repaired')
+        self.assertEqual(self.run_online_example_repair(None, phase='smoke'), 'original')
+
+    def test_smoke_retest_exception_restores_original(self):
+        self.run_online_example_repair(False, phase='smoke', retest_error=RuntimeError('API -> 401: denied'))
 
     def test_documents_are_compiled_without_case_rules_in_source(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -96,3 +118,6 @@ class FolderBuildTests(unittest.TestCase):
             self.assertTrue(events[-1]['completed'])
             self.assertTrue(events[0]['folder_mode'])
             self.assertEqual(events[0]['mock_url'],'https://personal-mock.example')
+            self.assertIn('documents.txt', events[-1]['artifacts'])
+            self.assertIn('workflow.json', events[-1]['artifacts'])
+            self.assertNotIn('trace.jsonl', events[-1]['artifacts'])

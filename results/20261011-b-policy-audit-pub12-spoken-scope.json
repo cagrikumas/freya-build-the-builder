@@ -1,0 +1,142 @@
+{
+  "scope": "Local generated-code counterexample with prescribed extraction values; not live speech or an official score.",
+  "artifact": "traces/20261011T152310Z-practice-b/candidate-0.json",
+  "artifact_sha256": "2d05488343fd2c4d475f3ad5f92bc3efa462c77f2dcee7d4194da9f578187b96",
+  "probes": [
+    {
+      "input": {
+        "event": "proposal",
+        "date_text": "tomorrow",
+        "product_scope": "credit card"
+      },
+      "phase": "all",
+      "route": "collection",
+      "prompt": "Does that apply to all the products or to one product?",
+      "pending_input": {
+        "event": "proposal",
+        "date_text": "tomorrow",
+        "amount_text": "",
+        "product_scope": "credit card",
+        "amount_scope": "unspecified",
+        "proposal_items": []
+      },
+      "ledger": [
+        {
+          "product_id": "p1",
+          "label": "credit card ending 9015",
+          "past_due": 510.0,
+          "days_late": 16,
+          "floor": 153.0,
+          "band": "late",
+          "deadline": "2026-10-23",
+          "budget": 2,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        },
+        {
+          "product_id": "p2",
+          "label": "personal loan",
+          "past_due": 1320.0,
+          "days_late": 16,
+          "floor": 440.0,
+          "band": "late",
+          "deadline": "2026-10-23",
+          "budget": 2,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        },
+        {
+          "product_id": "p3",
+          "label": "car loan",
+          "past_due": 140.0,
+          "days_late": 7,
+          "floor": 46.0,
+          "band": "early",
+          "deadline": "2026-11-02",
+          "budget": 1,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        }
+      ]
+    },
+    {
+      "input": {
+        "event": "none",
+        "product_scope": "credit card"
+      },
+      "phase": "all",
+      "route": "collection",
+      "prompt": "Does that apply to all the products or to one product?",
+      "pending_input": {
+        "event": "proposal",
+        "date_text": "tomorrow",
+        "amount_text": "",
+        "product_scope": "credit card",
+        "amount_scope": "unspecified",
+        "proposal_items": []
+      },
+      "ledger": [
+        {
+          "product_id": "p1",
+          "label": "credit card ending 9015",
+          "past_due": 510.0,
+          "days_late": 16,
+          "floor": 153.0,
+          "band": "late",
+          "deadline": "2026-10-23",
+          "budget": 2,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        },
+        {
+          "product_id": "p2",
+          "label": "personal loan",
+          "past_due": 1320.0,
+          "days_late": 16,
+          "floor": 440.0,
+          "band": "late",
+          "deadline": "2026-10-23",
+          "budget": 2,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        },
+        {
+          "product_id": "p3",
+          "label": "car loan",
+          "past_due": 140.0,
+          "days_late": 7,
+          "floor": 46.0,
+          "band": "early",
+          "deadline": "2026-11-02",
+          "budget": 1,
+          "attempts": 0,
+          "status": "open",
+          "rejected": [],
+          "floor_offered": "no",
+          "full_too_much": "no",
+          "vague_count": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 """Read a case folder without losing tables, sheet labels, or diagram images."""
 import datetime as dt
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
@@ -11,6 +12,12 @@ import zipfile
 W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 S = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 R = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
+A = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
+DGM = '{http://schemas.openxmlformats.org/drawingml/2006/diagram}'
+BUILTIN_FORMATS = {9: '0%', 10: '0.00%', 14: 'mm-dd-yy', 15: 'd-mmm-yy',
+                   16: 'd-mmm', 17: 'mmm-yy', 18: 'h:mm AM/PM', 19: 'h:mm:ss AM/PM',
+                   20: 'h:mm', 21: 'h:mm:ss', 22: 'm/d/yy h:mm',
+                   45: 'mm:ss', 46: '[h]:mm:ss', 47: 'mmss.0'}
 
 
 def office_images(archive, prefix, output):
@@ -52,6 +59,28 @@ def word(path, output):
                         parts.append(node.tag.split('}')[1].upper() + ' id=' + node.get(W+'id', ''))
                     for child in node: visit(child)
             visit(root)
+        # SmartArt stores its labels and directed graph outside document.xml.
+        # Preserve the logical graph even when Office has not stored a bitmap.
+        diagram_names = [n for n in z.namelist() if re.fullmatch(r'word/diagrams/data\d+\.xml', n)]
+        for name in sorted(diagram_names):
+            root = ET.fromstring(z.read(name))
+            parts.append('SMARTART PART ' + name)
+            for point in root.iter(DGM+'pt'):
+                labels = '\n'.join(''.join(t.text or '' for t in paragraph.iter(A+'t'))
+                                   for paragraph in point.iter(A+'p'))
+                parts.append('NODE ' + json.dumps(dict(point.attrib), ensure_ascii=False)
+                             + ' TEXT ' + json.dumps(labels, ensure_ascii=False))
+            for connection in root.iter(DGM+'cxn'):
+                parts.append('CONNECTION ' + json.dumps(dict(connection.attrib), ensure_ascii=False))
+        for name in names:
+            root = ET.fromstring(z.read(name))
+            for graphic in root.iter(A+'graphicData'):
+                uri = graphic.get('uri', '')
+                if uri.endswith('/diagram') and diagram_names:
+                    continue
+                if not uri.endswith('/picture'):
+                    raise ValueError('Unsupported native Word graphic in ' + name
+                                     + '; a general visual renderer is required: ' + uri)
         return '\n'.join(parts), office_images(z, 'word/media/', output)
 
 
@@ -86,15 +115,23 @@ def spreadsheet(path, output):
                     elif typ == 'b': value = 'true' if value == '1' else 'false'
                     style_index = int(c.get('s', '0'))
                     fmt = styles[style_index] if style_index < len(styles) else 0
-                    code = formats.get(fmt, '')
-                    numeric = bool(value and re.fullmatch(r'-?\d+(?:\.\d+)?', value))
+                    code = formats.get(fmt, BUILTIN_FORMATS.get(fmt, ''))
+                    numeric = bool(value and re.fullmatch(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?', value))
+                    raw = value
+                    numeric_cell = numeric and typ not in ('s', 'b', 'inlineStr')
+                    visible_code = re.sub(r'"[^"]*"|\[[^\]]*\]|\\.', '', code)
                     date_fmt = fmt in (*range(14, 23), 45, 46, 47) or bool(re.search(r'[dy]|h.*s', re.sub(r'"[^"]*"|\[[^\]]*\]', '', code), re.I))
-                    if numeric and typ not in ('s', 'b', 'inlineStr') and date_fmt:
+                    if numeric_cell and '%' in visible_code:
+                        value = format(Decimal(value) * 100, 'f') + '%'
+                    elif numeric_cell and date_fmt:
                         serial = float(value)
                         epoch = dt.datetime(1904, 1, 1) if epoch1904 else dt.datetime(1899, 12, 30)
                         if not epoch1904 and 0 < serial < 60: serial += 1
-                        value = (epoch + dt.timedelta(days=serial)).isoformat() + ' [raw=' + value + ']'
-                    elif numeric and re.fullmatch('0+', code): value = value.zfill(len(code))
+                        value = (epoch + dt.timedelta(days=serial)).isoformat()
+                    elif numeric_cell and re.fullmatch('0+', code) and Decimal(value) == Decimal(value).to_integral_value():
+                        value = str(int(Decimal(value))).zfill(len(code))
+                    if numeric_cell and fmt:
+                        value += ' [raw=' + raw + '; format=' + json.dumps(code or ('numFmtId=' + str(fmt)), ensure_ascii=False) + ']'
                     formula = c.find(S+'f')
                     if formula is not None: value += ' [formula=' + (formula.text or '') + ']'
                     cells.append(c.get('r', '?') + '=' + json.dumps(value, ensure_ascii=False))

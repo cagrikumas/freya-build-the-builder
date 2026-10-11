@@ -88,7 +88,9 @@ candidate. Phone agents use the unmodified model from the supplied
 Folder builds can run a one-turn opening check using a synthetic customer from
 the documents, then end the chat. Empty speech, unresolved placeholders and
 missing required opening phrases fail it. One automatic repair is allowed;
-the original smoke check cannot be weakened. This is a startup check, not a
+all post-audit repairs preserve the original smoke check, scenarios and existing
+local checks (new local checks may be appended). An unsuccessful smoke repair
+restores the prior workflow. This is a startup check, not a
 claim of passing the hidden policy evaluation.
 
 When the case supplies example conversations and usable test customers, the
@@ -105,6 +107,9 @@ Remote gateway/connection failures during these checks are recorded as
 inconclusive, and an already validated workflow is still exported. An opening
 outage skips the larger simulation. No policy repair is based on that outage;
 workflow validation and authentication errors still fail normally.
+Document evaluations have a separate deadline that reserves time for restoring
+the previous workflow and exporting it. A timed-out simulation retains its ID
+in the trace; do not start another simulation until its state is resolved.
 
 ## Local validation
 
@@ -128,6 +133,11 @@ The mock must remain available until results are announced.
 2. Run the generic builder on the unedited case folder and mock URL. Never write
    final-case rules into builder source or edit the generated phone agent.
 3. Commit the frozen source, final workflow export and complete trace directory.
+   The completed build records hashes of every trace artifact, the builder,
+   the platform client/reference documents, and the input files. The packager
+   rejects changed or missing artifacts and requires the source, export and
+   complete trace to match the bytes in HEAD. Older runs without the manifest
+   must be rebuilt for final submission.
 4. Produce the current single-case form (keep it outside tracked files):
 
 ```sh

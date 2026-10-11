@@ -1,6 +1,11 @@
 """Run document-derived conversations; these are internal checks, not event scores."""
 import json
+import signal
 import time
+
+
+class EvaluationTimeout(TimeoutError):
+    pass
 
 
 def validate_scenarios(scenarios):
@@ -52,7 +57,49 @@ def summarize_runs(scenarios, persona_ids, runs, calls):
             'conclusive': all(r['outcome'] in ('pass', 'fail') for r in rows), 'rows': rows}
 
 
-def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_call_seconds=300):
+def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_call_seconds=300,
+                 max_seconds=None):
+    """Bound remote evaluation, including blocked HTTP calls, leaving time to export."""
+    validate_scenarios(scenarios)
+    budget = evaluation_seconds(scenarios, max_call_seconds) if max_seconds is None else max_seconds
+    if budget <= 0: raise ValueError('Evaluation needs a positive time budget')
+    started = time.monotonic()
+    previous = signal.getitimer(signal.ITIMER_REAL)
+    handler = signal.getsignal(signal.SIGALRM)
+    # Never replace an earlier enclosing deadline with a later local deadline.
+    owns_alarm = not previous[0] or budget < previous[0]
+    progress = {'persona_ids': persona_ids, 'simulation_id': None}
+    def expired(sig, frame):
+        raise EvaluationTimeout('Document example evaluation time limit reached')
+    if owns_alarm:
+        signal.signal(signal.SIGALRM, expired)
+        signal.setitimer(signal.ITIMER_REAL, budget)
+    try:
+        return _run_examples(freya, agent_id, scenarios, trace, progress,
+                             persona_ids=persona_ids, max_call_seconds=max_call_seconds,
+                             expires=started + budget)
+    except EvaluationTimeout as error:
+        result = {'passed': None, 'failed': 0, 'total': len(scenarios), 'conclusive': False,
+                  'rows': [], 'status': 'evaluation_timeout', 'reason': str(error), **progress}
+        trace('example_evaluation_inconclusive', **result,
+              action='Retain this simulation ID; do not start another simulation while its status is unresolved')
+        return result
+    except RuntimeError as error:
+        if 'concurrent simulations' not in str(error).lower(): raise
+        result = {'passed': None, 'failed': 0, 'total': len(scenarios), 'conclusive': False,
+                  'rows': [], 'status': 'workspace_busy', 'reason': str(error), **progress}
+        trace('example_evaluation_inconclusive', **result,
+              action='Leave the existing workspace simulation unchanged; do not retry creation')
+        return result
+    finally:
+        if owns_alarm:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, handler)
+            if previous[0]:
+                signal.setitimer(signal.ITIMER_REAL, max(0.000001, previous[0] - (time.monotonic()-started)), previous[1])
+
+
+def _run_examples(freya, agent_id, scenarios, trace, progress, *, persona_ids, max_call_seconds, expires):
     """One simulation, fixed event phone models, original criteria reusable for repair."""
     validate_scenarios(scenarios)
     if persona_ids is None:
@@ -66,6 +113,7 @@ def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_cal
               scenarios=[{'name': s['name'], 'source': s['source']} for s in scenarios])
     if len(persona_ids) != len(scenarios) or len(set(persona_ids)) != len(persona_ids):
         raise ValueError('Each scenario needs a distinct persona')
+    progress['persona_ids'] = persona_ids
     variables = {pid: s['variables'] for pid, s in zip(persona_ids, scenarios)}
     # Identical fixtures may share state in the bank mock; never race those calls.
     fixtures = [json.dumps(s['variables'], sort_keys=True) for s in scenarios]
@@ -80,10 +128,13 @@ def run_examples(freya, agent_id, scenarios, trace, *, persona_ids=None, max_cal
     # Never retry this POST blindly: a timed-out creation may already have run.
     created = freya.api('POST', '/api/v2/simulations', body)
     sim_id = (created.get('simulation') or created)['id']
+    progress['simulation_id'] = sim_id
     trace('example_simulation_created', simulation_id=sim_id, persona_ids=persona_ids,
           concurrency=concurrency, criteria='Document-derived internal checks; not the hidden event score')
     while True:
-        time.sleep(10)
+        if time.monotonic() >= expires:
+            raise EvaluationTimeout('Document example evaluation time limit reached')
+        time.sleep(min(10, max(0, expires-time.monotonic())))
         result = freya.api('GET', '/api/v2/simulations/' + sim_id)
         status = (result.get('simulation') or result).get('status')
         if status in ('completed', 'failed', 'paused'): break

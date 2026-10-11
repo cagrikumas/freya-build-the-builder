@@ -1,0 +1,157 @@
+{
+  "scope": "Local generated-code counterexample with prescribed extraction values; not live speech or an official score.",
+  "artifact": "traces/20261011T152310Z-practice-b/candidate-0.json",
+  "artifact_sha256": "2d05488343fd2c4d475f3ad5f92bc3efa462c77f2dcee7d4194da9f578187b96",
+  "probes": [
+    {
+      "input_event": "refuse",
+      "input_date": "",
+      "output": {
+        "phase": "product",
+        "route": "collection",
+        "collection_prompt": "Can you pay 540 for your personal loan on 16 October 2026?",
+        "pending_input": {},
+        "ledger": [
+          {
+            "product_id": "p1",
+            "label": "personal loan",
+            "past_due": 540.0,
+            "days_late": 5,
+            "floor": 180.0,
+            "band": "early",
+            "deadline": "2026-11-02",
+            "budget": 1,
+            "attempts": 1,
+            "status": "open",
+            "rejected": [],
+            "floor_offered": "no",
+            "full_too_much": "no",
+            "vague_count": 0,
+            "offer_amount": 540.0,
+            "offer_date": "2026-10-16",
+            "offer_kind": "persuasion",
+            "question": "Can you pay 540 for your personal loan on 16 October 2026?"
+          }
+        ]
+      }
+    },
+    {
+      "input_event": "proposal",
+      "input_date": "the week after next",
+      "output": {
+        "phase": "product",
+        "route": "collection",
+        "collection_prompt": "Please give the exact payment day, month and year.",
+        "pending_input": {
+          "event": "proposal",
+          "date_text": "the week after next",
+          "amount_text": "",
+          "product_scope": "",
+          "amount_scope": "unspecified",
+          "proposal_items": []
+        },
+        "ledger": [
+          {
+            "product_id": "p1",
+            "label": "personal loan",
+            "past_due": 540.0,
+            "days_late": 5,
+            "floor": 180.0,
+            "band": "early",
+            "deadline": "2026-11-02",
+            "budget": 1,
+            "attempts": 1,
+            "status": "open",
+            "rejected": [],
+            "floor_offered": "no",
+            "full_too_much": "no",
+            "vague_count": 0,
+            "offer_amount": 540.0,
+            "offer_date": "2026-10-16",
+            "offer_kind": "persuasion",
+            "question": "Can you pay 540 for your personal loan on 16 October 2026?"
+          }
+        ]
+      }
+    },
+    {
+      "input_event": "proposal",
+      "input_date": "Monday the 26th",
+      "output": {
+        "phase": "product",
+        "route": "collection",
+        "collection_prompt": "Please give the exact payment day, month and year.",
+        "pending_input": {
+          "event": "proposal",
+          "date_text": "the week after next Monday the 26th",
+          "amount_text": "",
+          "product_scope": "",
+          "amount_scope": "unspecified",
+          "proposal_items": []
+        },
+        "ledger": [
+          {
+            "product_id": "p1",
+            "label": "personal loan",
+            "past_due": 540.0,
+            "days_late": 5,
+            "floor": 180.0,
+            "band": "early",
+            "deadline": "2026-11-02",
+            "budget": 1,
+            "attempts": 1,
+            "status": "open",
+            "rejected": [],
+            "floor_offered": "no",
+            "full_too_much": "no",
+            "vague_count": 0,
+            "offer_amount": 540.0,
+            "offer_date": "2026-10-16",
+            "offer_kind": "persuasion",
+            "question": "Can you pay 540 for your personal loan on 16 October 2026?"
+          }
+        ]
+      }
+    },
+    {
+      "input_event": "proposal",
+      "input_date": "when my salary comes",
+      "output": {
+        "phase": "product",
+        "route": "collection",
+        "collection_prompt": "What exact day do you mean?",
+        "pending_input": {
+          "event": "proposal",
+          "date_text": "when my salary comes",
+          "amount_text": "",
+          "product_scope": "",
+          "amount_scope": "unspecified",
+          "proposal_items": []
+        },
+        "ledger": [
+          {
+            "product_id": "p1",
+            "label": "personal loan",
+            "past_due": 540.0,
+            "days_late": 5,
+            "floor": 180.0,
+            "band": "early",
+            "deadline": "2026-11-02",
+            "budget": 1,
+            "attempts": 1,
+            "status": "open",
+            "rejected": [],
+            "floor_offered": "no",
+            "full_too_much": "no",
+            "vague_count": 1,
+            "offer_amount": 540.0,
+            "offer_date": "2026-10-16",
+            "offer_kind": "persuasion",
+            "question": "Can you pay 540 for your personal loan on 16 October 2026?",
+            "waiting_exact": "yes"
+          }
+        ]
+      }
+    }
+  ]
+}
