@@ -1,0 +1,52 @@
+# Final vaka — canlı Freya sonuçları
+
+Bu kayıtlar belge kaynaklı iç testlerdir; organizatörün gizli puanı değildir.
+
+## İlk üretilen sürüm (v1)
+
+11 görüşme: 2 başarılı, 9 başarısız.
+
+[Freya görüşme grubu](https://staging-app.freyavoice.ai/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2/iterations/5025a1c1-1b13-4f7b-b9f3-7b8994d1b511?workspaceId=f22d7c29-2569-4a74-b8fc-b626c80454a5)
+
+| Senaryo | Sonuç |
+|---|---|
+| Melis — asgari altında ödeme | fail |
+| Kerem — üçüncü haftaya değişiklik | fail |
+| Elif — tüm kartlarda iki kez ısrar | fail |
+| Ece — eski dönemden son ekstreye düzeltme | fail |
+| Zeynep — ilk on iki ve ilk altı hane talebi | fail |
+| Cem — teklif öncesi adres servisi hatası | pass |
+| Selin — mevcut hafta servisi hatası | fail |
+| Bora — başarısız önizleme yazmayı engeller | fail |
+| Duru — bulunamayan PDF gönderildi sayılmaz | fail |
+| Tuna — on iki saniyelik başarılı bakiye | fail |
+| Arda — henüz kesilmemiş ekstre | pass |
+
+Gerçek kayıtlarla doğrulanan nedenler: tüketilmiş olayların kalıcı durumdan silinmemesi nedeniyle eski servis olayının boş verilerle tekrar çalışması; normal ekstre isteğinin toplam borç isteği diye çözümlenmesi; genel kart sözcüklerinin belirli kart seçimi sayılması. HTTP servis cevapları bu incelenen kayıtlarda doğruydu.
+
+Önceki oturum ve bu canlı kanıtlar korunarak otomatik düzeltme çalışması 18:53 UTC’de başladı.
+
+## Otomatik düzeltme (v2)
+
+`traces/20261011T185315Z-final` çalışması 19:12:07 UTC’de tamamlandı. Önceki
+üretim oturumları ve canlı görüşme kanıtları değiştirilmeden içeri alındı;
+modelin ürettiği düzeltmeler uygulandı. Ajan elle düzenlenmedi.
+
+60 yerel kontrol, platform doğrulaması ve açılış kontrolü geçti. Bunlar tam
+görüşme başarısı değildir. Eski 41 kontrol ve 12 senaryo aynen korundu.
+Tam üretim kaydı 10.599.629 bayttır. Kaynak ve çıktı hashleri, tüm oturum
+kayıtları ve 39 iz dosyası doğrulandı; mevcut iki anahtar için taranan 362
+dosyada eşleşme bulunmadı.
+
+Yeniden çalıştırma kaydı:
+
+```sh
+python3 builder/build.py {case_folder} {mock_url} \
+  --refine-run traces/20261011T183700Z-final \
+  --repair-feedback traces/20261011T185315Z-final/refinement-evidence.json \
+  --max-seconds 3000
+```
+
+Üretimin kendi süre kapısı 12 görüşme için gereken üst sınırı karşılamadığı
+için bu testleri atladı. Aynı değişmemiş v2 üzerinde bağımsız gerçek Freya
+testi 19:12:49 UTC’de başlatıldı; sonuç bekleniyor.

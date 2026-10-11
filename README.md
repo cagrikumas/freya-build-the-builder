@@ -116,6 +116,20 @@ workflow validation and authentication errors still fail normally.
 Document evaluations have a separate deadline that reserves time for restoring
 the previous workflow and exporting it. A timed-out simulation retains its ID
 in the trace; do not start another simulation until its state is resolved.
+Repeated customer fixtures run in separate sequential batches; each batch can
+run up to three distinct fixtures concurrently. All original scenarios, criteria,
+results and simulation IDs are preserved across those batches.
+
+Malformed compiler JSON can be recovered with `--resume-compile <failed-run>`.
+The builder verifies the original input hashes, exact prompt, artifact manifest
+and full model session before importing the unchanged evidence. Syntax repairs
+are bounded and cannot change string tokens or literal values.
+
+For measured runtime failures, `--refine-run <completed-run>
+--repair-feedback <evidence.json>` imports an immutable completed run and asks
+the model to repair its generated artifact. The prior model sessions and new
+repair session are retained together. All existing local checks, smoke checks
+and customer scenarios remain fixed. No generated agent is edited by hand.
 
 ## Local validation
 
@@ -154,8 +168,17 @@ The mock must remain available until results are announced.
 python3 builder/package_submission.py --team cagrikumas \
   --repo https://github.com/cagrikumas/freya-build-the-builder \
   --final traces/COMPLETED-final \
-  --mock-url https://your-mock.your-subdomain.workers.dev \
+  --mock-url https://freya-bank-mock-cagrikumas.freya-hackathon-bank-mock.workers.dev \
+  --commit-ref final-submission-20261011 \
   --name 'Your Name' --email 'you@example.com' > private/submission.json
+```
+
+After review, commit the exact manifest as `submission/submission.json`, create
+the named immutable tag at that commit, and push the commit and tag. Verify all
+three committed attachments with:
+
+```sh
+python3 builder/package_submission.py --verify submission/submission.json
 ```
 
 The Submit page updated at 17:00 UTC requires an email to
@@ -164,4 +187,4 @@ The Submit page updated at 17:00 UTC requires an email to
 It also requires those same files in the repository at the named commit.
 The manifest above is initially private for review; its final repository reference
 and organiser clone access must be settled before submission. The repository
-remains private during preparation. No final agent or submission has been sent.
+remains private during preparation. No final submission email has been sent.

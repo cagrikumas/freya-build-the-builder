@@ -67,3 +67,32 @@
 {"at": "2026-10-11T18:52:32.108288+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "seconds": 0.56, "success": true}
 {"at": "2026-10-11T18:52:42.118907+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "attempt": 0}
 {"at": "2026-10-11T18:52:42.582372+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "seconds": 0.46, "success": true}
+{"at": "2026-10-11T18:52:52.593339+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "attempt": 0}
+{"at": "2026-10-11T18:52:53.045975+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "seconds": 0.45, "success": true}
+{"at": "2026-10-11T18:52:53.046958+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2/iterations", "attempt": 0}
+{"at": "2026-10-11T18:52:53.391635+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2/iterations", "seconds": 0.34, "success": true}
+{"at": "2026-10-11T18:52:53.392338+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2/iterations/5025a1c1-1b13-4f7b-b9f3-7b8994d1b511", "attempt": 0}
+{"at": "2026-10-11T18:52:54.533726+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/simulations/b1bc357b-62b3-40b9-8e97-d566a7f7efa2/iterations/5025a1c1-1b13-4f7b-b9f3-7b8994d1b511", "seconds": 1.14, "success": true}
+{"at": "2026-10-11T18:52:54.542119+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/ba09e19a-accd-4da9-9ac3-cff8b32ff58a", "attempt": 0}
+{"at": "2026-10-11T18:52:56.449363+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/ba09e19a-accd-4da9-9ac3-cff8b32ff58a", "seconds": 1.91, "success": true}
+{"at": "2026-10-11T18:52:56.457763+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/28891712-bcab-48bf-ae27-3d20a279f26e", "attempt": 0}
+{"at": "2026-10-11T18:52:58.592009+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/28891712-bcab-48bf-ae27-3d20a279f26e", "seconds": 2.13, "success": true}
+{"at": "2026-10-11T18:52:58.592602+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/5d276c4d-5466-4406-88ca-ef7dfc7dcfeb", "attempt": 0}
+{"at": "2026-10-11T18:53:02.458173+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/5d276c4d-5466-4406-88ca-ef7dfc7dcfeb", "seconds": 3.87, "success": true}
+{"at": "2026-10-11T18:53:02.458820+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/6623f160-6912-4643-9a9f-affeff1f63fd", "attempt": 0}
+{"at": "2026-10-11T18:53:03.422738+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/6623f160-6912-4643-9a9f-affeff1f63fd", "seconds": 0.96, "success": true}
+{"at": "2026-10-11T18:53:03.423334+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/7c22d3ae-5fa5-41e4-bbb0-3ba71110ee0c", "attempt": 0}
+{"at": "2026-10-11T18:53:04.754694+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/7c22d3ae-5fa5-41e4-bbb0-3ba71110ee0c", "seconds": 1.33, "success": true}
+{"at": "2026-10-11T18:53:04.755341+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/30ae9ba0-6233-44e0-b657-d0d82a952eb0", "attempt": 0}
+{"at": "2026-10-11T18:53:05.296663+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/30ae9ba0-6233-44e0-b657-d0d82a952eb0", "seconds": 0.54, "success": true}
+{"at": "2026-10-11T18:53:05.297257+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/da0797e4-dbf2-4faa-94f6-0f9fd24c29a2", "attempt": 0}
+{"at": "2026-10-11T18:53:07.805808+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/da0797e4-dbf2-4faa-94f6-0f9fd24c29a2", "seconds": 2.51, "success": true}
+{"at": "2026-10-11T18:53:07.814312+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/15bb6a4c-ecfd-454c-baa9-901f3a88576a", "attempt": 0}
+{"at": "2026-10-11T18:53:08.593338+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/15bb6a4c-ecfd-454c-baa9-901f3a88576a", "seconds": 0.78, "success": true}
+{"at": "2026-10-11T18:53:08.593941+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/aae171d1-891b-4def-8665-d9187ef88c48", "attempt": 0}
+{"at": "2026-10-11T18:53:09.591312+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/aae171d1-891b-4def-8665-d9187ef88c48", "seconds": 1.0, "success": true}
+{"at": "2026-10-11T18:53:09.599689+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/5760c642-f7c5-42c1-9663-de0686271cb5", "attempt": 0}
+{"at": "2026-10-11T18:53:10.316110+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/5760c642-f7c5-42c1-9663-de0686271cb5", "seconds": 0.72, "success": true}
+{"at": "2026-10-11T18:53:10.324463+00:00", "event": "freya_request_start", "method": "GET", "path": "/api/v2/call/f36e5fc7-3941-4d89-bf88-5fb11776b900", "attempt": 0}
+{"at": "2026-10-11T18:53:11.158322+00:00", "event": "freya_request_end", "method": "GET", "path": "/api/v2/call/f36e5fc7-3941-4d89-bf88-5fb11776b900", "seconds": 0.83, "success": true}
+{"at": "2026-10-11T18:53:11.168973+00:00", "event": "example_evaluation_end", "total": 11, "passed": 2, "failed": 9, "conclusive": true, "simulation_id": "b1bc357b-62b3-40b9-8e97-d566a7f7efa2", "iteration_id": "5025a1c1-1b13-4f7b-b9f3-7b8994d1b511", "status": "completed", "persona_ids": ["4a2bdf51-48ff-4ea8-943f-a971a791c3c8", "b3c3c8f0-a2d4-470d-94bf-2b79e78c8efe", "1443612b-e36a-488c-9077-117ec982a969", "e75321e3-48e8-4471-8495-312dff5fa12b", "feae427b-4a8a-4983-aee2-afdc0506dfa3", "0344960e-4f85-4763-8a78-44e8685b8381", "779a5252-1880-43ca-b397-774d8ff0b9f4", "60a89540-6220-4379-91a6-1a455c94499d", "42720701-3f26-4a39-9dbf-4e6f5fb42cd9", "4acee061-69e6-4fc8-a682-13fd7bb2d95d", "84f22afb-de44-497a-a947-6b6a12495b2f"]}
