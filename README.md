@@ -131,6 +131,15 @@ the model to repair its generated artifact. The prior model sessions and new
 repair session are retained together. All existing local checks, smoke checks
 and customer scenarios remain fixed. No generated agent is edited by hand.
 
+For a cold rebuild from only the released case folder, use
+`python3 builder/build.py {case_folder} {mock_url} --max-seconds 5400`.
+This 90-minute ceiling accommodates compilation, independent audit and live
+evaluation. It is different from the shorter incremental refinement budget:
+the final refinement imports the verified completed v2 run and uses its original
+sessions together with the new live-failure evidence. The actual invocation and
+deadline are recorded in that run's trace. A cold rebuild may produce a different
+valid workflow because it invokes the models again.
+
 ## Local validation
 
 ```sh

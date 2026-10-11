@@ -1,0 +1,9 @@
+{
+  "workflow_id": "ec0bdc1b-9503-45a1-89dc-1935dc841b97",
+  "agent_id": "fdff3b19-d892-486e-b13b-971067e1ba12",
+  "version": 3,
+  "export": "submission/final.workflow.json",
+  "trace": "traces/20261011T192924Z-final/trace.jsonl",
+  "session_trace": "traces/20261011T192924Z-final/full-session.jsonl",
+  "sha256": "66f8a6a0094a671521050a1d5a766ea807ca396706865fbdc052f7da83aea982"
+}
